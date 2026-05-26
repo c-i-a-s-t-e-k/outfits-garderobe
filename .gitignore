@@ -221,3 +221,6 @@ __marimo__/
 .claude/**/10x-*
 .github/**/10x-*
 .agents/**/10x-*
+
+#my ignore
+tmp/
