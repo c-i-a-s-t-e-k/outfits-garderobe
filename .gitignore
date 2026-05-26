@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# 10xdevs course secrets
+.claude/**/10x-*
+.github/**/10x-*
+.agents/**/10x-*
