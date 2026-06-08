@@ -176,10 +176,10 @@ These steps require a human with Railway credentials:
 5. **Disable auto-deploy on non-main branches** in Railway's GitHub integration settings to prevent accidental preview deploys. This is a Railway-side toggle — no branch protection rules or CI/CD config required.
 6. **Set a monthly spend alert** in Railway billing settings at your budget threshold (Risk Register: pay-per-second opacity).
 
-- [ ] Railway account + project created
-- [ ] PostgreSQL service added and linked
-- [ ] GitHub repo connected
-- [ ] Env vars set
+- [x] Railway account + project created
+- [x] PostgreSQL service added and linked
+- [x] GitHub repo connected
+- [x] Env vars set
 - [ ] Auto-deploy scoped to `main` only
 - [ ] Spend alert configured
 
