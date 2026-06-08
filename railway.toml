@@ -2,7 +2,8 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = ".venv/bin/python manage.py migrate && .venv/bin/gunicorn --bind 0.0.0.0:$PORT outfits_garderobe.wsgi:application"
+preDeployCommand = ".venv/bin/python manage.py migrate"
+startCommand = ".venv/bin/gunicorn --bind 0.0.0.0:$PORT outfits_garderobe.wsgi:application"
 healthcheckPath = "/"
 healthcheckTimeout = 30
 restartPolicyType = "on_failure"
