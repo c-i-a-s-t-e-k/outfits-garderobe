@@ -17,8 +17,10 @@ Roadmap F-01 (`context/foundation/roadmap.md`, milestone M-1, stream A) — fund
 
 **Unlocks:** S-02 (`add-garment`) i S-04 (`outfit-photo`) — oba wgrywają zdjęcia. Ścieżka weryfikacji: test z dwoma kontami, w którym drugie konto nie pobiera pliku pierwszego.
 
-**Otwarte pytanie (nie blokuje):** gdzie fizycznie leżą pliki na platformie wdrożeniowej — wolumen przypięty do usługi czy zewnętrzny magazyn obiektowy? Materiał o infrastrukturze wskazuje limit jednego wolumenu na usługę i przyjmuje wolumen za wystarczający poniżej 10 GB. Owner: user.
+**Rozstrzygnięcie (faza 3):** pliki leżą na wolumenie Railway przypiętym do usługi `outfits-garderobe`, nie w zewnętrznym magazynie obiektowym. Wolumen `outfits-garderobe-volume` zamontowany pod `/data`; `MEDIA_ROOT=/data/media` (katalog pod punktem montowania, korzeń wolumenu zostaje wolny). To zajmuje jedyny slot wolumenu tej usługi.
 
-**Zależność wdrożeniowa (zapisana przy zamknięciu fazy 2):** brama działa, ale produkcja pisze na efemeryczny filesystem do czasu ukończenia fazy 3 (wolumen Railway + `MEDIA_ROOT`). S-02 (`add-garment`) i S-04 (`outfit-photo`) nie mogą trafić na produkcję przed fazą 3 — pierwsze wgrane zdjęcie zostałoby utracone przy najbliższym deployu.
+**Faktyczny sufit: 5000 MB**, nie 10 GB, które zakładał `infrastructure.md` — to limit planu na wolumen, nie wybrany rozmiar. Przy 3–5 MB na zdjęcie z telefonu daje to ok. 1000–1500 zdjęć: wystarczy na MVP, ale to jest próg, przy którym wraca rozmowa o magazynie obiektowym. Postgres zużywa osobny wolumen (217 MB / 5000 MB).
+
+**Zależność wdrożeniowa:** S-02 (`add-garment`) i S-04 (`outfit-photo`) wymagają żywego wolumenu — bez niego pierwsze wgrane zdjęcie zostałoby zapisane na efemeryczny filesystem i utracone przy najbliższym deployu. Wolumen jest podpięty (faza 3), więc ta blokada jest zdjęta; zostaje wymóg, żeby `MEDIA_ROOT` w środowisku produkcyjnym nadal wskazywał na ścieżkę pod montowaniem.
 
 Jira: OG-1.
