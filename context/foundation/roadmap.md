@@ -3,7 +3,7 @@ project: "Outfits Garderobe"
 version: 1
 status: draft
 created: 2026-09-04
-updated: 2026-09-05
+updated: 2026-09-06
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -41,7 +41,7 @@ Osoby dbające o styl hobbystycznie zapominają wcześniej dobrane zestawienia, 
 
 | ID   | Change ID          | Outcome (użytkownik może …)                                                              | Prerequisites | PRD refs                          | Status   |
 | ---- | ------------------ | ---------------------------------------------------------------------------------------- | ------------- | --------------------------------- | -------- |
-| F-01 | private-media-gate | (fundament) zdjęcia leżą poza publicznym katalogiem, a dostęp do pliku sprawdza właściciela | —             | Prywatność (NFR), Access Control, FR-003, FR-007 | in-progress |
+| F-01 | private-media-gate | (fundament) zdjęcia leżą poza publicznym katalogiem, a dostęp do pliku sprawdza właściciela | —             | Prywatność (NFR), Access Control, FR-003, FR-007 | done |
 | S-01 | user-accounts      | zarejestrować się, zalogować, wylogować i zmienić hasło                                    | —             | FR-001, FR-002, Access Control    | ready    |
 | S-02 | add-garment        | dodać ubranie (zdjęcie, typ, opis) i zobaczyć swoją prywatną listę ubrań                   | S-01, F-01    | FR-003, US-01                     | proposed |
 | S-03 | compose-outfit     | wizualnie złożyć outfit z ubrań i zobaczyć go w siatce garderoby                           | S-02          | FR-005, FR-008, US-01             | proposed |
@@ -85,9 +85,9 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 - **Parallel with:** S-01
 - **Blockers:** —
 - **Unknowns:**
-  - Gdzie fizycznie leżą pliki na platformie wdrożeniowej — wolumen przypięty do usługi czy zewnętrzny magazyn obiektowy? Materiał o infrastrukturze wskazuje limit jednego wolumenu na usługę. Owner: user. Block: no.
+  - ~~Gdzie fizycznie leżą pliki na platformie wdrożeniowej — wolumen przypięty do usługi czy zewnętrzny magazyn obiektowy?~~ **Rozstrzygnięte 2026-09-06:** wolumen Railway przypięty do usługi `outfits-garderobe`, mount `/data`, `MEDIA_ROOT=/data/media`. Faktyczny sufit 5000 MB (nie 10 GB, jak zakładał `infrastructure.md`).
 - **Risk:** stoi przed pierwszym wgraniem zdjęcia, bo dołożenie bramy później oznaczałoby przenoszenie już wgranych plików i zmianę wszystkich adresów; ryzykiem jest wybór miejsca składowania, który przy jednym wolumenie na usługę może wymusić zewnętrzny magazyn.
-- **Status:** in-progress
+- **Status:** done
 
 ## Slices
 
@@ -197,7 +197,7 @@ Ta tabela jest przekazaniem do narzędzia backlogowego. Jeden wiersz na każdy e
 PRD nie ma nierozstrzygniętych pytań. Poniższe wyszły w trakcie układania roadmapy i żadne nie zatrzymuje planowania — każde ma bezpieczne ustawienie domyślne, które `/10x-plan` może przyjąć i zapisać.
 
 1. **Czy logowanie zewnętrzne wchodzi do tego kamienia milowego, czy wystarczy email z hasłem?** FR-001 dopuszcza jedno albo drugie, a przy celu „szybkie domknięcie przepływu" bezpiecznym domyślnym jest email z hasłem. Owner: user. Dotyczy: S-01.
-2. **Gdzie fizycznie leżą pliki zdjęć na platformie wdrożeniowej — wolumen przypięty do usługi czy zewnętrzny magazyn obiektowy?** Materiał o infrastrukturze wskazuje limit jednego wolumenu na usługę i przyjmuje wolumen za wystarczający przy skali poniżej dziesięciu gigabajtów. Owner: user. Dotyczy: F-01, S-02, S-04.
+2. ~~**Gdzie fizycznie leżą pliki zdjęć na platformie wdrożeniowej — wolumen przypięty do usługi czy zewnętrzny magazyn obiektowy?**~~ **Rozstrzygnięte 2026-09-06 w F-01:** wolumen Railway przypięty do usługi, mount `/data`, `MEDIA_ROOT=/data/media`. Uwaga: faktyczny sufit to 5000 MB, czyli połowa dziesięciu gigabajtów, które zakładał materiał o infrastrukturze — przy 3–5 MB na zdjęcie daje to ok. 1000–1500 zdjęć i to jest próg, przy którym wraca rozmowa o magazynie obiektowym. Dotyczy: F-01, S-02, S-04.
 3. **Czy typ ubrania to zamknięta lista wyboru, czy dowolny tekst?** PRD mówi tylko „typ + opis"; wybór wpływa na to, czy da się później po typie filtrować. Owner: user. Dotyczy: S-02.
 
 ## Parked
