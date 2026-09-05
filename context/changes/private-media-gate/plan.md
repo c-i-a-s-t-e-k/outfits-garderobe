@@ -354,38 +354,38 @@ The one migration-shaped risk is the `STORAGES` repair in Phase 1. Re-enabling w
 
 #### Automated
 
-- [x] 1.1 System checks pass with no warnings: `uv run python manage.py check`
-- [x] 1.2 Resolved settings are correct — `MEDIA_ROOT` non-empty, outside `STATIC_ROOT`, whitenoise manifest backend active
-- [x] 1.3 Static collection still succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [x] 1.4 Linting passes: `uv run ruff check .`
-- [x] 1.5 Formatting is clean: `uv run ruff format --check .`
-- [x] 1.6 Pillow resolves in the locked environment: `uv run python -c "import PIL"`
+- [x] 1.1 System checks pass with no warnings: `uv run python manage.py check` — 6ed0f51
+- [x] 1.2 Resolved settings are correct — `MEDIA_ROOT` non-empty, outside `STATIC_ROOT`, whitenoise manifest backend active — 6ed0f51
+- [x] 1.3 Static collection still succeeds under manifest storage: `uv run python manage.py collectstatic --noinput` — 6ed0f51
+- [x] 1.4 Linting passes: `uv run ruff check .` — 6ed0f51
+- [x] 1.5 Formatting is clean: `uv run ruff format --check .` — 6ed0f51
+- [x] 1.6 Pillow resolves in the locked environment: `uv run python -c "import PIL"` — 6ed0f51
 
 #### Manual
 
-- [x] 1.7 `git status` shows no stray media directory staged for commit
+- [x] 1.7 `git status` shows no stray media directory staged for commit — 6ed0f51
 
 ### Phase 2: The gate
 
 #### Automated
 
-- [ ] 2.1 Migration applies cleanly: `uv run python manage.py migrate`
-- [ ] 2.2 No model changes left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 2.3 The full test suite passes: `uv run pytest`
-- [ ] 2.4 Every gate test passes: `uv run pytest privatemedia/tests/test_gate.py`
-- [ ] 2.5 The config guard passes: `uv run pytest privatemedia/tests/test_storage_config.py`
-- [ ] 2.6 System checks pass: `uv run python manage.py check`
-- [ ] 2.7 Linting passes: `uv run ruff check .`
-- [ ] 2.8 Formatting is clean: `uv run ruff format --check .`
-- [ ] 2.9 No new vulnerable dependencies from Pillow: `uv run pip-audit`
+- [x] 2.1 Migration applies cleanly: `uv run python manage.py migrate`
+- [x] 2.2 No model changes left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
+- [x] 2.3 The full test suite passes: `uv run pytest`
+- [x] 2.4 Every gate test passes: `uv run pytest privatemedia/tests/test_gate.py`
+- [x] 2.5 The config guard passes: `uv run pytest privatemedia/tests/test_storage_config.py`
+- [x] 2.6 System checks pass: `uv run python manage.py check`
+- [x] 2.7 Linting passes: `uv run ruff check .`
+- [x] 2.8 Formatting is clean: `uv run ruff format --check .`
+- [x] 2.9 No new vulnerable dependencies from Pillow: `uv run pip-audit`
 
 #### Manual
 
-- [ ] 2.10 Admin upload stores the file under a UUID name with the original filename absent from the path
-- [ ] 2.11 A second, non-staff account opening the gate URL gets a 404 rather than the image
-- [ ] 2.12 Opening the same URL logged out lands on the login flow
-- [ ] 2.13 Reloading as the owner produces a `304`, confirming conditional GET is live
-- [ ] 2.14 No stray file appears in `staticfiles/` after an upload
+- [x] 2.10 Admin upload stores the file under a UUID name with the original filename absent from the path
+- [x] 2.11 A second, non-staff account opening the gate URL gets a 404 rather than the image
+- [x] 2.12 Opening the same URL logged out lands on the login flow
+- [x] 2.13 Reloading as the owner produces a `304`, confirming conditional GET is live
+- [x] 2.14 No stray file appears in `staticfiles/` after an upload
 
 ### Phase 3: Production storage
 

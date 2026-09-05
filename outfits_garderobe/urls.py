@@ -17,7 +17,7 @@ Including another URLconf
 
 from django.contrib import admin
 from django.http import JsonResponse
-from django.urls import path
+from django.urls import include, path
 
 
 def health(request):
@@ -27,4 +27,8 @@ def health(request):
 urlpatterns = [
     path('health/', health),
     path('admin/', admin.site.urls),
+    # The private media gate. Never add django.conf.urls.static.static() for
+    # MEDIA_ROOT here — that helper serves uploads publicly and would defeat the
+    # ownership check this route exists to enforce.
+    path('', include('privatemedia.urls')),
 ]
