@@ -41,7 +41,7 @@ Osoby dbające o styl hobbystycznie zapominają wcześniej dobrane zestawienia, 
 
 | ID   | Change ID          | Outcome (użytkownik może …)                                                              | Prerequisites | PRD refs                          | Status   |
 | ---- | ------------------ | ---------------------------------------------------------------------------------------- | ------------- | --------------------------------- | -------- |
-| F-01 | private-media-gate | (fundament) zdjęcia leżą poza publicznym katalogiem, a dostęp do pliku sprawdza właściciela | —             | Prywatność (NFR), Access Control, FR-003, FR-007 | planning    |
+| F-01 | private-media-gate | (fundament) zdjęcia leżą poza publicznym katalogiem, a dostęp do pliku sprawdza właściciela | —             | Prywatność (NFR), Access Control, FR-003, FR-007 | in-progress |
 | S-01 | user-accounts      | zarejestrować się, zalogować, wylogować i zmienić hasło                                    | —             | FR-001, FR-002, Access Control    | ready    |
 | S-02 | add-garment        | dodać ubranie (zdjęcie, typ, opis) i zobaczyć swoją prywatną listę ubrań                   | S-01, F-01    | FR-003, US-01                     | proposed |
 | S-03 | compose-outfit     | wizualnie złożyć outfit z ubrań i zobaczyć go w siatce garderoby                           | S-02          | FR-005, FR-008, US-01             | proposed |
@@ -87,7 +87,7 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 - **Unknowns:**
   - Gdzie fizycznie leżą pliki na platformie wdrożeniowej — wolumen przypięty do usługi czy zewnętrzny magazyn obiektowy? Materiał o infrastrukturze wskazuje limit jednego wolumenu na usługę. Owner: user. Block: no.
 - **Risk:** stoi przed pierwszym wgraniem zdjęcia, bo dołożenie bramy później oznaczałoby przenoszenie już wgranych plików i zmianę wszystkich adresów; ryzykiem jest wybór miejsca składowania, który przy jednym wolumenie na usługę może wymusić zewnętrzny magazyn.
-- **Status:** planning
+- **Status:** in-progress
 
 ## Slices
 

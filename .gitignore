@@ -225,3 +225,8 @@ __marimo__/
 #my ignore
 tmp/
 .railway/
+# Local uploaded media (development MEDIA_ROOT)
+/media/
+
+# Django collectstatic output (regenerated on deploy)
+/staticfiles/

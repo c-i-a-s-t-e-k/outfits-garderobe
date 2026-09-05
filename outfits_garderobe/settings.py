@@ -28,7 +28,9 @@ SECRET_KEY = os.environ['SECRET_KEY']
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') + ['healthcheck.railway.app']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') + [
+    'healthcheck.railway.app'
+]
 
 CSRF_TRUSTED_ORIGINS = [
     origin for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if origin
@@ -80,11 +82,7 @@ WSGI_APPLICATION = 'outfits_garderobe.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
-    )
-}
+DATABASES = {'default': dj_database_url.config(default=f'sqlite:///{BASE_DIR / "db.sqlite3"}')}
 
 
 # Password validation
@@ -123,4 +121,29 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+
+# Uploaded files (private — served only through the privatemedia gate view)
+# https://docs.djangoproject.com/en/6.0/ref/settings/#media-root
+#
+# MEDIA_ROOT must stay outside STATIC_ROOT and outside anything whitenoise
+# serves. In production it points at a mounted volume; never add
+# django.conf.urls.static.static() for it — that would serve uploads publicly.
+
+MEDIA_ROOT = Path(os.getenv('MEDIA_ROOT', BASE_DIR / 'media'))
+MEDIA_URL = 'media/'
+
+
+# Storage backends
+# https://docs.djangoproject.com/en/6.0/ref/settings/#storages
+#
+# Django 5.1 removed STATICFILES_STORAGE; both keys below are mandatory.
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}

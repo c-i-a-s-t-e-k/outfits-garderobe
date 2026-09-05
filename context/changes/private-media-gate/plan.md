@@ -354,16 +354,16 @@ The one migration-shaped risk is the `STORAGES` repair in Phase 1. Re-enabling w
 
 #### Automated
 
-- [ ] 1.1 System checks pass with no warnings: `uv run python manage.py check`
-- [ ] 1.2 Resolved settings are correct — `MEDIA_ROOT` non-empty, outside `STATIC_ROOT`, whitenoise manifest backend active
-- [ ] 1.3 Static collection still succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [ ] 1.4 Linting passes: `uv run ruff check .`
-- [ ] 1.5 Formatting is clean: `uv run ruff format --check .`
-- [ ] 1.6 Pillow resolves in the locked environment: `uv run python -c "import PIL"`
+- [x] 1.1 System checks pass with no warnings: `uv run python manage.py check`
+- [x] 1.2 Resolved settings are correct — `MEDIA_ROOT` non-empty, outside `STATIC_ROOT`, whitenoise manifest backend active
+- [x] 1.3 Static collection still succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
+- [x] 1.4 Linting passes: `uv run ruff check .`
+- [x] 1.5 Formatting is clean: `uv run ruff format --check .`
+- [x] 1.6 Pillow resolves in the locked environment: `uv run python -c "import PIL"`
 
 #### Manual
 
-- [ ] 1.7 `git status` shows no stray media directory staged for commit
+- [x] 1.7 `git status` shows no stray media directory staged for commit
 
 ### Phase 2: The gate
 
