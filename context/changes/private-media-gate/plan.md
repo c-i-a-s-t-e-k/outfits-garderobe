@@ -397,7 +397,7 @@ The one migration-shaped risk is the `STORAGES` repair in Phase 1. Re-enabling w
 
 #### Manual
 
-- [ ] 3.4 Production admin upload succeeds and the gate serves it back to its owner
-- [ ] 3.5 A second production account cannot fetch that image's URL (F-01 acceptance evidence)
-- [ ] 3.6 After a redeploy, the previously uploaded image is still served
-- [ ] 3.7 Railway logs show no permission errors writing beneath the mount path
+- [x] 3.4 Production admin upload succeeds and the gate serves it back to its owner — 35a9323
+- [x] 3.5 A second production account cannot fetch that image's URL (F-01 acceptance evidence) — 35a9323
+- [x] 3.6 After a redeploy, the previously uploaded image is still served — 35a9323
+- [x] 3.7 Railway logs show no permission errors writing beneath the mount path — 35a9323
