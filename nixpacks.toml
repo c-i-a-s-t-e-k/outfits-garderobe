@@ -2,3 +2,12 @@
 cmds = [
   "python -m venv --copies /opt/venv && . /opt/venv/bin/activate && pip install uv && uv sync --no-dev --frozen"
 ]
+
+# Static files are collected at BUILD time, not in preDeployCommand.
+# Railway runs preDeployCommand in a separate, throwaway container, so anything
+# collectstatic writes there is discarded before gunicorn starts — which leaves
+# CompressedManifestStaticFilesStorage without its staticfiles.json manifest and
+# turns every {% static %} lookup into a 500. Baking the output into the image is
+# the only place it survives.
+[phases.build]
+cmds = [".venv/bin/python manage.py collectstatic --noinput"]

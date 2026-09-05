@@ -391,9 +391,9 @@ The one migration-shaped risk is the `STORAGES` repair in Phase 1. Re-enabling w
 
 #### Automated
 
-- [x] 3.1 The service reports a volume attached at the expected mount path
-- [x] 3.2 The deployment reaches a healthy state — `/health/` returns `200` after deploy
-- [ ] 3.3 Deploy logs show `collectstatic` and `migrate` completing without error
+- [x] 3.1 The service reports a volume attached at the expected mount path — fd53dd8
+- [x] 3.2 The deployment reaches a healthy state — `/health/` returns `200` after deploy — fd53dd8
+- [x] 3.3 Deploy logs show `collectstatic` and `migrate` completing without error — fd53dd8
 
 #### Manual
 
