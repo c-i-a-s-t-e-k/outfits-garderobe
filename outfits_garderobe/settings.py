@@ -36,6 +36,17 @@ CSRF_TRUSTED_ORIGINS = [
     origin for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if origin
 ]
 
+# The session cookie is the only credential guarding every private photo behind
+# the privatemedia gate, so it must never cross the wire in plaintext. Railway
+# terminates TLS at its edge and forwards over HTTP, so Django needs the
+# forwarded-proto header to know a request was secure — without it,
+# SECURE_SSL_REDIRECT would loop. HSTS is left to S-01, which owns the auth flow.
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 # Application definition
 
@@ -131,7 +142,17 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # serves. In production it points at a mounted volume; never add
 # django.conf.urls.static.static() for it — that would serve uploads publicly.
 
-MEDIA_ROOT = Path(os.getenv('MEDIA_ROOT', BASE_DIR / 'media'))
+# Outside DEBUG the mounted volume is mandatory and MEDIA_ROOT is required, the
+# same way SECRET_KEY is: falling back to a path inside the image would send
+# uploads to the container's ephemeral layer, which Railway destroys on the next
+# deploy — losing user photos silently rather than failing at boot.
+if DEBUG:
+    MEDIA_ROOT = Path(os.getenv('MEDIA_ROOT', BASE_DIR / 'media'))
+else:
+    MEDIA_ROOT = Path(os.environ['MEDIA_ROOT'])
+
+# Matches the gate's route prefix. ImageField.url is NOT the gate — it appends
+# the storage name and resolves to nothing. Use PrivateImage.get_absolute_url().
 MEDIA_URL = 'media/'
 
 

@@ -1,10 +1,15 @@
 """The only path through which private file bytes reach a browser."""
 
+import logging
+
 from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, Http404
+from django.views.decorators.cache import cache_control
 from django.views.decorators.http import condition
 
 from privatemedia.models import PrivateImage
+
+logger = logging.getLogger(__name__)
 
 
 def _owned_image(request, pk):
@@ -39,6 +44,10 @@ def _last_modified(request, pk):
 
 
 @login_required
+# Above @condition on purpose: @condition returns its 304 before the view body
+# runs, so a header set inside the body would be missing from exactly the
+# response a cache is most likely to reuse.
+@cache_control(private=True, max_age=0, must_revalidate=True)
 @condition(etag_func=_etag, last_modified_func=_last_modified)
 def serve_private_image(request, pk):
     """Stream a private image to its owner.
@@ -51,6 +60,14 @@ def serve_private_image(request, pk):
     if image is None:
         raise Http404
 
-    response = FileResponse(image.image.open('rb'), as_attachment=False)
-    response['Cache-Control'] = 'private, max-age=0, must-revalidate'
-    return response
+    try:
+        handle = image.image.open('rb')
+    except (FileNotFoundError, OSError):
+        # The row is in Postgres and the bytes are on a separate volume, so the
+        # two can desynchronise (a reattach, a restore, a half-finished upload).
+        # Answer exactly as for a row that does not exist, but say so in the log
+        # — otherwise the data loss is silent.
+        logger.warning('PrivateImage %s has no file at %s', image.pk, image.image.name)
+        raise Http404 from None
+
+    return FileResponse(handle, as_attachment=False)

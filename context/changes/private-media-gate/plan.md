@@ -288,7 +288,9 @@ Confirmed by `railway volume list`: the only existing volume belongs to the **Po
 
 - The service reports a volume attached at the expected mount path
 - The deployment reaches a healthy state — `/health/` returns `200` after deploy
-- Deploy logs show `collectstatic` and `migrate` completing in `preDeployCommand` without error
+- Deploy logs show `collectstatic` and `migrate` completing without error — `migrate` in `preDeployCommand`, `collectstatic` in the build phase (see addendum below)
+
+> **Addendum (impl-review, 2026-09-09):** this criterion originally read "in `preDeployCommand`". During Phase 3 `collectstatic` had to move out of `preDeployCommand` into `[phases.build]` in `nixpacks.toml` (commit `35a9323`): Railway runs `preDeployCommand` in a separate, throwaway container, so the output was discarded before gunicorn started, leaving `CompressedManifestStaticFilesStorage` without its `staticfiles.json` manifest and turning `/admin/` into a 500 while `/health/` stayed green. Baking it into the image is the only place it survives. `migrate` remains the sole `preDeployCommand`. Verified from the build log: nixpacks v1.41.0 ran `.venv/bin/python manage.py collectstatic --noinput` in the build phase.
 
 #### Manual Verification:
 
