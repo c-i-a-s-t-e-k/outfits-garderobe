@@ -44,11 +44,11 @@ After reading all source files, produce the report below. Adapt the depth to the
 
 | Skill size | Depth |
 |-----------|-------|
-| Under 150 lines (simple) | Concise — each section is 3-5 sentences. Skip sections that don't apply (e.g., simple skills rarely have sub-agent orchestration or self-review gates). |
+| Under 150 lines (simple) | Concise — a few sentences per section. Skip sections that don't apply (e.g., simple skills rarely have sub-agent orchestration or self-review gates). |
 | 150-400 lines (medium) | Standard — each section is a short paragraph. Cover all 7 sections. |
 | Over 400 lines (complex/orchestrator) | Detailed — anatomy table, specific line references, extended mechanics analysis. All 7 sections in full. |
 
-Do not pad simple skills with generic filler. A 95-line skill gets a tight, focused report. An 831-line orchestrator gets deep coverage.
+Do not pad simple skills with generic filler. A short single-purpose skill gets a tight, focused report; a large orchestrator gets deep coverage.
 
 ## Report Structure
 
@@ -205,7 +205,7 @@ allowed-tools:
 
 **Step 3: Add structure.** Translate your prompt into sections: role statement, when-to-use/skip, initial response, and process steps. The role statement sets the personality; the when-to-use section prevents misuse.
 
-**Step 4: Add guardrails.** What must this skill NEVER do? Write 3-5 critical guardrails. These are the highest-leverage lines — they prevent the most damaging failure modes.
+**Step 4: Add guardrails.** What must this skill not do? State the few real constraints plainly, each with its reason. These are the highest-leverage lines — they prevent the most damaging failure modes — and a reason lets the model apply them sensibly at the edges, where capitals alone make it rigid.
 
 **Step 5: Add scope boundaries.** Write a "What this skill does NOT do" section. Explicit boundaries prevent scope creep and make the skill predictable.
 
@@ -224,7 +224,7 @@ For each step, note what the skill being analyzed does at that level, so the lea
 
 **Common mistakes to avoid:**
 - Starting with the advanced patterns before the core behavior works
-- Writing guardrails that are too vague ("be careful") instead of specific ("NEVER auto-chain to the next skill")
+- Writing guardrails that are too vague ("be careful") instead of specific ("don't auto-chain to the next skill — each skill halts so the human reviews its artifact")
 - Forgetting the "What this skill does NOT do" section — scope creep is the #1 skill failure mode
 - Making `description` too broad (activates on everything) or too narrow (never activates)
 
@@ -233,7 +233,7 @@ For each step, note what the skill being analyzed does at that level, so the lea
 - **Skill has no references/ directory**: skip the references analysis. Don't mention that references are missing — most simple skills don't have them, and that's fine.
 - **Skill is a prompt file, not a SKILL.md**: if the user points to a `.claude/prompts/*.md` file, explain that prompts are simpler than skills (no frontmatter, no allowed-tools, no chain position) and analyze what's there. Adjust the report to skip sections that don't apply.
 - **Skill is very short (under 50 lines)**: produce a minimal report — Problem & Purpose + Anatomy + Building Something Similar. Skip chain position, key mechanics, and adaptation guide if there's nothing meaningful to say.
-- **Skill uses patterns not listed above**: analyze what you see. The mechanics list in section 5 is illustrative, not exhaustive. If the skill has a unique pattern, explain it.
+- **Skill uses patterns not listed above**: analyze what you see. The mechanics list in section 4 is illustrative, not exhaustive. If the skill has a unique pattern, explain it.
 
 ## Tone
 
