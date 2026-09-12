@@ -1,10 +1,11 @@
 """Settings for the test run — the real settings, with the deploy secrets stubbed.
 
-`settings.py` deliberately reads `SECRET_KEY` and (outside DEBUG) `MEDIA_ROOT`
-from `os.environ` with no fallback, so a misconfigured deploy fails at boot
-rather than running degraded. There is no dotenv loader, so importing it in a
-bare shell raises `KeyError`. Without this module `uv run pytest` only worked
-for a developer who happened to have those exported — it would fail in CI.
+`settings.py` deliberately reads `SECRET_KEY` and (outside DEBUG) `MEDIA_ROOT`,
+`BREVO_API_KEY` and `DEFAULT_FROM_EMAIL` from `os.environ` with no fallback, so
+a misconfigured deploy fails at boot rather than running degraded. There is no
+dotenv loader, so importing it in a bare shell raises `KeyError`. Without this
+module `uv run pytest` only worked for a developer who happened to have those
+exported — it would fail in CI.
 
 Everything else is inherited unchanged, so the config-guard tests still assert
 against the real `STORAGES`, the real URLconf, and the real `STATIC_ROOT`.
@@ -17,6 +18,10 @@ os.environ.setdefault('SECRET_KEY', 'test-only-key-not-used-outside-pytest')
 # Individual tests point MEDIA_ROOT at tmp_path; this only needs to be a real
 # path so the settings module can be imported at all.
 os.environ.setdefault('MEDIA_ROOT', tempfile.mkdtemp(prefix='outfits-test-media-'))
+# No test reaches Brevo: pytest-django swaps EMAIL_BACKEND to locmem for the run.
+# These only let the production email branch import.
+os.environ.setdefault('BREVO_API_KEY', 'test-only-not-a-brevo-key')
+os.environ.setdefault('DEFAULT_FROM_EMAIL', 'Outfits Garderobe <noreply@example.com>')
 
 from outfits_garderobe.settings import *  # noqa: E402, F403
 

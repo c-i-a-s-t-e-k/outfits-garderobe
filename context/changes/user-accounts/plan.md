@@ -711,30 +711,30 @@ Deleting a user cascades to `PrivateImage` rows but leaves their files on disk. 
 
 #### Automated
 
-- [x] 4.1 Railway holds both `BREVO_API_KEY` and `DEFAULT_FROM_EMAIL` (jq presence check prints `true`/`true`)
-- [x] 4.2 The Railway credentials are valid: `railway run` probe prints `account: 200` and `active sender: 1`
-- [x] 4.3 No key leaked into the repository: `git grep -nE 'xkeysib-[0-9a-f]{32}'` finds nothing
+- [x] 4.1 Railway holds both `BREVO_API_KEY` and `DEFAULT_FROM_EMAIL` (jq presence check prints `true`/`true`) — a63ac9a
+- [x] 4.2 The Railway credentials are valid: `railway run` probe prints `account: 200` and `active sender: 1` — a63ac9a
+- [x] 4.3 No key leaked into the repository: `git grep -nE 'xkeysib-[0-9a-f]{32}'` finds nothing — a63ac9a
 
 #### Manual
 
-- [x] 4.4 The Brevo account is confirmed and on the Free plan
-- [x] 4.5 The dedicated Gmail sender shows as verified under *Senders*
-- [x] 4.6 The API key is a v3 key from *API Keys* and is stored in the password manager
-- [x] 4.7 The local `.env` credentials are valid: the developer's probe prints `account: 200` and `active sender: 1`
-- [x] 4.8 One real send returns `201`, arrives in a mailbox other than the sender, and shows delivered in Brevo's logs
-- [x] 4.9 `change.md` records the sender variant, how From appeared, and where the test mail landed
-- [x] 4.10 The API key's value never appeared in the conversation transcript
+- [x] 4.4 The Brevo account is confirmed and on the Free plan — a63ac9a
+- [x] 4.5 The dedicated Gmail sender shows as verified under *Senders* — a63ac9a
+- [x] 4.6 The API key is a v3 key from *API Keys* and is stored in the password manager — a63ac9a
+- [x] 4.7 The local `.env` credentials are valid: the developer's probe prints `account: 200` and `active sender: 1` — a63ac9a
+- [x] 4.8 One real send returns `201`, arrives in a mailbox other than the sender, and shows delivered in Brevo's logs — a63ac9a
+- [x] 4.9 `change.md` records the sender variant, how From appeared, and where the test mail landed — a63ac9a
+- [x] 4.10 The API key's value never appeared in the conversation transcript — a63ac9a
 
 ### Phase 5: Production — real email, transport hardening, account reset
 
 #### Automated
 
-- [ ] 5.1 The deploy-configuration guard passes: `uv run pytest accounts/tests/test_deploy_config.py`
-- [ ] 5.2 The full suite passes: `uv run pytest`
-- [ ] 5.3 Linting passes: `uv run ruff check .`
-- [ ] 5.4 Formatting is clean: `uv run ruff format --check .`
-- [ ] 5.5 No vulnerable dependencies: `uv run pip-audit`
-- [ ] 5.6 Railway still holds valid Brevo credentials before the push
+- [x] 5.1 The deploy-configuration guard passes: `uv run pytest accounts/tests/test_deploy_config.py`
+- [x] 5.2 The full suite passes: `uv run pytest`
+- [x] 5.3 Linting passes: `uv run ruff check .`
+- [x] 5.4 Formatting is clean: `uv run ruff format --check .`
+- [x] 5.5 No vulnerable dependencies: `uv run pip-audit`
+- [x] 5.6 Railway still holds valid Brevo credentials before the push
 - [ ] 5.7 The deployment reaches a healthy state — `/health/` returns 200 after deploy
 - [ ] 5.8 Deploy logs show `collectstatic` and `migrate` completing without error, and no `KeyError` at boot
 

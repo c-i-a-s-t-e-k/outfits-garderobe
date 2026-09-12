@@ -1,6 +1,6 @@
 """What `reset_legacy_accounts` must and must not delete.
 
-This command is the only irreversible step in S-01, and in Phase 4 it runs
+This command is the only irreversible step in S-01, and in Phase 5 it runs
 against production. The cases below are the ones where getting it wrong destroys
 real data rather than merely failing.
 """

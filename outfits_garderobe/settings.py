@@ -40,12 +40,24 @@ CSRF_TRUSTED_ORIGINS = [
 # the privatemedia gate, so it must never cross the wire in plaintext. Railway
 # terminates TLS at its edge and forwards over HTTP, so Django needs the
 # forwarded-proto header to know a request was secure — without it,
-# SECURE_SSL_REDIRECT would loop. HSTS is left to S-01, which owns the auth flow.
+# SECURE_SSL_REDIRECT would loop.
+#
+# HSTS max-age is deliberately short. Browsers cache the header and a mistake
+# cannot be recalled, only waited out — so it ships at one hour, pending
+# verification in production. Raising it, and adding INCLUDE_SUBDOMAINS or
+# PRELOAD, is a later and separate decision; PRELOAD in particular is close to
+# permanent.
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # Railway's healthcheck calls /health/ over plain HTTP from inside its
+    # network, with no forwarded-proto header. Redirected, it sees a 301, never
+    # a 200, and fails the deploy — which is exactly what happened to deployment
+    # a47ace49 on 2026-09-10. The endpoint returns a constant and sets no cookie.
+    SECURE_REDIRECT_EXEMPT = [r'^health/$']
+    SECURE_HSTS_SECONDS = 3600
 
 
 # Application definition
@@ -62,6 +74,7 @@ INSTALLED_APPS = [
     # mails from request.get_host() plus ACCOUNT_DEFAULT_HTTP_PROTOCOL instead.
     'allauth',
     'allauth.account',
+    'anymail',
     'accounts',
     'privatemedia',
 ]
@@ -81,7 +94,7 @@ MIDDLEWARE = [
 
 # ModelBackend stays first so /admin/ keeps working for accounts that predate
 # allauth — that is the escape hatch which makes the production cutover in
-# Phase 4 recoverable at every step.
+# Phase 5 recoverable at every step.
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
@@ -248,15 +261,48 @@ ACCOUNT_SIGNUP_FORM_CLASS = 'accounts.forms.SignupForm'
 
 # ACCOUNT_SESSION_REMEMBER is deliberately unset: its default of None means
 # "ask the user", which is what renders the login form's "Remember me?"
-# checkbox. SESSION_COOKIE_AGE — the lifetime that checkbox selects — is set in
-# Phase 4 alongside the rest of the production hardening.
+# checkbox. Unchecked, allauth ends the session when the browser closes;
+# checked, the session lives for SESSION_COOKIE_AGE below.
+#
+# Two weeks is a trade. Someone standing at their wardrobe with a phone should
+# not have to re-authenticate on every visit — but that same cookie is the only
+# credential guarding every private photo, so a stolen or forgotten-on-a-shared-
+# device session stays useful for this long. SESSION_EXPIRE_AT_BROWSER_CLOSE
+# stays at its default; allauth sets expiry per login from the checkbox.
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 14
+
+# With no sites framework, allauth composes the links it mails from this plus
+# request.get_host(). Left at its 'http' default, every confirmation and reset
+# link would bounce off SECURE_SSL_REDIRECT on click — and once HSTS is cached,
+# some browsers refuse the http:// link outright.
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'http' if DEBUG else 'https'
 
 
 # Email
+# https://anymail.dev/en/stable/esps/brevo/
 #
 # Under DEBUG, confirmation and reset links are printed to the console; an unset
 # EMAIL_BACKEND would default to SMTP on localhost:25, which fails silently and
-# makes mandatory verification look broken. The production sender (Brevo SMTP,
-# read from the environment with no fallback) lands in Phase 4.
+# makes mandatory verification look broken.
+#
+# Production sends through Brevo's HTTP API, not its SMTP relay: Railway blocks
+# outbound SMTP on the Hobby plan this project runs on
+# (https://docs.railway.com/networking/outbound-networking), so
+# smtp-relay.brevo.com is unreachable from the container. The key must be a v3
+# API key (xkeysib-…), and DEFAULT_FROM_EMAIL must match a verified Brevo sender
+# character for character — Brevo rejects anything else.
+#
+# Both are read with no fallback, like SECRET_KEY and MEDIA_ROOT: a missing value
+# should stop the boot, not run degraded and silently lose every reset link.
+# The 10-second timeout replaces anymail's 30, so a Brevo outage becomes an
+# error page rather than a hung signup form.
 if DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Outfits Garderobe <noreply@localhost>')
+else:
+    EMAIL_BACKEND = 'anymail.backends.brevo.EmailBackend'
+    ANYMAIL = {
+        'BREVO_API_KEY': os.environ['BREVO_API_KEY'],
+        'REQUESTS_TIMEOUT': 10,
+    }
+    DEFAULT_FROM_EMAIL = os.environ['DEFAULT_FROM_EMAIL']

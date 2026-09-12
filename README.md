@@ -35,8 +35,9 @@ defaults for two settings that are otherwise mandatory:
 
 - **Email goes to the console.** Account confirmation and password-reset links
   are printed to the terminal running the server, so no mail provider is needed
-  to walk the whole signup flow. Outside `DEBUG` the app requires real SMTP
-  credentials.
+  to walk the whole signup flow. Outside `DEBUG` the app sends through Brevo's
+  HTTP API and requires `BREVO_API_KEY` (a v3 API key) and `DEFAULT_FROM_EMAIL`
+  (a sender verified in Brevo).
 - **Uploads go to `media/`** in the project directory instead of a mounted
   volume.
 
