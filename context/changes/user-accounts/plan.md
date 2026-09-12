@@ -680,7 +680,7 @@ Deleting a user cascades to `PrivateImage` rows but leaves their files on disk. 
 - [x] 2.10 Login before confirming is refused; after confirming it succeeds — 73e01e9
 - [x] 2.11 The login form shows a *Remember me?* checkbox — 73e01e9
 - [x] 2.12 Password change works and the old password stops working — 73e01e9
-- [ ] 2.13 The password reset flow completes via the console-printed link
+- [x] 2.13 The password reset flow completes via the console-printed link — 73e01e9
 - [x] 2.14 A duplicate signup gives a plain "already registered" error — 73e01e9
 - [x] 2.15 Every account screen inherits `base.html` and is usable at 360px — 73e01e9
 - [x] 2.16 Logging out requires a POST — a bare GET shows a confirmation page — 73e01e9
@@ -729,24 +729,24 @@ Deleting a user cascades to `PrivateImage` rows but leaves their files on disk. 
 
 #### Automated
 
-- [x] 5.1 The deploy-configuration guard passes: `uv run pytest accounts/tests/test_deploy_config.py`
-- [x] 5.2 The full suite passes: `uv run pytest`
-- [x] 5.3 Linting passes: `uv run ruff check .`
-- [x] 5.4 Formatting is clean: `uv run ruff format --check .`
-- [x] 5.5 No vulnerable dependencies: `uv run pip-audit`
-- [x] 5.6 Railway still holds valid Brevo credentials before the push
-- [ ] 5.7 The deployment reaches a healthy state — `/health/` returns 200 after deploy
-- [ ] 5.8 Deploy logs show `collectstatic` and `migrate` completing without error, and no `KeyError` at boot
+- [x] 5.1 The deploy-configuration guard passes: `uv run pytest accounts/tests/test_deploy_config.py` — 6ed120f
+- [x] 5.2 The full suite passes: `uv run pytest` — 6ed120f
+- [x] 5.3 Linting passes: `uv run ruff check .` — 6ed120f
+- [x] 5.4 Formatting is clean: `uv run ruff format --check .` — 6ed120f
+- [x] 5.5 No vulnerable dependencies: `uv run pip-audit` — 6ed120f
+- [x] 5.6 Railway still holds valid Brevo credentials before the push — 6ed120f
+- [x] 5.7 The deployment reaches a healthy state — `/health/` returns 200 after deploy — 6ed120f
+- [x] 5.8 Deploy logs show `collectstatic` and `migrate` completing without error, and no `KeyError` at boot — 6ed120f
 
 #### Manual
 
-- [ ] 5.9 A production response carries `Strict-Transport-Security` with the expected max-age
-- [ ] 5.10 A new production registration delivers a confirmation email with a working `https://` link
-- [ ] 5.11 Brevo's *Transactional → Logs* shows the confirmation and reset emails as delivered
-- [ ] 5.12 Login before confirming is refused in production
-- [ ] 5.13 A full password reset completes from the emailed link
-- [ ] 5.14 Password change and log out work against production
-- [ ] 5.15 *Remember me?* governs whether the session survives browser close
-- [ ] 5.16 A private media URL requested while logged out lands on the production login page
-- [ ] 5.17 The whole flow is usable on a real phone
-- [ ] 5.18 Production holds only accounts from the new flow, with no orphaned files under `/data/media/private/`
+- [x] 5.9 A production response carries `Strict-Transport-Security` with the expected max-age — 6ed120f
+- [x] 5.10 A new production registration delivers a confirmation email with a working `https://` link — 6ed120f
+- [x] 5.11 Brevo's *Transactional → Logs* shows the confirmation and reset emails as delivered — 6ed120f
+- [x] 5.12 Login before confirming is refused in production — 6ed120f
+- [x] 5.13 A full password reset completes from the emailed link — 6ed120f
+- [x] 5.14 Password change and log out work against production — 6ed120f
+- [x] 5.15 *Remember me?* governs whether the session survives browser close — 6ed120f
+- [x] 5.16 A private media URL requested while logged out lands on the production login page — 6ed120f
+- [x] 5.17 The whole flow is usable on a real phone — 6ed120f
+- [x] 5.18 Production holds only accounts from the new flow, with no orphaned files under `/data/media/private/` — 6ed120f
