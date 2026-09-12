@@ -1,0 +1,43 @@
+/*
+ * Project styles — everything Pico does not already do.
+ *
+ * Pico styles semantic elements, so this file exists only for layout Pico has
+ * no opinion about. Keep it small: it is the file most at risk of quietly
+ * becoming a design system, which the roadmap names as this slice's main risk.
+ * Before adding a rule, check whether plainer markup would get it from Pico.
+ */
+
+/* Site header: brand on one side, account links on the other, stacking rather
+   than overflowing once there is no room for both (the 360px floor). */
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--pico-spacing);
+}
+
+.site-header > .site-brand {
+  margin-bottom: 0;
+  font-size: 1.25rem;
+}
+
+/* Pico styles <a> but not a button that must be a form submit for CSRF's sake;
+   the log-out control is a POST, so it renders as a button that should read as
+   one of the links beside it. */
+.linklike {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--pico-primary);
+  font-size: inherit;
+  text-decoration: underline;
+  width: auto;
+}
+
+/* django.contrib.messages: a plain <ul> would inherit list bullets and no
+   spacing from the surrounding flow. */
+.messages {
+  padding-left: 0;
+  list-style: none;
+}

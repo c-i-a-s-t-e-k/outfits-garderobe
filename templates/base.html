@@ -1,0 +1,31 @@
+{% load static %}<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Outfits Garderobe{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'vendor/pico.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  </head>
+  <body>
+    <header class="container site-header">
+      <strong class="site-brand">Outfits Garderobe</strong>
+      {% block nav %}{% endblock %}
+    </header>
+
+    <main class="container">
+      {# allauth reports every account action through the messages framework, so
+         a page that does not render them swallows "Confirmation email sent",
+         "Password changed" and every form-level notice. #}
+      {% if messages %}
+        <ul class="messages">
+          {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>

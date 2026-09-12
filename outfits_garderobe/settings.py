@@ -76,7 +76,10 @@ ROOT_URLCONF = 'outfits_garderobe.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        # DIRS is searched before APP_DIRS, which is what lets templates/
+        # override a template an installed app ships under the same name —
+        # templates/allauth/layouts/base.html relies on exactly that.
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -133,6 +136,12 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Project-level static sources. This must never point at STATIC_ROOT:
+# collectstatic would then read from and write to the same tree, hashing files
+# it had already hashed. Sources live in static/, output goes to staticfiles/,
+# and only the latter is gitignored.
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 
 # Uploaded files (private — served only through the privatemedia gate view)
