@@ -14,7 +14,8 @@ Two things ride along because nothing else can carry them. First, this is the fi
 - **`@login_required` currently redirects into a void.** `privatemedia/views.py:46` gates the private media view, but `LOGIN_URL` is never set, so Django falls back to `/accounts/login/` — a route that does not exist. F-01's manual check 2.12 ("opening the same URL logged out lands on the login flow") passes only in the loosest sense today. This change is what makes it true.
 - **`CompressedManifestStaticFilesStorage` is live** (`settings.py:169`) and `collectstatic` runs in the nixpacks **build** phase (`nixpacks.toml:12`), not at deploy. Under manifest storage a `{% static %}` reference to a missing file raises at render time, and a missing manifest turns every page into a 500. F-01's plan predicted this: *"S-01 will meet it."* No template has ever exercised it.
 - **Identity is stock `auth.User`.** `privatemedia/migrations/0001_initial.py` carries `swappable_dependency(settings.AUTH_USER_MODEL)` and a real FK. Dev holds two rows — superuser `ciastek` (`jezowdominik@duck.com`) and `stranger` with a **blank** email, an F-01 test artifact — each with a `PrivateImage`. Production holds the equivalent accounts plus files on the Railway volume, created as F-01's acceptance evidence.
-- **No email infrastructure exists.** `EMAIL_BACKEND` is unset (so Django defaults to SMTP against `localhost:25`, which silently fails), and `.env.example` names no mail variables. Railway provides no mail service.
+- **No email infrastructure exists.** `EMAIL_BACKEND` is unset (so Django defaults to SMTP against `localhost:25`, which silently fails), and `.env.example` names no mail variables. Railway provides no mail service — and on the Hobby plan this project runs on, it **blocks outbound SMTP altogether**, so any provider must be reached over its HTTPS API.
+- **No Brevo account, sender or credentials exist yet.** The `outfits-garderobe` service's `production` variables hold neither `BREVO_API_KEY` nor `DEFAULT_FROM_EMAIL` (checked by name on 2026-09-12), and the local `../.secrets/outfits-garderobe/.env` is assumed not to either.
 - **`manage.py check --deploy` reports exactly one substantive issue:** `security.W004` (no `SECURE_HSTS_SECONDS`). `security.W009` also fires under the test settings because `settings_test.py:16` uses a 38-character key; that is a test-harness artifact, not a production defect.
 - **Transport hardening is otherwise done.** `settings.py:44-48` already sets `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `SECURE_SSL_REDIRECT` and `SECURE_PROXY_SSL_HEADER` outside DEBUG, and `settings_test.py:28` disables only the redirect.
 - **Conventions to match.** `ruff` with single quotes and a 100-character line length, `E/F/I/UP/B/DJ` rules (`pyproject.toml:26-32`). Tests live under `<app>/tests/` and run against `outfits_garderobe.settings_test`. `privatemedia` is the house style: thin views, module docstrings that explain *why*, and a settings-guard test suite (`privatemedia/tests/test_storage_config.py`).
@@ -36,6 +37,10 @@ Verify by: `uv run pytest` (all smoke tests green), then, against production, re
 - **allauth's docs confirm the enumeration trade-off we are taking deliberately:** with `mandatory` verification, allauth *can* fully prevent enumeration at signup. Setting `ACCOUNT_PREVENT_ENUMERATION = False` is therefore an explicit, informed exchange of that property for a clearer error message.
 - **Pico.css v2.1.1** is the current release (2025-03-15).
 - `django.contrib.sessions` is already installed and `ACCOUNT_*` needs no session-engine change — allauth only forbids the `signed_cookies` engine, which this project does not use.
+- **Railway blocks outbound SMTP on Free, Trial and Hobby plans** (*"SMTP is only available on the Pro plan and above"*). `smtp-relay.brevo.com:587` is unreachable from the container, so production mail goes to Brevo's REST API over 443 via **django-anymail 15.2** (`django-anymail[brevo]`, backend `anymail.backends.brevo.EmailBackend`, setting `ANYMAIL['BREVO_API_KEY']`). The key must be a **v3 API key** (`xkeysib-…`); the *SMTP key* on the neighbouring Brevo tab does not work with anymail.
+- **Brevo rewrites a free-mailbox From address.** A dedicated Gmail sender verifies by link, but Brevo replaces its domain with `@<id>.brevosend.com` on every send, and the Free plan appends a "Sent with Brevo" sticker even to transactional mail. Only an authenticated own domain removes the rewrite. `duck.com` publishes DMARC `p=quarantine` (`icloud.com` likewise, `yahoo.com` `p=reject`), so the developer's own `@duck.com` address must never be the sender. Full research: `context/changes/user-accounts/brevo-onboarding.md`.
+- **Brevo exposes two non-sending endpoints that prove credentials without spending quota:** `GET https://api.brevo.com/v3/account` (200 with a valid key) and `GET https://api.brevo.com/v3/senders` (`senders[]` with `email` and `active`), both authenticated with the `api-key` header.
+- **Railway's `railway variable list --json` prints raw values** as a flat object, so any automated presence check must pipe through `jq` and emit only booleans. **Sealed variables are not provided to `railway run`** and cannot be unsealed — sealing the key would make its Railway copy unverifiable from outside a deploy.
 
 ## What We're NOT Doing
 
@@ -48,16 +53,20 @@ Verify by: `uv run pytest` (all smoke tests green), then, against production, re
 - **No design system.** One vendored stylesheet plus a short project stylesheet. No component library, no utility classes, no build step, no Node in the nixpacks build.
 - **No changes to `privatemedia`'s model, view or tests.** This change only supplies the login page its `@login_required` was already pointing at.
 - **No thorough test suite.** Smoke coverage only, by explicit decision — recorded as a risk below rather than silently absorbed.
+- **No own sending domain.** The sender is a dedicated Gmail mailbox and the From rewrite to `brevosend.com` is accepted for M-1. Moving to a domain later is a Brevo-panel and `DEFAULT_FROM_EMAIL` change with no code involved.
+- **No sealed Railway variables, no Brevo webhooks, no removal of the "Sent with Brevo" sticker.** Each is a later, separate decision.
 
 ## Implementation Approach
 
-The slice is built dev-first and shipped last, mirroring how F-01 was run: three phases that touch only the working tree, then one production phase.
+The slice is built dev-first and shipped last, mirroring how F-01 was run: three phases that touch only the working tree, a guided onboarding that puts Brevo credentials in place without touching code, then one production phase.
 
 The presentation layer comes first and alone, because it is the only part that can break the Railway build. Manifest storage plus build-time `collectstatic` means a bad `{% static %}` reference fails the deploy rather than a page — proving that path with one stylesheet, before any auth code exists, keeps the two risks from arriving together.
 
 allauth then lands on top of stock `auth.User`. `username` is not a field the user ever sees: an account adapter writes the confirmed email into it, so the column stays populated and unique without a model swap and without allauth's default of deriving a username from the email's local part. Email uniqueness is enforced by allauth's own `account_emailaddress` table, which carries a real unique constraint — the property the plain-`auth.User` route would otherwise have lacked.
 
 Routing is deliberately thin. `/` holds no content; it is a redirect that reads authentication state. `/wardrobe/` is the login-gated destination, reserved now so S-02 and S-03 fill a page in rather than move it. Setting `LOGIN_URL` to allauth's login route is what repairs `privatemedia`'s dangling redirect, at no cost.
+
+Brevo onboarding is its own phase because it is done by a human at a browser, not by an implementer in the repository, and because Phase 5's settings fail loudly at boot without its output. It ends when the credentials are proven to work in both places the app and its operator will read them from — the local `.env` and the Railway service — so that Phase 5 is pure code and deploy.
 
 Production comes last because it is where the two irreversible things live: a real mail sender, and the deletion of the existing accounts. Everything before it is reversible in the working tree.
 
@@ -72,6 +81,10 @@ Production comes last because it is where the two irreversible things live: a re
 **Verification links will be `http://` unless told otherwise.** With no `sites` framework, allauth composes email URLs from `ACCOUNT_DEFAULT_HTTP_PROTOCOL`, which defaults to `'http'`. Combined with `SECURE_SSL_REDIRECT`, an unset value produces a link that redirects on click — and, once HSTS is live, one that some browsers refuse outright. Set it to `'https'` outside DEBUG.
 
 **Ordering: the production account reset must follow the production deploy, not precede it.** Deleting the accounts first would leave the environment with no way in until the new registration flow is live. The old superuser can still reach `/admin/` throughout, because `ModelBackend` stays in `AUTHENTICATION_BACKENDS` — that is the escape hatch that makes the sequence safe.
+
+**The Brevo API key never passes through the agent.** The developer alone writes it into `../.secrets/outfits-garderobe/.env` and into Railway, and never through a `!`-prefixed command — both its text and its output land in the session transcript. The agent sets only the non-secret `DEFAULT_FROM_EMAIL` and runs checks whose output is a boolean, an HTTP status or a count. The same rule makes the local `.env` checks human-run: CLAUDE.md forbids the agent from reading, sourcing or grepping that file.
+
+**Ordering: credentials before code.** Phase 5's settings read `BREVO_API_KEY` and `DEFAULT_FROM_EMAIL` with `os.environ[...]` outside DEBUG, so a deploy that reaches Railway before the variables does fails at boot and `/health/` never returns 200. Phase 4 sets them with `--skip-deploys`; the running code ignores unknown variables, so nothing about the live service changes until Phase 5 ships.
 
 **Deleting a user cascades to their photos but not to their files.** `PrivateImage.owner` is `on_delete=CASCADE` (`privatemedia/models.py:30-34`), so the rows vanish while the bytes remain on the Railway volume under `/data/media/private/`. Enumerate and remove the orphans explicitly; nothing else will.
 
@@ -183,7 +196,7 @@ ACCOUNT_SIGNUP_FORM_CLASS = 'accounts.forms.SignupForm'
 
 **Intent**: Make confirmation and reset links readable during development without a mail provider. An unset `EMAIL_BACKEND` defaults to SMTP on `localhost:25`, which fails silently and would make mandatory verification look broken.
 
-**Contract**: Under `DEBUG`, `EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'`. The production branch is Phase 4; leave a comment saying so rather than a half-configured SMTP block.
+**Contract**: Under `DEBUG`, `EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'`. The production branch is Phase 5; leave a comment saying so rather than a half-configured SMTP block.
 
 #### 5. The `accounts` app
 
@@ -281,7 +294,7 @@ Give the application its entry point, reserve the URL the wardrobe will occupy, 
 
 **File**: `accounts/management/commands/reset_legacy_accounts.py`
 
-**Intent**: Make the riskiest step in this plan a reviewable artifact rather than a console session. The same command serves development here and production in Phase 4, where the operation is irreversible and cascades into files on a mounted volume.
+**Intent**: Make the riskiest step in this plan a reviewable artifact rather than a console session. The same command serves development here and production in Phase 5, where the operation is irreversible and cascades into files on a mounted volume.
 
 **Contract**: Deletes `auth.User` rows that have no verified allauth `EmailAddress` — the pre-allauth accounts — and removes the files their `PrivateImage` rows orphan. **Defaults to a dry run**: it prints the users and the exact file paths it would remove and changes nothing unless explicitly told to commit. The file sweep has to be code regardless of how the deletion is triggered, because `on_delete=CASCADE` (`privatemedia/models.py:32`) removes rows and never bytes. Selecting on "no verified `EmailAddress`" rather than on a hardcoded username list is what makes it safe to run twice and safe to run in production.
 
@@ -291,7 +304,7 @@ Give the application its entry point, reserve the URL the wardrobe will occupy, 
 
 **Intent**: Remove the pre-allauth users so development exercises only accounts created through the real flow. Neither existing row can log in through the new path anyway: `stranger` has no email at all, and neither has an `EmailAddress` record.
 
-**Contract**: Run the command above in dry-run mode, confirm it names exactly the two known rows, then run it for real. Create a fresh superuser and register a normal account through `/accounts/signup/`. Development data only — production is Phase 4.
+**Contract**: Run the command above in dry-run mode, confirm it names exactly the two known rows, then run it for real. Create a fresh superuser and register a normal account through `/accounts/signup/`. Development data only — production is Phase 5.
 
 #### 7. Smoke test suite
 
@@ -327,23 +340,168 @@ Give the application its entry point, reserve the URL the wardrobe will occupy, 
 
 ---
 
-## Phase 4: Production — real email, transport hardening, account reset
+## Phase 4: Brevo onboarding — sender, API key and credentials in place
 
 ### Overview
 
-Make password reset actually deliver, enable HSTS, guard the deploy configuration with a test, and retire the F-01 evidence accounts. This is the only phase with irreversible steps, which is why it is last.
+Walk the developer through setting up Brevo, and finish only when working credentials sit in both places they are needed: the local `../.secrets/outfits-garderobe/.env` and the `production` variables of the `outfits-garderobe` service on Railway. No application code changes in this phase. Its output is what Phase 5's settings require at boot. The step-by-step runbook, with panel paths and sources, is `context/changes/user-accounts/brevo-onboarding.md` §3.1–3.5; this phase fixes the decisions that document left open and defines when onboarding counts as done.
+
+The work is split by who may touch what. The **developer** does everything in a browser and everything that handles the API key's value. The **agent** guides step by step, sets the non-secret `DEFAULT_FROM_EMAIL` on Railway, and runs the checks that print no values. Decided variant: a **dedicated Gmail mailbox as the sender, no own domain**, with the From rewrite to `@<id>.brevosend.com` accepted.
+
+### Changes Required:
+
+#### 1. Brevo account
+
+**File**: none — browser
+
+**Intent**: Create the account every later step depends on, on the plan that costs nothing.
+
+**Contract**: Runbook §3.1. Sign up at `https://app.brevo.com/`, confirm the welcome email, choose the **Free** plan (300 emails/day, no card). If a later check returns 401/403 despite a correct v3 key, look for a validation banner in the panel before suspecting the key: Brevo's help centre does not confirm whether new accounts get manual review.
+
+#### 2. Sender mailbox and verified sender
+
+**File**: none — browser
+
+**Intent**: Give Brevo a From address it will accept and that recipients' DMARC policies will not push into spam.
+
+**Contract**: Create a Gmail mailbox dedicated to the project (e.g. `outfits.garderobe@gmail.com`). `gmail.com` publishes `p=none`; **never** `@duck.com`, `@icloud.com` or `@yahoo.com` (quarantine/reject). In Brevo: *Senders, Domains & Dedicated IPs → Senders → Add a sender*, From name `Outfits Garderobe`, then click the verification link Brevo sends to that mailbox. The address, exactly as listed in *Senders*, becomes `DEFAULT_FROM_EMAIL`. Brevo rejects sends from anything that does not match it character for character.
+
+#### 3. API key
+
+**File**: none — browser
+
+**Intent**: Obtain the single secret the application needs, of the only kind anymail accepts.
+
+**Contract**: *Settings → SMTP & API → **API Keys** → Generate a new API key*, named `outfits-garderobe-railway`. It must be a **v3** key (prefix `xkeysib-`), not an SMTP key from the neighbouring tab. It is shown once, so the developer copies it straight into their password manager. It is never pasted into the conversation and never used in a `!`-prefixed command.
+
+#### 4. Local credentials
+
+**File**: `../.secrets/outfits-garderobe/.env` — edited by the developer only
+
+**Intent**: Put the credentials where the local operator reads secrets, so the key can be proven valid from this machine and Phase 5 can be exercised against real Brevo if ever needed.
+
+**Contract**: The file gains `BREVO_API_KEY=<v3 key>` and `DEFAULT_FROM_EMAIL=<verified sender>`, each on its own line as plain `KEY=value` with no quotes or spaces, because the checks below extract exactly those two lines. The agent does not open, source or grep this file (CLAUDE.md), and nothing loads it into the app automatically (README).
+
+#### 5. Railway variables
+
+**File**: none — platform configuration
+
+**Intent**: Stage the production credentials ahead of the code that will require them, without triggering a deploy.
+
+**Contract**: Service `outfits-garderobe`, environment `production`.
+
+- `BREVO_API_KEY` is set **by the developer**, either in the Railway dashboard (*service → Variables*) or in their own terminal, never through `!`:
+
+  ```bash
+  read -rs K && printf '%s' "$K" | railway variable set BREVO_API_KEY --stdin \
+    --service outfits-garderobe --environment production --skip-deploys; unset K
+  ```
+
+- `DEFAULT_FROM_EMAIL` is set **by the agent** with `railway variable set DEFAULT_FROM_EMAIL=<address> --service outfits-garderobe --environment production --skip-deploys`.
+- Both use `--skip-deploys`, because the running code reads neither variable yet.
+- Neither is **sealed**. Railway does not provide sealed values to `railway run`, which the validity check depends on, and sealing cannot be undone. Whether to seal the key after Phase 5 is a separate decision.
+
+#### 6. Credential checks
+
+**File**: none — commands run in the session
+
+**Intent**: Prove that the credentials are valid in both places, not merely present. A present but wrong key (an SMTP key, a v2 key, a truncated paste) or a sender string that differs from Brevo's list would pass a name check and then break Phase 5 on its first real signup.
+
+**Contract**: Every command prints only booleans, HTTP status codes or counts, so none of them can leak a value. The validity probe hits Brevo's two non-sending endpoints and is the same shell body in both environments:
+
+```bash
+sh -c '
+  printf "account: %s\n" "$(curl -s -o /dev/null -w "%{http_code}" \
+    -H "api-key: $BREVO_API_KEY" https://api.brevo.com/v3/account)"
+  printf "active sender: %s\n" "$(curl -s -H "api-key: $BREVO_API_KEY" \
+    https://api.brevo.com/v3/senders \
+    | jq --arg e "$DEFAULT_FROM_EMAIL" "[.senders[]? | select(.email == \$e and .active)] | length")"
+'
+```
+
+Expected output: `account: 200` and `active sender: 1`. A `401` means a wrong key type or a bad paste. `0` means the sender is unverified or `DEFAULT_FROM_EMAIL` differs from Brevo's list.
+
+- **Railway presence** (agent). Never run `--json` without the `jq` filter, because it prints raw values:
+  `railway variable list --service outfits-garderobe --environment production --json | jq '{BREVO_API_KEY: has("BREVO_API_KEY"), DEFAULT_FROM_EMAIL: has("DEFAULT_FROM_EMAIL")}'`
+- **Railway validity** (agent). `railway run --service outfits-garderobe --environment production -- ` followed by the probe above. `railway run` injects the Railway values into a local process, so this proves the Railway copy of the key, not the local one.
+- **Local validity** (developer, via `!`). The command text contains no secret, and only the two keys are loaded:
+  `env $(grep -E '^(BREVO_API_KEY|DEFAULT_FROM_EMAIL)=' ../.secrets/outfits-garderobe/.env)` followed by the probe above.
+- **One real send** (developer, via `!` or their own terminal). Runbook §3.5, reading the credentials the same way. It costs 1 of the 300 daily emails and goes to a mailbox other than the sender (the developer's own inbox is fine as a *recipient*):
+
+  ```bash
+  env TO='<test mailbox>' $(grep -E '^(BREVO_API_KEY|DEFAULT_FROM_EMAIL)=' ../.secrets/outfits-garderobe/.env) sh -c '
+    jq -n --arg from "$DEFAULT_FROM_EMAIL" --arg to "$TO" \
+      "{sender: {name: \"Outfits Garderobe\", email: \$from}, to: [{email: \$to}],
+        subject: \"Brevo smoke\", textContent: \"Jesli to czytasz, konto Brevo jest gotowe.\"}" \
+    | curl -s -o /dev/null -w "send: %{http_code}\n" -X POST https://api.brevo.com/v3/smtp/email \
+        -H "api-key: $BREVO_API_KEY" -H "content-type: application/json" --data @-
+  '
+  ```
+
+  Expected: `send: 201`. The message then arrives (check spam too), and *Transactional → Logs* in Brevo shows it as delivered.
+
+#### 7. Onboarding record
+
+**File**: `context/changes/user-accounts/change.md`
+
+**Intent**: Leave the non-secret facts of this setup where the next person (or the domain migration) will look for them.
+
+**Contract**: Under *Notes*, record:
+
+- the sender variant (dedicated Gmail, no domain) and the sender address
+- the date
+- how the From field actually appeared in the test mail (expected `…@<id>.brevosend.com`) and whether it landed in the inbox or spam
+- that the Railway key is deliberately not sealed
+- that moving to a domain later touches only Brevo and `DEFAULT_FROM_EMAIL`
+
+Never the key.
+
+### Success Criteria:
+
+#### Automated Verification:
+
+- Railway holds both keys: the `jq` presence check prints `true` for `BREVO_API_KEY` and `DEFAULT_FROM_EMAIL`
+- The Railway credentials are valid: `railway run … -- sh -c '<probe>'` prints `account: 200` and `active sender: 1`
+- No key leaked into the repository: `git grep -nE 'xkeysib-[0-9a-f]{32}'` finds nothing
+
+#### Manual Verification:
+
+- The Brevo account is confirmed and on the Free plan
+- The dedicated Gmail sender shows as verified under *Senders* in Brevo
+- The API key is a v3 key from the *API Keys* tab and is stored in the developer's password manager
+- The local credentials are valid: the developer's `!` run of the probe against `.env` prints `account: 200` and `active sender: 1`
+- One real send returns `201`, the message arrives in a mailbox other than the sender, and Brevo's *Transactional → Logs* shows it delivered
+- `change.md` records the sender variant, how From appeared, and where the test mail landed
+- The API key's value never appeared in the conversation transcript
+
+**Implementation Note**: This phase is a guided session, not an implementation. The agent leads the developer through items 1–5 in order, pausing at each browser step, then runs the automated checks. After all verification passes, pause for the developer's confirmation before starting Phase 5.
+
+---
+
+## Phase 5: Production — real email, transport hardening, account reset
+
+### Overview
+
+Make password reset actually deliver, enable HSTS, guard the deploy configuration with a test, and retire the F-01 evidence accounts. This is the only phase with irreversible steps, which is why it is last. It consumes the credentials Phase 4 put on Railway and adds no new ones.
 
 ### Changes Required:
 
 #### 1. Settings — production email
 
-**File**: `outfits_garderobe/settings.py`, `outfits_garderobe/settings_test.py`, `.env.example`
+**File**: `pyproject.toml`, `uv.lock`, `outfits_garderobe/settings.py`, `outfits_garderobe/settings_test.py`, `.env.example`, `README.md`
 
-**Intent**: Send real mail through Brevo's SMTP relay, which verifies a single sender *address* rather than a whole domain — the only common free tier that reaches arbitrary recipients from a Railway hostname we do not own.
+**Intent**: Send real mail through Brevo's **HTTP API**. Railway Hobby blocks outbound SMTP, so Brevo's SMTP relay is unreachable from the container. Brevo stays the provider: it verifies a single sender *address* rather than a whole domain, which makes it the only common free tier that reaches arbitrary recipients from a Railway hostname we do not own.
 
-**Contract**: Outside `DEBUG`, Django's stock SMTP backend configured from the environment: `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, plus `DEFAULT_FROM_EMAIL`. Read credentials with `os.environ[...]` rather than `os.getenv` with a default, matching how `SECRET_KEY` (`settings.py:26`) and the production `MEDIA_ROOT` (`settings.py:152`) already fail loudly at boot instead of running degraded — a silently unset mail password means every reset link is lost. `.env.example` gains the new keys with placeholder values and no secrets.
+**Contract**: 
 
-`settings_test.py` **must** gain the same keys in its existing `os.environ.setdefault` block (`settings_test.py:16-19`) in this phase, not later. The suite runs with `DEBUG=False`, so it executes this very branch; without the stubs the settings module raises `KeyError: 'EMAIL_HOST_PASSWORD'` at import and the entire suite fails to collect — every automated criterion below included. This is the same reason that block already stubs `SECRET_KEY` and `MEDIA_ROOT`.
+- **Dependency.** `uv add "django-anymail[brevo]>=15.2,<16"`, which pulls in `requests`. `INSTALLED_APPS` gains `'anymail'`.
+- **Outside `DEBUG`.** `EMAIL_BACKEND = 'anymail.backends.brevo.EmailBackend'`, `ANYMAIL = {'BREVO_API_KEY': os.environ['BREVO_API_KEY'], 'REQUESTS_TIMEOUT': 10}`, and `DEFAULT_FROM_EMAIL = os.environ['DEFAULT_FROM_EMAIL']`. Both use `os.environ[...]` for the same reason `SECRET_KEY` (`settings.py:26`) and the production `MEDIA_ROOT` do: a missing value should stop the boot, not run degraded and silently lose every reset link. The 10-second timeout replaces anymail's 30-second default, so a Brevo outage turns into an error page instead of a hung form.
+- **Under `DEBUG`.** The console backend stays, and `DEFAULT_FROM_EMAIL` falls back through `os.getenv` to a placeholder, following the `MEDIA_ROOT` pattern. Local `runserver` per README exports only `DEBUG` and `SECRET_KEY`, and must keep working.
+- **Settings comments.** Rewrite the `# Email` comment block (it still says "Brevo SMTP … lands in Phase 4") so it records the SMTP block and links `docs.railway.com/networking/outbound-networking`. Repoint the other comments that name "Phase 4" as the production cutover (`AUTHENTICATION_BACKENDS`, the `ACCOUNT_SESSION_REMEMBER` note) to Phase 5.
+- **`.env.example`.** Gains `BREVO_API_KEY=xkeysib-...` (commented with its panel path: *Settings → SMTP & API → API Keys*, v3) and `DEFAULT_FROM_EMAIL=` (commented: must be a verified sender in Brevo).
+- **README.** Its line "Outside `DEBUG` the app requires real SMTP credentials" changes to name the Brevo API key and the verified sender.
+
+`settings_test.py` **must** gain `BREVO_API_KEY` and `DEFAULT_FROM_EMAIL` stubs in its existing `os.environ.setdefault` block (`settings_test.py:16-19`) in this phase, not later. The suite runs with `DEBUG=False`, so it executes the production branch. Without the stubs, importing the settings module raises `KeyError: 'BREVO_API_KEY'` and the suite fails to collect, taking every automated criterion below with it. This is the same reason that block already stubs `SECRET_KEY` and `MEDIA_ROOT`. No test reaches Brevo: pytest-django's test environment swaps `EMAIL_BACKEND` to `locmem`.
 
 #### 2. Settings — absolute URLs in email
 
@@ -377,13 +535,13 @@ Make password reset actually deliver, enable HSTS, guard the deploy configuratio
 
 **Contract**: Runs Django's `check --deploy` checks under production-like settings and asserts the resulting IDs against a named allow-list. Two IDs are allow-listed, each with a comment naming the harness artifact that causes it: `security.W009` (the 38-character key at `settings_test.py:16`) and `security.W008` (`settings_test.py:28` forces `SECURE_SSL_REDIRECT = False`, because leaving it on would turn every test-client request into a 301 before it reached a view). `security.W004` must **not** be allow-listed, since this phase fixes it. Verified against the current tree: the deployment checks emit exactly these three IDs today. The assertion is on specific IDs, never on an empty list — otherwise the harness's own artifacts make it unpassable.
 
-#### 6. Railway environment
+#### 6. Railway environment — confirm, don't set
 
 **File**: none — platform configuration
 
-**Intent**: Supply the mail credentials the application now requires at boot.
+**Intent**: Make sure the credentials Phase 4 staged are still there before shipping code that refuses to boot without them.
 
-**Contract**: Set `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS` and `DEFAULT_FROM_EMAIL` on the `outfits-garderobe` service, from a Brevo account with the sender address verified. Imperative and outside the repository, exactly as F-01's volume was. `DEFAULT_FROM_EMAIL` must match the verified sender or Brevo rejects the message.
+**Contract**: Immediately before pushing, re-run Phase 4's Railway **presence** and **validity** checks (item 6) and proceed only on `true`/`true`, `account: 200` and `active sender: 1`. This phase sets no variables. If the key was rotated in the meantime, the developer replaces it as in Phase 4, item 5.
 
 #### 7. Production account reset
 
@@ -402,13 +560,15 @@ Make password reset actually deliver, enable HSTS, guard the deploy configuratio
 - Linting passes: `uv run ruff check .`
 - Formatting is clean: `uv run ruff format --check .`
 - No vulnerable dependencies: `uv run pip-audit`
+- Railway still holds valid Brevo credentials before the push: Phase 4's presence and validity checks pass
 - The deployment reaches a healthy state — `/health/` returns 200 after deploy
-- Deploy logs show `collectstatic` and `migrate` completing without error
+- Deploy logs show `collectstatic` and `migrate` completing without error, and no `KeyError` at boot
 
 #### Manual Verification:
 
 - A response from production carries a `Strict-Transport-Security` header with the expected max-age
 - Registering a brand-new production account delivers a confirmation email to a real mailbox, and the link is `https://` and works
+- Brevo's *Transactional → Logs* shows the confirmation and reset emails as delivered
 - Logging in before confirming is refused in production, as it is locally
 - A full password reset completes from the emailed link
 - Password change and log out work against production
@@ -451,7 +611,9 @@ Scoped to smoke coverage by explicit decision, recorded in *Open Risks* below.
 
 ## Performance Considerations
 
-Nothing here approaches the PRD's five-second budget. The one operation with real latency is sending mail: an SMTP handshake inside the request-response cycle means signup and password-reset submissions block on Brevo. At MVP scale that is a second or two, well inside budget — but it is synchronous, and a Brevo outage turns signup into a timeout rather than an error page. Background sending is the fix, and it needs a worker the roadmap has deliberately not funded; revisit if signup latency becomes visible.
+Nothing here approaches the PRD's five-second budget. The one operation with real latency is sending mail: an HTTPS call to Brevo's API inside the request-response cycle means signup and password-reset submissions block on Brevo. At MVP scale that is well under a second or two, inside budget — but it is synchronous. `ANYMAIL['REQUESTS_TIMEOUT'] = 10` caps a Brevo outage at ten seconds and an error page rather than anymail's default thirty-second hang; that still exceeds the budget during an outage, which is accepted. Background sending is the real fix, and it needs a worker the roadmap has deliberately not funded; revisit if signup latency becomes visible.
+
+The Free plan's 300 emails/day is per account and shared with anything else sent from it. One full production check (registration + reset) spends two; Phase 4's smoke send spends one.
 
 Pico.css adds roughly 80KB uncompressed, served once with a hashed filename under whitenoise's compression and immutable caching.
 
@@ -459,7 +621,7 @@ Pico.css adds roughly 80KB uncompressed, served once with a hashed filename unde
 
 allauth's own migrations create `account_emailaddress` and `account_emailconfirmation`; no existing table is altered and no project model changes, so `makemigrations` produces nothing.
 
-The delicate part is data, not schema. Pre-allauth users have no `EmailAddress` record, and with `ACCOUNT_LOGIN_METHODS = {'email'}` they cannot log in through the new flow at all — `stranger` has no email address, and neither account has a verified one. They are deleted rather than backfilled: development in Phase 3, production in Phase 4 and only after a fresh account has proven the flow. `ModelBackend` remains first in `AUTHENTICATION_BACKENDS` throughout, so `/admin/` stays reachable for the old superuser across the whole cutover — that is the property that makes the sequence recoverable at every step.
+The delicate part is data, not schema. Pre-allauth users have no `EmailAddress` record, and with `ACCOUNT_LOGIN_METHODS = {'email'}` they cannot log in through the new flow at all — `stranger` has no email address, and neither account has a verified one. They are deleted rather than backfilled: development in Phase 3, production in Phase 5 and only after a fresh account has proven the flow. `ModelBackend` remains first in `AUTHENTICATION_BACKENDS` throughout, so `/admin/` stays reachable for the old superuser across the whole cutover — that is the property that makes the sequence recoverable at every step.
 
 Deleting a user cascades to `PrivateImage` rows but leaves their files on disk. Both resets therefore pair the deletion with an explicit sweep of the orphaned bytes.
 
@@ -470,7 +632,12 @@ Deleting a user cascades to `PrivateImage` rows but leaves their files on disk. 
 - PRD FR-001, FR-002, *Access Control*: `context/foundation/prd.md`
 - Prior slice, for structure and conventions: `context/changes/private-media-gate/plan.md`
 - The gate this change repairs the redirect for: `privatemedia/views.py:46`
-- The settings-guard pattern reused in Phase 4: `privatemedia/tests/test_storage_config.py`
+- The settings-guard pattern reused in Phase 5: `privatemedia/tests/test_storage_config.py`
+- Brevo onboarding research (runbook for Phase 4, facts behind Phase 5's transport): `context/changes/user-accounts/brevo-onboarding.md`
+- Railway outbound networking (SMTP block on Hobby): https://docs.railway.com/networking/outbound-networking
+- Railway sealed variables: https://docs.railway.com/variables
+- django-anymail Brevo backend: https://anymail.dev/en/stable/esps/brevo/
+- Brevo API — get account, get senders: https://developers.brevo.com/reference/get-account, https://developers.brevo.com/reference/get-senders
 - The HSTS debt this change discharges: `outfits_garderobe/settings.py:43`
 - django-allauth quickstart and configuration: https://docs.allauth.org/en/latest/installation/quickstart.html, https://docs.allauth.org/en/latest/account/configuration.html
 - allauth template override hook: https://docs.allauth.org/en/latest/common/templates.html
@@ -522,44 +689,64 @@ Deleting a user cascades to `PrivateImage` rows but leaves their files on disk. 
 
 #### Automated
 
-- [x] 3.1 The full suite passes, old and new: `uv run pytest`
-- [x] 3.2 The new smoke suite passes on its own: `uv run pytest accounts/tests/`
-- [x] 3.3 The `privatemedia` suite is unaffected: `uv run pytest privatemedia/tests/`
-- [x] 3.4 System checks pass: `uv run python manage.py check`
-- [x] 3.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [x] 3.6 Linting passes: `uv run ruff check .`
-- [x] 3.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 3.1 The full suite passes, old and new: `uv run pytest` — e7ec12b
+- [x] 3.2 The new smoke suite passes on its own: `uv run pytest accounts/tests/` — e7ec12b
+- [x] 3.3 The `privatemedia` suite is unaffected: `uv run pytest privatemedia/tests/` — e7ec12b
+- [x] 3.4 System checks pass: `uv run python manage.py check` — e7ec12b
+- [x] 3.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run` — e7ec12b
+- [x] 3.6 Linting passes: `uv run ruff check .` — e7ec12b
+- [x] 3.7 Formatting is clean: `uv run ruff format --check .` — e7ec12b
 
 #### Manual
 
-- [x] 3.8 `/` lands on login when logged out, on `/wardrobe/` when logged in
-- [x] 3.9 Register → confirm → log in reaches `/wardrobe/` without manual URL entry
-- [x] 3.10 The header log-out button ends the session and returns to login
-- [x] 3.11 A private media URL requested while logged out lands on the real login page
-- [x] 3.12 The whole flow is usable at 360px width
-- [x] 3.13 The local database holds only accounts from the new flow, with no orphaned media files
-- [x] 3.14 `reset_legacy_accounts` dry-run names exactly the expected rows and files before anything is deleted
+- [x] 3.8 `/` lands on login when logged out, on `/wardrobe/` when logged in — e7ec12b
+- [x] 3.9 Register → confirm → log in reaches `/wardrobe/` without manual URL entry — e7ec12b
+- [x] 3.10 The header log-out button ends the session and returns to login — e7ec12b
+- [x] 3.11 A private media URL requested while logged out lands on the real login page — e7ec12b
+- [x] 3.12 The whole flow is usable at 360px width — e7ec12b
+- [x] 3.13 The local database holds only accounts from the new flow, with no orphaned media files — e7ec12b
+- [x] 3.14 `reset_legacy_accounts` dry-run names exactly the expected rows and files before anything is deleted — e7ec12b
 
-### Phase 4: Production — real email, transport hardening, account reset
+### Phase 4: Brevo onboarding — sender, API key and credentials in place
 
 #### Automated
 
-- [ ] 4.1 The deploy-configuration guard passes: `uv run pytest accounts/tests/test_deploy_config.py`
-- [ ] 4.2 The full suite passes: `uv run pytest`
-- [ ] 4.3 Linting passes: `uv run ruff check .`
-- [ ] 4.4 Formatting is clean: `uv run ruff format --check .`
-- [ ] 4.5 No vulnerable dependencies: `uv run pip-audit`
-- [ ] 4.6 The deployment reaches a healthy state — `/health/` returns 200 after deploy
-- [ ] 4.7 Deploy logs show `collectstatic` and `migrate` completing without error
+- [x] 4.1 Railway holds both `BREVO_API_KEY` and `DEFAULT_FROM_EMAIL` (jq presence check prints `true`/`true`)
+- [x] 4.2 The Railway credentials are valid: `railway run` probe prints `account: 200` and `active sender: 1`
+- [x] 4.3 No key leaked into the repository: `git grep -nE 'xkeysib-[0-9a-f]{32}'` finds nothing
 
 #### Manual
 
-- [ ] 4.8 A production response carries `Strict-Transport-Security` with the expected max-age
-- [ ] 4.9 A new production registration delivers a confirmation email with a working `https://` link
-- [ ] 4.10 Login before confirming is refused in production
-- [ ] 4.11 A full password reset completes from the emailed link
-- [ ] 4.12 Password change and log out work against production
-- [ ] 4.13 *Remember me?* governs whether the session survives browser close
-- [ ] 4.14 A private media URL requested while logged out lands on the production login page
-- [ ] 4.15 The whole flow is usable on a real phone
-- [ ] 4.16 Production holds only accounts from the new flow, with no orphaned files under `/data/media/private/`
+- [x] 4.4 The Brevo account is confirmed and on the Free plan
+- [x] 4.5 The dedicated Gmail sender shows as verified under *Senders*
+- [x] 4.6 The API key is a v3 key from *API Keys* and is stored in the password manager
+- [x] 4.7 The local `.env` credentials are valid: the developer's probe prints `account: 200` and `active sender: 1`
+- [x] 4.8 One real send returns `201`, arrives in a mailbox other than the sender, and shows delivered in Brevo's logs
+- [x] 4.9 `change.md` records the sender variant, how From appeared, and where the test mail landed
+- [x] 4.10 The API key's value never appeared in the conversation transcript
+
+### Phase 5: Production — real email, transport hardening, account reset
+
+#### Automated
+
+- [ ] 5.1 The deploy-configuration guard passes: `uv run pytest accounts/tests/test_deploy_config.py`
+- [ ] 5.2 The full suite passes: `uv run pytest`
+- [ ] 5.3 Linting passes: `uv run ruff check .`
+- [ ] 5.4 Formatting is clean: `uv run ruff format --check .`
+- [ ] 5.5 No vulnerable dependencies: `uv run pip-audit`
+- [ ] 5.6 Railway still holds valid Brevo credentials before the push
+- [ ] 5.7 The deployment reaches a healthy state — `/health/` returns 200 after deploy
+- [ ] 5.8 Deploy logs show `collectstatic` and `migrate` completing without error, and no `KeyError` at boot
+
+#### Manual
+
+- [ ] 5.9 A production response carries `Strict-Transport-Security` with the expected max-age
+- [ ] 5.10 A new production registration delivers a confirmation email with a working `https://` link
+- [ ] 5.11 Brevo's *Transactional → Logs* shows the confirmation and reset emails as delivered
+- [ ] 5.12 Login before confirming is refused in production
+- [ ] 5.13 A full password reset completes from the emailed link
+- [ ] 5.14 Password change and log out work against production
+- [ ] 5.15 *Remember me?* governs whether the session survives browser close
+- [ ] 5.16 A private media URL requested while logged out lands on the production login page
+- [ ] 5.17 The whole flow is usable on a real phone
+- [ ] 5.18 Production holds only accounts from the new flow, with no orphaned files under `/data/media/private/`

@@ -3,7 +3,7 @@ project: "Outfits Garderobe"
 version: 1
 status: draft
 created: 2026-09-04
-updated: 2026-09-06
+updated: 2026-09-12
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -42,7 +42,7 @@ Osoby dbające o styl hobbystycznie zapominają wcześniej dobrane zestawienia, 
 | ID   | Change ID          | Outcome (użytkownik może …)                                                              | Prerequisites | PRD refs                          | Status   |
 | ---- | ------------------ | ---------------------------------------------------------------------------------------- | ------------- | --------------------------------- | -------- |
 | F-01 | private-media-gate | (fundament) zdjęcia leżą poza publicznym katalogiem, a dostęp do pliku sprawdza właściciela | —             | Prywatność (NFR), Access Control, FR-003, FR-007 | done |
-| S-01 | user-accounts      | zarejestrować się, zalogować, wylogować i zmienić hasło                                    | —             | FR-001, FR-002, Access Control    | ready    |
+| S-01 | user-accounts      | zarejestrować się, zalogować, wylogować i zmienić hasło                                    | —             | FR-001, FR-002, Access Control    | in-progress |
 | S-02 | add-garment        | dodać ubranie (zdjęcie, typ, opis) i zobaczyć swoją prywatną listę ubrań                   | S-01, F-01    | FR-003, US-01                     | proposed |
 | S-03 | compose-outfit     | wizualnie złożyć outfit z ubrań i zobaczyć go w siatce garderoby                           | S-02          | FR-005, FR-008, US-01             | proposed |
 | S-04 | outfit-photo       | dodać do outfitu własne zdjęcie w tym stroju i widzieć je jako kafelek w siatce            | S-03, F-01    | FR-007, FR-008, US-01             | proposed |
@@ -102,7 +102,7 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 - **Unknowns:**
   - Czy logowanie zewnętrzne wchodzi do tego kamienia milowego, czy wystarczy email z hasłem? FR-001 dopuszcza jedno albo drugie. Owner: user. Block: no.
 - **Risk:** to pierwszy element z widocznym interfejsem, więc powstaje przy nim szablon bazowy i style działające od 360 pikseli, z których korzystają wszystkie kolejne widoki; ryzykiem jest rozlanie się tej pracy na pełny system projektowy zamiast minimalnej bazy.
-- **Status:** ready
+- **Status:** in-progress
 
 ### S-02: Ubranie ze zdjęciem
 
