@@ -41,3 +41,10 @@
   padding-left: 0;
   list-style: none;
 }
+
+/* The log-out control is a POST form, so it sits inside the nav list as a
+   <form> rather than an <a>. Pico gives every form a bottom margin, which
+   would push the header taller than the links beside it. */
+.site-header nav form {
+  margin-bottom: 0;
+}

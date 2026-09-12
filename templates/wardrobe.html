@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% comment %}
+  Deliberately minimal. S-03 replaces this body wholesale with the real outfit
+  grid, so anything invested here is thrown away — the page exists now only so
+  that /wardrobe/ is a reserved, login-gated URL rather than a 404.
+{% endcomment %}
+
+{% block title %}Wardrobe{% endblock %}
+
+{% block content %}
+  <h1>Your wardrobe</h1>
+  <p>
+    There is nothing here yet. Adding garments and composing outfits arrive in
+    the next slices — for now this page exists to prove you are signed in.
+  </p>
+{% endblock %}

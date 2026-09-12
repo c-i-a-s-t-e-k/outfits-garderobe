@@ -224,6 +224,25 @@ ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 # trade looks worse in practice than on paper.
 ACCOUNT_PREVENT_ENUMERATION = False
 
+# Where Django's authentication machinery sends people.
+#
+# LOGIN_URL is deliberately the *path*, not the 'account_login' route name:
+# privatemedia/tests/test_gate.py:86 asserts the anonymous redirect's Location
+# starts with settings.LOGIN_URL, which compares against a URL and would fail
+# outright against a route name. The path is fixed by the 'accounts/' include
+# prefix in outfits_garderobe/urls.py, which we control, so nothing is lost by
+# hardcoding it — but change the two together or F-01's gate test breaks.
+#
+# Setting this at all is what repairs privatemedia/views.py:54: its
+# @login_required has been redirecting to Django's /accounts/login/ default
+# since F-01, a URL that did not exist until this change created it.
+LOGIN_URL = '/accounts/login/'
+
+# These two are route names on purpose — S-03 repoints the landing page by
+# changing one string once the wardrobe is real.
+LOGIN_REDIRECT_URL = 'wardrobe'
+LOGOUT_REDIRECT_URL = 'account_login'
+
 ACCOUNT_ADAPTER = 'accounts.adapter.AccountAdapter'
 ACCOUNT_SIGNUP_FORM_CLASS = 'accounts.forms.SignupForm'
 

@@ -498,47 +498,47 @@ Deleting a user cascades to `PrivateImage` rows but leaves their files on disk. 
 
 #### Automated
 
-- [x] 2.1 allauth's migrations apply cleanly: `uv run python manage.py migrate`
-- [x] 2.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [x] 2.3 System checks pass: `uv run python manage.py check`
-- [x] 2.4 The existing suite still passes: `uv run pytest`
-- [x] 2.5 Linting passes: `uv run ruff check .`
-- [x] 2.6 Formatting is clean: `uv run ruff format --check .`
-- [x] 2.7 allauth introduces no vulnerable dependency: `uv run pip-audit`
+- [x] 2.1 allauth's migrations apply cleanly: `uv run python manage.py migrate` — 73e01e9
+- [x] 2.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run` — 73e01e9
+- [x] 2.3 System checks pass: `uv run python manage.py check` — 73e01e9
+- [x] 2.4 The existing suite still passes: `uv run pytest` — 73e01e9
+- [x] 2.5 Linting passes: `uv run ruff check .` — 73e01e9
+- [x] 2.6 Formatting is clean: `uv run ruff format --check .` — 73e01e9
+- [x] 2.7 allauth introduces no vulnerable dependency: `uv run pip-audit` — 73e01e9
 
 #### Manual
 
-- [x] 2.8 Registration creates a user whose `username` equals the full email address
-- [x] 2.9 The confirmation email appears in the console and its link verifies the address
-- [x] 2.10 Login before confirming is refused; after confirming it succeeds
-- [x] 2.11 The login form shows a *Remember me?* checkbox
-- [x] 2.12 Password change works and the old password stops working
+- [x] 2.8 Registration creates a user whose `username` equals the full email address — 73e01e9
+- [x] 2.9 The confirmation email appears in the console and its link verifies the address — 73e01e9
+- [x] 2.10 Login before confirming is refused; after confirming it succeeds — 73e01e9
+- [x] 2.11 The login form shows a *Remember me?* checkbox — 73e01e9
+- [x] 2.12 Password change works and the old password stops working — 73e01e9
 - [ ] 2.13 The password reset flow completes via the console-printed link
-- [x] 2.14 A duplicate signup gives a plain "already registered" error
-- [x] 2.15 Every account screen inherits `base.html` and is usable at 360px
-- [x] 2.16 Logging out requires a POST — a bare GET shows a confirmation page
+- [x] 2.14 A duplicate signup gives a plain "already registered" error — 73e01e9
+- [x] 2.15 Every account screen inherits `base.html` and is usable at 360px — 73e01e9
+- [x] 2.16 Logging out requires a POST — a bare GET shows a confirmation page — 73e01e9
 
 ### Phase 3: Routing and the wardrobe placeholder
 
 #### Automated
 
-- [ ] 3.1 The full suite passes, old and new: `uv run pytest`
-- [ ] 3.2 The new smoke suite passes on its own: `uv run pytest accounts/tests/`
-- [ ] 3.3 The `privatemedia` suite is unaffected: `uv run pytest privatemedia/tests/`
-- [ ] 3.4 System checks pass: `uv run python manage.py check`
-- [ ] 3.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 3.6 Linting passes: `uv run ruff check .`
-- [ ] 3.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 3.1 The full suite passes, old and new: `uv run pytest`
+- [x] 3.2 The new smoke suite passes on its own: `uv run pytest accounts/tests/`
+- [x] 3.3 The `privatemedia` suite is unaffected: `uv run pytest privatemedia/tests/`
+- [x] 3.4 System checks pass: `uv run python manage.py check`
+- [x] 3.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
+- [x] 3.6 Linting passes: `uv run ruff check .`
+- [x] 3.7 Formatting is clean: `uv run ruff format --check .`
 
 #### Manual
 
-- [ ] 3.8 `/` lands on login when logged out, on `/wardrobe/` when logged in
-- [ ] 3.9 Register → confirm → log in reaches `/wardrobe/` without manual URL entry
-- [ ] 3.10 The header log-out button ends the session and returns to login
-- [ ] 3.11 A private media URL requested while logged out lands on the real login page
-- [ ] 3.12 The whole flow is usable at 360px width
-- [ ] 3.13 The local database holds only accounts from the new flow, with no orphaned media files
-- [ ] 3.14 `reset_legacy_accounts` dry-run names exactly the expected rows and files before anything is deleted
+- [x] 3.8 `/` lands on login when logged out, on `/wardrobe/` when logged in
+- [x] 3.9 Register → confirm → log in reaches `/wardrobe/` without manual URL entry
+- [x] 3.10 The header log-out button ends the session and returns to login
+- [x] 3.11 A private media URL requested while logged out lands on the real login page
+- [x] 3.12 The whole flow is usable at 360px width
+- [x] 3.13 The local database holds only accounts from the new flow, with no orphaned media files
+- [x] 3.14 `reset_legacy_accounts` dry-run names exactly the expected rows and files before anything is deleted
 
 ### Phase 4: Production — real email, transport hardening, account reset
 

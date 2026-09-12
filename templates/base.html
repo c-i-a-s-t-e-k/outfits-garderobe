@@ -16,8 +16,34 @@
   </head>
   <body>
     <header class="container site-header">
-      <strong class="site-brand">Outfits Garderobe</strong>
-      {% block nav %}{% endblock %}
+      <strong class="site-brand">
+        <a href="{% url 'home' %}">Outfits Garderobe</a>
+      </strong>
+      {% block nav %}
+        <nav>
+          <ul>
+            {% if user.is_authenticated %}
+              <li>{{ user.email }}</li>
+              <li><a href="{% url 'account_change_password' %}">Change password</a></li>
+              <li>
+                {% comment %}
+                  ACCOUNT_LOGOUT_ON_GET is False, so logging out is a POST — a
+                  plain link would only render allauth's confirmation page. That
+                  default is deliberate: a GET logout can be fired by any stray
+                  <img src> or link prefetch, ending a session unasked.
+                {% endcomment %}
+                <form method="post" action="{% url 'account_logout' %}">
+                  {% csrf_token %}
+                  <button type="submit" class="linklike">Log out</button>
+                </form>
+              </li>
+            {% else %}
+              <li><a href="{% url 'account_login' %}">Log in</a></li>
+              <li><a href="{% url 'account_signup' %}">Register</a></li>
+            {% endif %}
+          </ul>
+        </nav>
+      {% endblock %}
     </header>
 
     <main class="container">

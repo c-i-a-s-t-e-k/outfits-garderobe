@@ -19,6 +19,8 @@ from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
 
+from accounts import views as account_views
+
 
 def health(request):
     return JsonResponse({'status': 'ok'})
@@ -26,6 +28,11 @@ def health(request):
 
 urlpatterns = [
     path('health/', health),
+    # `/` carries no content — it reads authentication state and redirects.
+    # `wardrobe` is reserved here so S-02 and S-03 fill a page in rather than
+    # relocate one; the route name is what survives the move into its own app.
+    path('', account_views.home, name='home'),
+    path('wardrobe/', account_views.wardrobe, name='wardrobe'),
     path('admin/', admin.site.urls),
     # Mounted at the prefix Django's own LOGIN_URL default already assumes, and
     # above the privatemedia include so route resolution is unambiguous.
