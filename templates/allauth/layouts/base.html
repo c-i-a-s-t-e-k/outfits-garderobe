@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% comment %}
+   The single override that styles every allauth screen.
+
+   allauth ships its templates as deliberately plain semantic markup, and
+   allauth/layouts/base.html is the documented hook all of them reach through —
+   login, signup, email confirmation, password change and password reset extend
+   it via entrance.html or manage.html. Because Pico styles semantic elements
+   rather than classes, replacing this one file is enough: no allauth template
+   needs to be copied into the project and none needs a class attribute added.
+   Copying them wholesale is the maintenance burden this hook exists to avoid.
+
+   Only the page title needs mapping. allauth's screens fill `head_title`, and
+   `content` / `extra_body` carry the same names in base.html, so they resolve
+   against it directly without a line here.
+
+   Two things allauth's own version of this file does are deliberately dropped:
+   it renders django.contrib.messages (base.html already does, and doing both
+   shows every notice twice) and it carries an account menu (the site header in
+   base.html is where navigation lives).
+{% endcomment %}
+
+{% block title %}{% block head_title %}{% endblock %}{% endblock %}

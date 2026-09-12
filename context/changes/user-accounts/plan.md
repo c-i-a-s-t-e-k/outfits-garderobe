@@ -483,40 +483,40 @@ Deleting a user cascades to `PrivateImage` rows but leaves their files on disk. 
 
 #### Automated
 
-- [x] 1.1 System checks pass: `uv run python manage.py check`
-- [x] 1.2 `collectstatic` succeeds under manifest storage with the new sources
-- [x] 1.3 The full existing suite still passes: `uv run pytest`
-- [x] 1.4 Linting passes: `uv run ruff check .`
-- [x] 1.5 Formatting is clean: `uv run ruff format --check .`
+- [x] 1.1 System checks pass: `uv run python manage.py check` — 79ad4d4
+- [x] 1.2 `collectstatic` succeeds under manifest storage with the new sources — 79ad4d4
+- [x] 1.3 The full existing suite still passes: `uv run pytest` — 79ad4d4
+- [x] 1.4 Linting passes: `uv run ruff check .` — 79ad4d4
+- [x] 1.5 Formatting is clean: `uv run ruff format --check .` — 79ad4d4
 
 #### Manual
 
-- [x] 1.6 Hashed filenames for both stylesheets appear in `staticfiles/staticfiles.json`
-- [x] 1.7 `git status` shows `staticfiles/` ignored and only intended sources staged
+- [x] 1.6 Hashed filenames for both stylesheets appear in `staticfiles/staticfiles.json` — 79ad4d4
+- [x] 1.7 `git status` shows `staticfiles/` ignored and only intended sources staged — 79ad4d4
 
 ### Phase 2: allauth wired up
 
 #### Automated
 
-- [ ] 2.1 allauth's migrations apply cleanly: `uv run python manage.py migrate`
-- [ ] 2.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 2.3 System checks pass: `uv run python manage.py check`
-- [ ] 2.4 The existing suite still passes: `uv run pytest`
-- [ ] 2.5 Linting passes: `uv run ruff check .`
-- [ ] 2.6 Formatting is clean: `uv run ruff format --check .`
-- [ ] 2.7 allauth introduces no vulnerable dependency: `uv run pip-audit`
+- [x] 2.1 allauth's migrations apply cleanly: `uv run python manage.py migrate`
+- [x] 2.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
+- [x] 2.3 System checks pass: `uv run python manage.py check`
+- [x] 2.4 The existing suite still passes: `uv run pytest`
+- [x] 2.5 Linting passes: `uv run ruff check .`
+- [x] 2.6 Formatting is clean: `uv run ruff format --check .`
+- [x] 2.7 allauth introduces no vulnerable dependency: `uv run pip-audit`
 
 #### Manual
 
-- [ ] 2.8 Registration creates a user whose `username` equals the full email address
-- [ ] 2.9 The confirmation email appears in the console and its link verifies the address
-- [ ] 2.10 Login before confirming is refused; after confirming it succeeds
-- [ ] 2.11 The login form shows a *Remember me?* checkbox
-- [ ] 2.12 Password change works and the old password stops working
+- [x] 2.8 Registration creates a user whose `username` equals the full email address
+- [x] 2.9 The confirmation email appears in the console and its link verifies the address
+- [x] 2.10 Login before confirming is refused; after confirming it succeeds
+- [x] 2.11 The login form shows a *Remember me?* checkbox
+- [x] 2.12 Password change works and the old password stops working
 - [ ] 2.13 The password reset flow completes via the console-printed link
-- [ ] 2.14 A duplicate signup gives a plain "already registered" error
-- [ ] 2.15 Every account screen inherits `base.html` and is usable at 360px
-- [ ] 2.16 Logging out requires a POST — a bare GET shows a confirmation page
+- [x] 2.14 A duplicate signup gives a plain "already registered" error
+- [x] 2.15 Every account screen inherits `base.html` and is usable at 360px
+- [x] 2.16 Logging out requires a POST — a bare GET shows a confirmation page
 
 ### Phase 3: Routing and the wardrobe placeholder
 

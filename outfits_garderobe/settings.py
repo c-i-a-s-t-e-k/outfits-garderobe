@@ -57,6 +57,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Account-only allauth: no 'allauth.socialaccount', and deliberately no
+    # 'django.contrib.sites'/SITE_ID — allauth 65.x builds the absolute URLs it
+    # mails from request.get_host() plus ACCOUNT_DEFAULT_HTTP_PROTOCOL instead.
+    'allauth',
+    'allauth.account',
+    'accounts',
     'privatemedia',
 ]
 
@@ -69,6 +75,16 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Must come after AuthenticationMiddleware: it inspects request.user.
+    'allauth.account.middleware.AccountMiddleware',
+]
+
+# ModelBackend stays first so /admin/ keeps working for accounts that predate
+# allauth — that is the escape hatch which makes the production cutover in
+# Phase 4 recoverable at every step.
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
 ROOT_URLCONF = 'outfits_garderobe.urls'
@@ -178,3 +194,50 @@ STORAGES = {
         'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
     },
 }
+
+
+# Accounts (django-allauth)
+# https://docs.allauth.org/en/latest/account/configuration.html
+#
+# Identity is the email address. The stock auth.User is kept rather than swapped
+# — production already holds PrivateImage rows with a real FK to it — and the
+# unique constraint that plain auth.User would have lacked on email comes from
+# allauth's own account_emailaddress table. accounts.adapter writes the full
+# address into User.username so the column stays populated and unique.
+
+# These two must agree with each other; allauth's defaults are username-based
+# ({'username'} and a list that includes 'username*'), which would put a field
+# on the signup form that this product has no concept of.
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+
+# A mistyped address is otherwise a silent lockout, discovered on the day
+# password recovery is needed and not before.
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+
+# Deliberate, not an oversight. allauth's default answers a signup for an
+# existing address with a silent success — an anti-enumeration property. We
+# trade it for a plain "already registered" error, because the alternative
+# leaves a returning user staring at a confirmation email that never arrives.
+# Note this also applies to password reset, which will likewise disclose
+# whether an address has an account; 'strict' is the middle setting if that
+# trade looks worse in practice than on paper.
+ACCOUNT_PREVENT_ENUMERATION = False
+
+ACCOUNT_ADAPTER = 'accounts.adapter.AccountAdapter'
+ACCOUNT_SIGNUP_FORM_CLASS = 'accounts.forms.SignupForm'
+
+# ACCOUNT_SESSION_REMEMBER is deliberately unset: its default of None means
+# "ask the user", which is what renders the login form's "Remember me?"
+# checkbox. SESSION_COOKIE_AGE — the lifetime that checkbox selects — is set in
+# Phase 4 alongside the rest of the production hardening.
+
+
+# Email
+#
+# Under DEBUG, confirmation and reset links are printed to the console; an unset
+# EMAIL_BACKEND would default to SMTP on localhost:25, which fails silently and
+# makes mandatory verification look broken. The production sender (Brevo SMTP,
+# read from the environment with no fallback) lands in Phase 4.
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

@@ -6,6 +6,13 @@
     <title>{% block title %}Outfits Garderobe{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'vendor/pico.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    {% comment %}
+      allauth's own layout exposes extra_head/extra_body and some of its
+      screens use them — account/email.html puts its scripts there. A block
+      that has no counterpart here would be dropped without an error, so the
+      two pass-throughs exist to keep that failure from being silent.
+    {% endcomment %}
+    {% block extra_head %}{% endblock %}
   </head>
   <body>
     <header class="container site-header">
@@ -14,9 +21,12 @@
     </header>
 
     <main class="container">
-      {# allauth reports every account action through the messages framework, so
-         a page that does not render them swallows "Confirmation email sent",
-         "Password changed" and every form-level notice. #}
+      {% comment %}
+        allauth reports every account action through the messages framework, so
+        a page that does not render them swallows "Confirmation email sent",
+        "Password changed" and every form-level notice. {# #} is single-line
+        only — a multi-line one renders as literal text into the page.
+      {% endcomment %}
       {% if messages %}
         <ul class="messages">
           {% for message in messages %}
@@ -27,5 +37,7 @@
 
       {% block content %}{% endblock %}
     </main>
+
+    {% block extra_body %}{% endblock %}
   </body>
 </html>

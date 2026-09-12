@@ -27,6 +27,9 @@ def health(request):
 urlpatterns = [
     path('health/', health),
     path('admin/', admin.site.urls),
+    # Mounted at the prefix Django's own LOGIN_URL default already assumes, and
+    # above the privatemedia include so route resolution is unambiguous.
+    path('accounts/', include('allauth.urls')),
     # The private media gate. Never add django.conf.urls.static.static() for
     # MEDIA_ROOT here — that helper serves uploads publicly and would defeat the
     # ownership check this route exists to enforce.
