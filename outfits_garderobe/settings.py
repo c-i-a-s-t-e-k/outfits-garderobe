@@ -246,7 +246,7 @@ ACCOUNT_PREVENT_ENUMERATION = False
 # prefix in outfits_garderobe/urls.py, which we control, so nothing is lost by
 # hardcoding it — but change the two together or F-01's gate test breaks.
 #
-# Setting this at all is what repairs privatemedia/views.py:54: its
+# Setting this at all is what repairs privatemedia/views.py:46: its
 # @login_required has been redirecting to Django's /accounts/login/ default
 # since F-01, a URL that did not exist until this change created it.
 LOGIN_URL = '/accounts/login/'

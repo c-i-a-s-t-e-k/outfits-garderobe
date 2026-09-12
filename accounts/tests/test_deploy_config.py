@@ -15,6 +15,8 @@ from django.conf import settings
 from django.core.checks import run_checks
 from django.test import override_settings
 
+import outfits_garderobe.settings as production
+
 # Issues the harness produces and production does not. Never add an ID here to
 # make a real regression pass — fix the setting instead.
 HARNESS_ARTIFACTS = {
@@ -88,3 +90,19 @@ def test_healthcheck_is_not_redirected_to_https(client):
     """
     assert client.get('/health/').status_code == 200
     assert client.get('/accounts/login/').status_code == 301
+
+
+def test_production_transport_settings_are_pinned():
+    """Read the real settings module, not the harness's view of it.
+
+    settings_test overrides SECURE_SSL_REDIRECT and pytest-django swaps
+    EMAIL_BACKEND, so `django.conf.settings` cannot show either regression — and
+    W008 is allow-listed above. Django has no check at all for the proxy header
+    (without it Railway's TLS edge causes a redirect loop) or for the healthcheck
+    exemption (without it the deploy never turns healthy, as a47ace49 did).
+    """
+    assert production.DEBUG is False
+    assert production.SECURE_SSL_REDIRECT is True
+    assert production.SECURE_PROXY_SSL_HEADER == ('HTTP_X_FORWARDED_PROTO', 'https')
+    assert production.SECURE_REDIRECT_EXEMPT == [r'^health/$']
+    assert production.EMAIL_BACKEND == 'anymail.backends.brevo.EmailBackend'

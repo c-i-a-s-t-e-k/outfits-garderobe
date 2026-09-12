@@ -13,9 +13,15 @@ allauth's email field accepts Django's 254-character default. Addresses in the
 151–254 range therefore reach the adapter, and the adapter runs during save,
 after validation — raising there is an unhandled exception on a public form.
 Refusing here turns the same case into an ordinary field error.
+
+The same reasoning covers uniqueness. allauth refuses an address already in
+`EmailAddress` or `User.email`, but never looks at `User.username` — which the
+adapter fills with the address and which carries a unique constraint.
 """
 
+from allauth.account.adapter import get_adapter
 from django import forms
+from django.contrib.auth import get_user_model
 
 from accounts.adapter import username_max_length
 
@@ -33,6 +39,12 @@ class SignupForm(forms.Form):
                 f'This email address is too long. Please use one of at most '
                 f'{max_length} characters.',
             )
+        elif email and get_user_model().objects.filter(username__iexact=email).exists():
+            # allauth checks EmailAddress and User.email, never User.username —
+            # but the adapter writes the address there and the column is unique.
+            # A username left behind by an email change, or a createsuperuser
+            # account with a blank email, would otherwise be an IntegrityError.
+            self.add_error('email', get_adapter().error_messages['email_taken'])
         return cleaned_data
 
     def signup(self, request, user) -> None:

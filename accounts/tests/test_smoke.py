@@ -170,6 +170,29 @@ def test_signup_refuses_an_email_too_long_for_the_username_column(client):
     assert not get_user_model().objects.filter(email=too_long).exists()
 
 
+def test_signup_refuses_an_email_already_taken_as_a_username(client, django_user_model):
+    """A field error, not the IntegrityError the unique username column would raise.
+
+    allauth's duplicate check reads `EmailAddress` and `User.email` only; an
+    account whose username holds the address but whose email does not — here a
+    `createsuperuser` row with a blank email — slips past it.
+    """
+    django_user_model.objects.create_user(username='admin@example.com', email='')
+
+    response = client.post(
+        reverse('account_signup'),
+        {
+            'email': 'admin@example.com',
+            'password1': 'correct-horse-battery-staple',
+            'password2': 'correct-horse-battery-staple',
+        },
+    )
+
+    assert response.status_code == 200
+    assert 'email' in response.context['form'].errors
+    assert django_user_model.objects.count() == 1
+
+
 def test_unverified_account_cannot_log_in(client, django_user_model, password):
     """ACCOUNT_EMAIL_VERIFICATION is mandatory — the row alone is not enough."""
     django_user_model.objects.create_user(

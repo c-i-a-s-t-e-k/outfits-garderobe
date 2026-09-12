@@ -9,6 +9,9 @@ have — a CDN URL stays unhashed and uncached alongside everything else.
 | --- | --- | --- | --- | --- |
 | `pico.min.css` | [Pico CSS](https://picocss.com) | v2.1.1 (2025-03-15) | `https://cdn.jsdelivr.net/npm/@picocss/pico@2.1.1/css/pico.min.css` | 2026-09-12 |
 
+This is Pico's **default** build, not the classless one: `templates/base.html` uses
+`.container`, which the classless build does not define. Upgrade to the same build.
+
 ## Upgrading
 
 Fetch the new release to the same path, then re-run

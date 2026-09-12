@@ -680,7 +680,7 @@ Deleting a user cascades to `PrivateImage` rows but leaves their files on disk. 
 - [x] 2.10 Login before confirming is refused; after confirming it succeeds — 73e01e9
 - [x] 2.11 The login form shows a *Remember me?* checkbox — 73e01e9
 - [x] 2.12 Password change works and the old password stops working — 73e01e9
-- [x] 2.13 The password reset flow completes via the console-printed link — 73e01e9
+- [x] 2.13 The password reset flow completes via the console-printed link — 64fa8d0
 - [x] 2.14 A duplicate signup gives a plain "already registered" error — 73e01e9
 - [x] 2.15 Every account screen inherits `base.html` and is usable at 360px — 73e01e9
 - [x] 2.16 Logging out requires a POST — a bare GET shows a confirmation page — 73e01e9
@@ -740,13 +740,13 @@ Deleting a user cascades to `PrivateImage` rows but leaves their files on disk. 
 
 #### Manual
 
-- [x] 5.9 A production response carries `Strict-Transport-Security` with the expected max-age — 6ed120f
-- [x] 5.10 A new production registration delivers a confirmation email with a working `https://` link — 6ed120f
-- [x] 5.11 Brevo's *Transactional → Logs* shows the confirmation and reset emails as delivered — 6ed120f
-- [x] 5.12 Login before confirming is refused in production — 6ed120f
-- [x] 5.13 A full password reset completes from the emailed link — 6ed120f
-- [x] 5.14 Password change and log out work against production — 6ed120f
-- [x] 5.15 *Remember me?* governs whether the session survives browser close — 6ed120f
-- [x] 5.16 A private media URL requested while logged out lands on the production login page — 6ed120f
-- [x] 5.17 The whole flow is usable on a real phone — 6ed120f
-- [x] 5.18 Production holds only accounts from the new flow, with no orphaned files under `/data/media/private/` — 6ed120f
+- [x] 5.9 A production response carries `Strict-Transport-Security` with the expected max-age — 64fa8d0
+- [x] 5.10 A new production registration delivers a confirmation email with a working `https://` link — 64fa8d0
+- [x] 5.11 Brevo's *Transactional → Logs* shows the confirmation and reset emails as delivered — 64fa8d0
+- [x] 5.12 Login before confirming is refused in production — 64fa8d0
+- [x] 5.13 A full password reset completes from the emailed link — 64fa8d0
+- [x] 5.14 Password change and log out work against production — 64fa8d0
+- [x] 5.15 *Remember me?* governs whether the session survives browser close — 64fa8d0
+- [x] 5.16 A private media URL requested while logged out lands on the production login page — 64fa8d0
+- [x] 5.17 The whole flow is usable on a real phone — 64fa8d0
+- [x] 5.18 Production holds only accounts from the new flow, with no orphaned files under `/data/media/private/` — 64fa8d0

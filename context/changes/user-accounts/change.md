@@ -1,7 +1,7 @@
 ---
 change_id: user-accounts
 title: Konto użytkownika — rejestracja, logowanie, wylogowanie i zmiana hasła
-status: implemented
+status: impl_reviewed
 created: 2026-09-12
 updated: 2026-09-12
 archived_at: null
