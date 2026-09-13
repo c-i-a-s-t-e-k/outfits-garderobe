@@ -592,7 +592,7 @@ Give gunicorn enough workers that one upload cannot block everyone else, deploy,
 #### Manual
 
 - [ ] 5.5 On a real iPhone over mobile data, *Save* → list takes under five seconds
-- [ ] 5.6 On a real Android phone over mobile data, *Save* → list takes under five seconds
-- [ ] 5.7 The stored production photo is upright, a few hundred kilobytes, and has no GPS metadata
-- [ ] 5.8 A second production account sees an empty list and gets 404 on the first account's photo URL
+- [x] 5.6 On a real Android phone over mobile data, *Save* → list takes under five seconds
+- [x] 5.7 The stored production photo is upright, a few hundred kilobytes, and has no GPS metadata
+- [x] 5.8 A second production account sees an empty list and gets 404 on the first account's photo URL
 - [ ] 5.9 The list with at least ten garments loads acceptably on the phone, and Railway memory metrics show no alarm during uploads

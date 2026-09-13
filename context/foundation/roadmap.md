@@ -207,6 +207,7 @@ PRD nie ma nierozstrzygniętych pytań. Poniższe wyszły w trakcie układania r
 - **Integracje ze sklepami internetowymi** — Poza zakresem wg PRD; nie sugerujemy zakupów i nie importujemy ubrań.
 - **System pluginów i architektura modularna** — Poza zakresem wg PRD, przeniesione do wersji drugiej.
 - **Logowanie zdarzeń, śledzenie błędów i metryki aplikacji** — Żadne wymaganie z PRD tego nie wymusza, a przyjęty cel „szybkie domknięcie przepływu" każe odłożyć wszystko, czego przepływ nie potrzebuje. Platforma wdrożeniowa daje własne logi na siedem dni.
+- **Robienie zdjęcia aparatem przy dodawaniu ubrania na Androidzie** — Odłożone 2026-09-13 w S-02. Na Androidzie (Chrome) pole `accept="image/*"` otwiera tylko galerię i kolekcje, bez opcji aparatu (test 4.8). Developer zaakceptował samą galerię na MVP. Ewentualna poprawka UX, np. osobny przycisk z `capture="environment"`, to materiał na nowy slice po MVP.
 - **Zrównanie bazy deweloperskiej z produkcyjną** — Środowisko deweloperskie zostaje na SQLite; połączenie i tak jest czytane ze zmiennej środowiskowej, więc produkcja dostaje PostgreSQL bez osobnej pracy. Warto pilnować, by modele nie opierały się na luźnym typowaniu SQLite.
 
 ## Milestone History
