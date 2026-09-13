@@ -516,18 +516,18 @@ Never merge the PR.
 
 #### Automated
 
-- [ ] 1.1 The migration applies cleanly: `uv run python manage.py migrate`
-- [ ] 1.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 1.3 The tag model tests pass: `uv run pytest outfits/tests/test_tags_model.py`
-- [ ] 1.4 The full suite still passes: `uv run pytest`
-- [ ] 1.5 System checks pass: `uv run python manage.py check`
-- [ ] 1.6 Linting passes: `uv run ruff check .`
-- [ ] 1.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 1.1 The migration applies cleanly: `uv run python manage.py migrate`
+- [x] 1.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
+- [x] 1.3 The tag model tests pass: `uv run pytest outfits/tests/test_tags_model.py`
+- [x] 1.4 The full suite still passes: `uv run pytest`
+- [x] 1.5 System checks pass: `uv run python manage.py check`
+- [x] 1.6 Linting passes: `uv run ruff check .`
+- [x] 1.7 Formatting is clean: `uv run ruff format --check .`
 
 #### Manual
 
-- [ ] 1.8 In `/admin/`, adding another user's tag id to an outfit is refused
-- [ ] 1.9 In `/admin/`, removing a tag from its only outfit makes it disappear from the tag list
+- [x] 1.8 In `/admin/`, adding another user's tag id to an outfit is refused
+- [x] 1.9 In `/admin/`, removing a tag from its only outfit makes it disappear from the tag list
 
 ### Phase 2: Tagging on compose and the outfit page
 

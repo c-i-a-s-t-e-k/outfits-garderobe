@@ -4,7 +4,8 @@ import re
 import uuid
 
 from django.conf import settings
-from django.db import models
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, models, transaction
 from django.db.models.functions import Lower
 from django.urls import reverse
 
@@ -34,6 +35,112 @@ def _garment_sort_key(garment):
     return (_TYPE_RANK.get(garment.type, len(_TYPE_RANK)), garment.created_at, garment.pk)
 
 
+class Tag(models.Model):
+    """One user's label for outfits.
+
+    `Letnie` and ` letnie ` are the same tag: identity is the `normalized` key,
+    and the tag keeps the spelling it was first typed with. The key is computed
+    in Python and compared exactly, never with `iexact` or `Lower()` — SQLite
+    folds only ASCII case, so `Ślub` and `ślub` would be two tags in dev and
+    tests but one on PostgreSQL.
+    """
+
+    MAX_LENGTH = 30
+    MAX_PER_OUTFIT = 20
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='tags',
+    )
+    name = models.CharField(max_length=MAX_LENGTH)
+    # blank=True only because clean_fields() runs before clean() fills it in;
+    # the check constraint below keeps an empty key out of the table.
+    # casefold() can expand a character to up to three (`ß` → `ss`), so the key
+    # gets room for a name that is at its limit.
+    normalized = models.CharField(max_length=MAX_LENGTH * 3, blank=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['normalized']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['owner', 'normalized'],
+                name='tag_unique_per_owner',
+                violation_error_message='You already have this tag.',
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(normalized=''),
+                name='tag_name_not_empty',
+                violation_error_message='A tag needs a name.',
+            ),
+        ]
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        # Same reasoning as Outfit.save(): Django validates only through
+        # ModelForm, so the key and the uniqueness check would not hold on a
+        # plain objects.create() without this.
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        self.name = ' '.join(self.name.split())
+        self.normalized = self.normalize(self.name)
+        if not self.normalized:
+            raise ValidationError({'name': 'A tag needs a name.'})
+        if ',' in self.name:
+            # Commas separate tags in every input, so a tag cannot contain one.
+            raise ValidationError({'name': 'A tag cannot contain a comma.'})
+
+    @staticmethod
+    def normalize(text):
+        """The identity key: whitespace collapsed and stripped, case folded."""
+        return ' '.join(text.split()).casefold()
+
+    @classmethod
+    def resolve(cls, owner, names):
+        """The owner's tags for these cleaned names, in input order.
+
+        Existing tags are reused by key and keep their spelling; missing ones
+        are created. A name whose key repeats an earlier one is skipped.
+        """
+        keyed = {}
+        for name in names:
+            keyed.setdefault(cls.normalize(name), name)
+        found = cls._existing_by_key(owner, keyed)
+        tags = []
+        for key, name in keyed.items():
+            tag = found.get(key)
+            if tag is None:
+                tag = found[key] = cls._create_or_fetch(owner, name, key)
+            tags.append(tag)
+        return tags
+
+    @classmethod
+    def _existing_by_key(cls, owner, keys):
+        return {tag.normalized: tag for tag in cls.objects.filter(owner=owner, normalized__in=keys)}
+
+    @classmethod
+    def _create_or_fetch(cls, owner, name, key):
+        # Another request may create the same tag between the read and this
+        # insert. If it committed first, full_clean() sees it (ValidationError);
+        # if not, the constraint does (IntegrityError). Either way the row that
+        # won is the tag — first spelling wins. The savepoint keeps a failed
+        # insert from breaking the caller's transaction.
+        try:
+            with transaction.atomic():
+                return cls.objects.create(owner=owner, name=name)
+        except (IntegrityError, ValidationError):
+            existing = cls.objects.filter(owner=owner, normalized=key).first()
+            if existing is None:
+                raise
+            return existing
+
+
 class Outfit(models.Model):
     """A set of garments composed by their owner.
 
@@ -55,6 +162,7 @@ class Outfit(models.Model):
     # check constraint below is what keeps an empty name out of the table.
     name = models.CharField(max_length=60, blank=True)
     garments = models.ManyToManyField('garments.Garment', related_name='outfits')
+    tags = models.ManyToManyField(Tag, related_name='outfits', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

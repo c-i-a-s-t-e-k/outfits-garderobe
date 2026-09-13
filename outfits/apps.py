@@ -6,6 +6,7 @@ class OutfitsConfig(AppConfig):
     name = 'outfits'
 
     def ready(self):
-        # Importing the module is what connects the m2m_changed receiver that
-        # keeps another user's garment out of an outfit on every ORM path.
+        # Importing the module is what connects the receivers that keep another
+        # user's garments and tags out of an outfit on every ORM path, and
+        # delete tags no outfit carries any more.
         from outfits import signals  # noqa: F401
