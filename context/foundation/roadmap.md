@@ -43,8 +43,8 @@ Osoby dbające o styl hobbystycznie zapominają wcześniej dobrane zestawienia, 
 | ---- | ------------------ | ---------------------------------------------------------------------------------------- | ------------- | --------------------------------- | -------- |
 | F-01 | private-media-gate | (fundament) zdjęcia leżą poza publicznym katalogiem, a dostęp do pliku sprawdza właściciela | —             | Prywatność (NFR), Access Control, FR-003, FR-007 | done |
 | S-01 | user-accounts      | zarejestrować się, zalogować, wylogować i zmienić hasło                                    | —             | FR-001, FR-002, Access Control    | done |
-| S-02 | add-garment        | dodać ubranie (zdjęcie, typ, opis) i zobaczyć swoją prywatną listę ubrań                   | S-01, F-01    | FR-003, US-01                     | in-progress |
-| S-03 | compose-outfit     | wizualnie złożyć outfit z ubrań i zobaczyć go w siatce garderoby                           | S-02          | FR-005, FR-008, US-01             | proposed |
+| S-02 | add-garment        | dodać ubranie (zdjęcie, typ, opis) i zobaczyć swoją prywatną listę ubrań                   | S-01, F-01    | FR-003, US-01                     | done |
+| S-03 | compose-outfit     | wizualnie złożyć outfit z ubrań i zobaczyć go w siatce garderoby                           | S-02          | FR-005, FR-008, US-01             | ready |
 | S-04 | outfit-photo       | dodać do outfitu własne zdjęcie w tym stroju i widzieć je jako kafelek w siatce            | S-03, F-01    | FR-007, FR-008, US-01             | proposed |
 | S-05 | outfit-tags        | tagować outfity i filtrować siatkę garderoby po wybranym tagu                              | S-03          | FR-009, FR-010, US-02             | proposed |
 | S-06 | garment-lifecycle  | edytować i usunąć ubranie, a dotknięte outfity widzieć jako niekompletne z szybką naprawą  | S-03          | FR-004, US-01                     | proposed |
@@ -113,9 +113,9 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 - **Parallel with:** —
 - **Blockers:** —
 - **Unknowns:**
-  - Czy typ ubrania to zamknięta lista wyboru, czy dowolny tekst? PRD mówi tylko „typ + opis". Owner: user. Block: no.
+  - ~~Czy typ ubrania to zamknięta lista wyboru, czy dowolny tekst?~~ **Rozstrzygnięte 2026-09-13 w S-02:** zamknięta lista typów plus _Other_ z obowiązkowym polem tekstowym (spójność pilnuje ograniczenie w bazie), więc późniejsze filtrowanie po typie jest możliwe.
 - **Risk:** to pierwszy realny test wgrywania zdjęcia z telefonu, czyli kluczowego przypadku użycia wskazanego w kryteriach sukcesu; ryzykiem są duże pliki prosto z aparatu, które bez zmniejszania łamią wymaganie odpowiedzi poniżej pięciu sekund.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-03: Kompozycja outfitu i siatka garderoby
 
@@ -127,7 +127,7 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** to jest teza produktu — kompozycja stroju zamiast katalogu ubrań — więc leży najwcześniej, jak pozwalają zależności; ryzykiem jest wizualny wybór ubrań na ekranie 360 pikseli, gdzie siatka miniatur i zaznaczanie łatwo stają się nieużywalne.
-- **Status:** proposed
+- **Status:** ready
 
 ### S-04: Własne zdjęcie w stroju
 
@@ -184,7 +184,7 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 | F-01 | `private-media-gate` | Prywatna brama dostępu do zdjęć użytkownika | OG-1 | yes | Uruchom `/10x-plan private-media-gate` |
 | S-01 | `user-accounts` | Rejestracja, logowanie, wylogowanie i zmiana hasła | OG-2 | yes | Uruchom `/10x-plan user-accounts` |
 | S-02 | `add-garment` | Dodawanie ubrania ze zdjęciem i prywatna lista ubrań | OG-3 | yes | Uruchom `/10x-plan add-garment` (S-01 i F-01 done) |
-| S-03 | `compose-outfit` | Wizualne składanie outfitu i siatka garderoby | OG-4 | no | Czeka na S-02 |
+| S-03 | `compose-outfit` | Wizualne składanie outfitu i siatka garderoby | OG-4 | yes | Uruchom `/10x-plan compose-outfit` (S-02 done) |
 | S-04 | `outfit-photo` | Własne zdjęcie w stroju jako kafelek outfitu | OG-5 | no | Czeka na S-03 i F-01 |
 | S-05 | `outfit-tags` | Tagowanie outfitów i filtrowanie siatki po tagu | OG-6 | no | Czeka na S-03 |
 | S-06 | `garment-lifecycle` | Edycja i usuwanie ubrania z oznaczeniem niekompletnych outfitów | OG-7 | no | Czeka na S-03 |
@@ -198,7 +198,7 @@ PRD nie ma nierozstrzygniętych pytań. Poniższe wyszły w trakcie układania r
 
 1. ~~**Czy logowanie zewnętrzne wchodzi do tego kamienia milowego, czy wystarczy email z hasłem?**~~ **Rozstrzygnięte 2026-09-12 w S-01:** email z hasłem, obowiązkowe potwierdzenie adresu, bez OAuth w M-1. Dołożenie logowania zewnętrznego później to osobna zmiana (allauth `socialaccount`). Dotyczy: S-01.
 2. ~~**Gdzie fizycznie leżą pliki zdjęć na platformie wdrożeniowej — wolumen przypięty do usługi czy zewnętrzny magazyn obiektowy?**~~ **Rozstrzygnięte 2026-09-06 w F-01:** wolumen Railway przypięty do usługi, mount `/data`, `MEDIA_ROOT=/data/media`. Uwaga: faktyczny sufit to 5000 MB, czyli połowa dziesięciu gigabajtów, które zakładał materiał o infrastrukturze — przy 3–5 MB na zdjęcie daje to ok. 1000–1500 zdjęć i to jest próg, przy którym wraca rozmowa o magazynie obiektowym. Dotyczy: F-01, S-02, S-04.
-3. **Czy typ ubrania to zamknięta lista wyboru, czy dowolny tekst?** PRD mówi tylko „typ + opis"; wybór wpływa na to, czy da się później po typie filtrować. Owner: user. Dotyczy: S-02.
+3. ~~**Czy typ ubrania to zamknięta lista wyboru, czy dowolny tekst?**~~ **Rozstrzygnięte 2026-09-13 w S-02:** zamknięta lista typów plus _Other_ z obowiązkowym polem tekstowym i ograniczeniem w bazie, więc filtrowanie po typie pozostaje możliwe. Dotyczy: S-02.
 
 ## Parked
 
