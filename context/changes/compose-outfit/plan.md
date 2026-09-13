@@ -488,13 +488,13 @@ Bring the branch up to date with `master`, open a pull request instead of pushin
 
 #### Automated
 
-- [x] 1.1 The migration applies cleanly: `uv run python manage.py migrate`
-- [x] 1.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [x] 1.3 The model tests pass: `uv run pytest outfits/tests/test_model.py`
-- [x] 1.4 The full suite still passes: `uv run pytest`
-- [x] 1.5 System checks pass: `uv run python manage.py check`
-- [x] 1.6 Linting passes: `uv run ruff check .`
-- [x] 1.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 1.1 The migration applies cleanly: `uv run python manage.py migrate` — bdc4d87
+- [x] 1.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run` — bdc4d87
+- [x] 1.3 The model tests pass: `uv run pytest outfits/tests/test_model.py` — bdc4d87
+- [x] 1.4 The full suite still passes: `uv run pytest` — bdc4d87
+- [x] 1.5 System checks pass: `uv run python manage.py check` — bdc4d87
+- [x] 1.6 Linting passes: `uv run ruff check .` — bdc4d87
+- [x] 1.7 Formatting is clean: `uv run ruff format --check .` — bdc4d87
 
 #### Manual
 
@@ -505,13 +505,13 @@ Bring the branch up to date with `master`, open a pull request instead of pushin
 
 #### Automated
 
-- [ ] 2.1 The view tests pass: `uv run pytest outfits/tests/test_views.py`
-- [ ] 2.2 The full suite passes: `uv run pytest`
-- [ ] 2.3 System checks pass: `uv run python manage.py check`
-- [ ] 2.4 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 2.5 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [ ] 2.6 Linting passes: `uv run ruff check .`
-- [ ] 2.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 2.1 The view tests pass: `uv run pytest outfits/tests/test_views.py`
+- [x] 2.2 The full suite passes: `uv run pytest`
+- [x] 2.3 System checks pass: `uv run python manage.py check`
+- [x] 2.4 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
+- [x] 2.5 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
+- [x] 2.6 Linting passes: `uv run ruff check .`
+- [x] 2.7 Formatting is clean: `uv run ruff format --check .`
 
 #### Manual
 

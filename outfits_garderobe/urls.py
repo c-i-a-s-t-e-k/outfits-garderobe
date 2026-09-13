@@ -33,6 +33,8 @@ urlpatterns = [
     # relocate one; the route name is what survives the move into its own app.
     path('', account_views.home, name='home'),
     path('wardrobe/', account_views.wardrobe, name='wardrobe'),
+    # Compose and outfit detail pages live under the same prefix.
+    path('wardrobe/', include('outfits.urls')),
     path('admin/', admin.site.urls),
     # Mounted at the prefix Django's own LOGIN_URL default already assumes, and
     # above the privatemedia include so route resolution is unambiguous.
