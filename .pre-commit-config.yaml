@@ -1,0 +1,24 @@
+# Pre-commit gate: lint, format check and affected tests on staged files.
+# Install once per clone: uv run pre-commit install
+# Hooks run through `uv run`, so tool versions come from uv.lock, not from here.
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --force-exclude
+        language: system
+        types_or: [python]
+      - id: ruff-format
+        name: ruff format --check
+        entry: uv run ruff format --check --force-exclude
+        language: system
+        types_or: [python]
+      - id: pytest-staged
+        name: pytest (affected apps)
+        entry: uv run python scripts/pytest_staged.py
+        language: system
+        files: ^(.*\.(py|html|txt)|pyproject\.toml|uv\.lock)$
+        exclude: ^(context|static|staticfiles|media)/
+        # One invocation with every staged path, never split across parallel runs.
+        require_serial: true
