@@ -1,36 +1,16 @@
 """The naming rules, the ownership guard and the preview order of an outfit."""
 
-import io
 from datetime import timedelta
 
 import pytest
 from django.core.exceptions import ValidationError
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError, transaction
-from PIL import Image
 
 from garments.models import Garment, GarmentType
 from outfits.models import Outfit
-from privatemedia.models import PrivateImage
+from tests.factories import make_garment
 
 pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('temp_media_root')]
-
-
-def _png_bytes():
-    buffer = io.BytesIO()
-    Image.new('RGB', (4, 4), 'green').save(buffer, format='PNG')
-    return buffer.getvalue()
-
-
-IMAGE_BYTES = _png_bytes()
-
-
-def make_garment(user, type=GarmentType.SHIRT, **fields):
-    photo = PrivateImage.objects.create(
-        owner=user,
-        image=SimpleUploadedFile('garment.png', IMAGE_BYTES, content_type='image/png'),
-    )
-    return Garment.objects.create(owner=user, photo=photo, type=type, **fields)
 
 
 def _links():

@@ -5,9 +5,12 @@ the `wardrobe` name is the contract, wherever the view behind it lives.
 """
 
 from django.conf import settings
+from django.contrib.auth.decorators import login_not_required
 from django.shortcuts import redirect
 
 
+# Public: `/` routes by authentication state, so anonymous visitors must reach it.
+@login_not_required
 def home(request):
     """`/` holds no content of its own — it reads authentication state.
 

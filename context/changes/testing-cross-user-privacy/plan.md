@@ -498,15 +498,15 @@ No schema changes. The middleware is a behaviour change for anonymous visitors o
 
 #### Automated
 
-- [ ] 1.1 Full suite passes, including the healthcheck, root-redirect and allauth smoke tests
-- [ ] 1.2 Middleware pin tests pass
-- [ ] 1.3 No test module defines or cross-imports a garment factory any more
-- [ ] 1.4 Lint and format are clean
-- [ ] 1.5 Django system checks pass
+- [x] 1.1 Full suite passes, including the healthcheck, root-redirect and allauth smoke tests
+- [x] 1.2 Middleware pin tests pass
+- [x] 1.3 No test module defines or cross-imports a garment factory any more
+- [x] 1.4 Lint and format are clean
+- [x] 1.5 Django system checks pass
 
 #### Manual
 
-- [ ] 1.6 runserver logged-out smoke: health 200, root to login, allauth screens render, guarded pages redirect with next
+- [x] 1.6 runserver logged-out smoke: health 200, root to login, allauth screens render, guarded pages redirect with next
 - [ ] 1.7 Railway healthcheck green after the deploy that ships this change
 
 ### Phase 2: Risk #1 — cross-user visibility
