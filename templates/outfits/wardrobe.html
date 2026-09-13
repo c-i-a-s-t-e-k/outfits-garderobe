@@ -14,6 +14,23 @@
     </p>
   {% endif %}
 
+  {% if selected or available or filtering %}
+    {% comment %}
+      Links, not a form: each chip is the wardrobe URL with that tag added or
+      dropped, so filtering needs no JavaScript and a filtered view can be
+      bookmarked. The view only lists tags that keep an outfit on screen.
+    {% endcomment %}
+    <nav class="tag-bar" aria-label="Filter by tag">
+      <a href="{% url 'wardrobe' %}" class="tag-chip"{% if not filtering %} aria-current="page"{% endif %}>All</a>
+      {% for tag in selected %}
+        <a href="{{ tag.url }}" class="tag-chip tag-chip-selected" aria-label="Remove filter {{ tag.name }}">{{ tag.name }} <span aria-hidden="true">×</span></a>
+      {% endfor %}
+      {% for tag in available %}
+        <a href="{{ tag.url }}" class="tag-chip">{{ tag.name }}</a>
+      {% endfor %}
+    </nav>
+  {% endif %}
+
   {% if outfits %}
     <ul class="outfit-grid">
       {% for outfit in outfits %}
@@ -38,10 +55,21 @@
               {% endfor %}
             </div>
             <span class="outfit-name">{{ outfit.name }}</span>
+            {% comment %}
+              Plain text: the tile is already one link, so its tags cannot be
+              links too. The bar above is where they filter.
+            {% endcomment %}
+            {% with tags=outfit.tags.all %}
+              {% if tags %}
+                <span class="outfit-tags">{% for tag in tags %}{{ tag.name }}{% if not forloop.last %} · {% endif %}{% endfor %}</span>
+              {% endif %}
+            {% endwith %}
           </a>
         </li>
       {% endfor %}
     </ul>
+  {% elif filtering %}
+    <p>No outfits have all these tags. <a href="{% url 'wardrobe' %}">Show all outfits</a></p>
   {% elif can_compose %}
     <p>No outfits yet. Compose your first one from the garments you added.</p>
   {% endif %}

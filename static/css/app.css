@@ -252,6 +252,40 @@
   line-height: 1;
 }
 
+/* Wardrobe tag bar: the same chips, as links in a wrapping row. Pico lays a
+   <nav> out as a spaced-out flex row; here chips pack to the start. A chip here
+   has no remove button, so its padding is even; a selected chip is filled. */
+.tag-bar {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  margin-bottom: var(--pico-spacing);
+}
+
+.tag-bar .tag-chip {
+  padding: 0.25rem 0.75rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.tag-bar .tag-chip[aria-current='page'],
+.tag-bar .tag-chip-selected {
+  border-color: var(--pico-primary-background);
+  background: var(--pico-primary-background);
+  color: var(--pico-primary-inverse);
+}
+
+/* A tile's tags: one muted line under the name, cut with an ellipsis, so
+   tiles in one row keep the same height however many tags they carry. */
+.outfit-tags {
+  display: block;
+  overflow: hidden;
+  color: var(--pico-muted-color);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 /* Tag input and its Add button share a row; the button keeps its width. */
 .tag-add-row {
   display: flex;

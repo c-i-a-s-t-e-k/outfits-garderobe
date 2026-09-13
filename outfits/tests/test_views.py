@@ -6,6 +6,8 @@ Every assertion re-reads the database rather than trusting a status code.
 import re
 import uuid
 from datetime import timedelta
+from html import unescape
+from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from django.conf import settings
@@ -628,3 +630,208 @@ def test_detail_query_count_does_not_grow_with_tags(client, owner, wardrobe):
         client.get(eight.get_absolute_url())
 
     assert len(many.captured_queries) == len(few.captured_queries)
+
+
+# --- filtering the wardrobe by tag -------------------------------------------
+
+
+def _shown(page):
+    """Names of the outfits whose tiles are on the page."""
+    return set(re.findall(r'<span class="outfit-name">([^<]+)</span>', page))
+
+
+def _bar(page):
+    """The tag bar's chips as (name, tags in the chip's link, selected), in order."""
+    nav = re.search(r'<nav class="tag-bar".*?</nav>', page, flags=re.DOTALL)
+    if nav is None:
+        return []
+    chips = re.findall(
+        r'<a href="([^"]+)" class="tag-chip( tag-chip-selected)?"[^>]*>([^<]+?)\s*(?:<span|</a>)',
+        nav.group(0),
+    )
+    return [
+        (name, parse_qs(urlsplit(unescape(href)).query).get('tag', []), bool(chosen))
+        for href, chosen, name in chips
+        if name != 'All'
+    ]
+
+
+def _available(page):
+    return [name for name, _, chosen in _bar(page) if not chosen]
+
+
+def _selected(page):
+    return [name for name, _, chosen in _bar(page) if chosen]
+
+
+def _link_of(page, name):
+    return next(tags for chip, tags, _ in _bar(page) if chip == name)
+
+
+def _filtered(client, *tags):
+    return client.get(WARDROBE_URL, {'tag': list(tags)}).content.decode()
+
+
+@pytest.fixture
+def tagged(owner, stranger, wardrobe, foreign_wardrobe):
+    """A {letnie}, B {Letnie, smart casual}, C {smart casual, zimowe}, D {}; S is the stranger's.
+
+    B's `Letnie` resolves to A's `letnie`: one tag, spelled as first typed.
+    """
+    return {
+        'A': _outfit_with(owner, wardrobe, 'Outfit A', tags=['letnie']),
+        'B': _outfit_with(owner, wardrobe, 'Outfit B', tags=['Letnie', 'smart casual']),
+        'C': _outfit_with(owner, wardrobe, 'Outfit C', tags=['smart casual', 'zimowe']),
+        'D': _outfit_with(owner, wardrobe, 'Outfit D'),
+        'S': _outfit_with(stranger, foreign_wardrobe, 'Theirs', tags=['letnie', 'obce']),
+    }
+
+
+def test_each_tile_shows_its_own_tags_and_nothing_of_anyone_else(client, owner, tagged):
+    client.force_login(owner)
+
+    page = client.get(WARDROBE_URL).content.decode()
+
+    assert '<span class="outfit-tags">letnie</span>' in _tile(page, tagged['A'])
+    assert '<span class="outfit-tags">letnie · smart casual</span>' in _tile(page, tagged['B'])
+    assert '<span class="outfit-tags">smart casual · zimowe</span>' in _tile(page, tagged['C'])
+    assert 'outfit-tags' not in _tile(page, tagged['D'])
+    assert _shown(page) == {'Outfit A', 'Outfit B', 'Outfit C', 'Outfit D'}
+    for filtered in (page, _filtered(client, 'letnie'), _filtered(client, 'obce')):
+        assert 'Theirs' not in filtered
+        assert 'obce' not in _available(filtered)
+        assert tagged['S'].get_absolute_url() not in filtered
+
+
+@pytest.mark.parametrize('value', ['letnie', 'LETNIE', ' letnie '])
+def test_one_tag_shows_exactly_the_outfits_carrying_it(client, owner, tagged, value):
+    client.force_login(owner)
+
+    assert _shown(_filtered(client, value)) == {'Outfit A', 'Outfit B'}
+
+
+def test_a_raw_encoded_value_is_normalized_too(client, owner, tagged):
+    client.force_login(owner)
+
+    page = client.get(f'{WARDROBE_URL}?tag=%20letnie%20').content.decode()
+
+    assert _shown(page) == {'Outfit A', 'Outfit B'}
+
+
+def test_two_tags_show_only_outfits_carrying_both(client, owner, tagged):
+    client.force_login(owner)
+
+    assert _shown(_filtered(client, 'letnie', 'smart casual')) == {'Outfit B'}
+
+
+def test_two_spellings_of_one_tag_are_one_selection(client, owner, tagged):
+    client.force_login(owner)
+
+    page = _filtered(client, 'letnie', 'Letnie')
+
+    assert _shown(page) == {'Outfit A', 'Outfit B'}
+    assert _selected(page) == ['letnie']
+
+
+def test_a_separator_variant_is_a_different_tag_and_matches_nothing(client, owner, tagged):
+    client.force_login(owner)
+
+    page = _filtered(client, 'smart-casual')
+
+    assert _shown(page) == set()
+    assert 'No outfits have all these tags.' in page
+    assert 'Show all outfits' in page
+    assert 'outfit-grid' not in page
+
+
+def test_an_unknown_tag_empties_the_grid_and_can_be_dropped(client, owner, tagged):
+    client.force_login(owner)
+
+    page = _filtered(client, 'letnie', 'nonexistent')
+
+    assert _shown(page) == set()
+    assert _selected(page) == ['letnie', 'nonexistent']
+    assert _link_of(page, 'nonexistent') == ['letnie']
+    assert _link_of(page, 'letnie') == ['nonexistent']
+    assert _available(page) == []
+
+
+def test_another_users_same_named_tag_filters_only_their_own_outfits(client, stranger, tagged):
+    client.force_login(stranger)
+
+    page = _filtered(client, 'letnie')
+
+    assert _shown(page) == {'Theirs'}
+    for name in ('Outfit A', 'Outfit B', 'Outfit C', 'Outfit D', 'smart casual', 'zimowe'):
+        assert name not in page
+    assert _available(client.get(WARDROBE_URL).content.decode()) == ['letnie', 'obce']
+
+
+def test_unfiltered_bar_lists_each_own_tag_in_use_once_by_key(client, owner, tagged):
+    client.force_login(owner)
+
+    page = client.get(WARDROBE_URL).content.decode()
+
+    assert _available(page) == ['letnie', 'smart casual', 'zimowe']
+    assert _selected(page) == []
+    assert re.search(r'<a href="/wardrobe/" class="tag-chip" aria-current="page">All</a>', page)
+
+
+def test_with_a_tag_selected_the_bar_offers_only_tags_that_narrow(client, owner, tagged):
+    client.force_login(owner)
+
+    page = _filtered(client, 'letnie')
+
+    assert _selected(page) == ['letnie']
+    assert _available(page) == ['smart casual']
+    assert 'aria-current' not in re.search(r'<nav class="tag-bar".*?</nav>', page, re.S).group(0)
+    assert 'aria-label="Remove filter letnie"' in page
+
+
+def test_chip_links_add_to_or_drop_from_the_current_selection(client, owner, tagged):
+    client.force_login(owner)
+
+    one = _filtered(client, 'letnie')
+    assert _link_of(one, 'smart casual') == ['letnie', 'smart casual']
+    assert _link_of(one, 'letnie') == []
+    assert f'<a href="{WARDROBE_URL}" class="tag-chip tag-chip-selected"' in one
+
+    two = _filtered(client, *_link_of(one, 'smart casual'))
+    assert _shown(two) == {'Outfit B'}
+    assert _link_of(two, 'letnie') == ['smart casual']
+    assert _link_of(two, 'smart casual') == ['letnie']
+    assert _shown(_filtered(client, *_link_of(two, 'letnie'))) == {'Outfit B', 'Outfit C'}
+
+
+def test_a_tag_removed_from_its_last_outfit_leaves_the_filter_and_the_bar(client, owner, tagged):
+    tag = tagged['A'].tags.get()
+    client.force_login(owner)
+
+    for key in ('A', 'B'):
+        assert client.post(_tag_remove_url(tagged[key], tag)).status_code == 302
+
+    assert _shown(_filtered(client, 'letnie')) == set()
+    assert _available(client.get(WARDROBE_URL).content.decode()) == ['smart casual', 'zimowe']
+
+
+def test_grid_query_count_does_not_grow_with_outfits_tags_or_selections(client, owner, wardrobe):
+    first = _outfit_with(owner, wardrobe, 'First', tags=['x', 'y'])
+    client.force_login(owner)
+
+    def count(*tags):
+        with CaptureQueriesContext(connection) as queries:
+            client.get(WARDROBE_URL, {'tag': list(tags)} if tags else None)
+        return len(queries.captured_queries)
+
+    small = (count(), count('x', 'y'))
+
+    first.tags.add(*Tag.resolve(owner, ['z0']))
+    for n in range(1, 5):
+        _outfit_with(owner, wardrobe, f'More {n}', tags=['x', 'y', f'z{n}'])
+    large = (count(), count('x', 'y'))
+
+    assert _shown(client.get(WARDROBE_URL).content.decode()) == {
+        'First',
+        *(f'More {n}' for n in range(1, 5)),
+    }
+    assert large == small

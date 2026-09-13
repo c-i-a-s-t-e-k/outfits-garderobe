@@ -533,39 +533,39 @@ Never merge the PR.
 
 #### Automated
 
-- [x] 2.1 The view tests pass: `uv run pytest outfits/tests/test_views.py`
-- [x] 2.2 If the privacy net is on the branch, it covers the new routes: `uv run pytest tests/`
-- [x] 2.3 The full suite passes: `uv run pytest`
-- [x] 2.4 System checks pass: `uv run python manage.py check`
-- [x] 2.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [x] 2.6 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [x] 2.7 Linting passes: `uv run ruff check .`
-- [x] 2.8 Formatting is clean: `uv run ruff format --check .`
+- [x] 2.1 The view tests pass: `uv run pytest outfits/tests/test_views.py` — e1da981
+- [x] 2.2 If the privacy net is on the branch, it covers the new routes: `uv run pytest tests/` — e1da981
+- [x] 2.3 The full suite passes: `uv run pytest` — e1da981
+- [x] 2.4 System checks pass: `uv run python manage.py check` — e1da981
+- [x] 2.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run` — e1da981
+- [x] 2.6 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput` — e1da981
+- [x] 2.7 Linting passes: `uv run ruff check .` — e1da981
+- [x] 2.8 Formatting is clean: `uv run ruff format --check .` — e1da981
 
 #### Manual
 
-- [x] 2.9 Composing with `Letnie, smart casual` shows both chips on the new outfit's page
-- [x] 2.10 On the outfit page, adding `letnie` to a second outfit offers `Letnie` in the suggestions and keeps that spelling
-- [x] 2.11 Removing a chip removes it after the redirect, with "Tag removed."
-- [x] 2.12 At 360 px in headless Chromium, chips wrap, the remove buttons are tappable, and nothing scrolls horizontally
+- [x] 2.9 Composing with `Letnie, smart casual` shows both chips on the new outfit's page — e1da981
+- [x] 2.10 On the outfit page, adding `letnie` to a second outfit offers `Letnie` in the suggestions and keeps that spelling — e1da981
+- [x] 2.11 Removing a chip removes it after the redirect, with "Tag removed." — e1da981
+- [x] 2.12 At 360 px in headless Chromium, chips wrap, the remove buttons are tappable, and nothing scrolls horizontally — e1da981
 
 ### Phase 3: Wardrobe filter bar and tile tags
 
 #### Automated
 
-- [ ] 3.1 The view tests pass: `uv run pytest outfits/tests/test_views.py`
-- [ ] 3.2 The full suite passes: `uv run pytest`
-- [ ] 3.3 System checks pass: `uv run python manage.py check`
-- [ ] 3.4 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [ ] 3.5 Linting passes: `uv run ruff check .`
-- [ ] 3.6 Formatting is clean: `uv run ruff format --check .`
+- [x] 3.1 The view tests pass: `uv run pytest outfits/tests/test_views.py`
+- [x] 3.2 The full suite passes: `uv run pytest`
+- [x] 3.3 System checks pass: `uv run python manage.py check`
+- [x] 3.4 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
+- [x] 3.5 Linting passes: `uv run ruff check .`
+- [x] 3.6 Formatting is clean: `uv run ruff format --check .`
 
 #### Manual
 
-- [ ] 3.7 Tapping a chip filters the grid; a second narrows to outfits with both; a selected chip widens again; *All* clears
-- [ ] 3.8 With one tag selected, the bar offers only tags that keep at least one outfit on screen
-- [ ] 3.9 Tiles show their tags on one line with an ellipsis when long, and tiles in a row stay the same height
-- [ ] 3.10 At 360 px in headless Chromium, the bar wraps, the grid shows two tiles per row, and nothing scrolls horizontally
+- [x] 3.7 Tapping a chip filters the grid; a second narrows to outfits with both; a selected chip widens again; *All* clears
+- [x] 3.8 With one tag selected, the bar offers only tags that keep at least one outfit on screen
+- [x] 3.9 Tiles show their tags on one line with an ellipsis when long, and tiles in a row stay the same height
+- [x] 3.10 At 360 px in headless Chromium, the bar wraps, the grid shows two tiles per row, and nothing scrolls horizontally
 
 ### Phase 4: Pull request and production
 
