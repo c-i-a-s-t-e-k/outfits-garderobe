@@ -108,12 +108,13 @@ def _garment_add_payload(seeded, requester):
     """A valid upload that also claims the seeded user's owner, photo and garment id."""
     garment = seeded.garments[0]
     return {
-        'photo': _photo_upload(),
+        # Multipart carries both under one name: the upload in FILES, the seeded
+        # user's photo pk in POST — where a model-bound `photo` field would read it.
+        'photo': [_photo_upload(), str(garment.photo_id)],
         'type': GarmentType.SHIRT,
         'type_other': '',
         'description': 'posted over someone else',
         'owner': garment.owner_id,
-        'photo_id': garment.photo_id,
         'id': garment.pk,
     }
 

@@ -513,26 +513,26 @@ No schema changes. The middleware is a behaviour change for anonymous visitors o
 
 #### Automated
 
-- [x] 2.1 The risk #1 folder passes
-- [x] 2.2 Full suite passes
-- [x] 2.3 Every registry route is exercised by the anonymous, stranger and photo contracts
-- [x] 2.4 Lint and format are clean
+- [x] 2.1 The risk #1 folder passes — 379b52c
+- [x] 2.2 Full suite passes — 379b52c
+- [x] 2.3 Every registry route is exercised by the anonymous, stranger and photo contracts — 379b52c
+- [x] 2.4 Lint and format are clean — 379b52c
 
 #### Manual
 
-- [x] 2.5 Sabotage checks (a)–(d) each fail the named test, then reverted
+- [x] 2.5 Sabotage checks (a)–(d) each fail the named test, then reverted — 379b52c
 
 ### Phase 3: Risk #2 — foreign-id writes
 
 #### Automated
 
-- [ ] 3.1 The risk #2 folder passes
-- [ ] 3.2 Full suite passes
-- [ ] 3.3 Lint and format are clean
+- [x] 3.1 The risk #2 folder passes
+- [x] 3.2 Full suite passes
+- [x] 3.3 Lint and format are clean
 
 #### Manual
 
-- [ ] 3.4 Sabotage checks (a)–(b) each fail the named test, then reverted
+- [x] 3.4 Sabotage checks (a)–(b) each fail the named test, then reverted
 
 ### Phase 4: Cookbook and test guide
 
