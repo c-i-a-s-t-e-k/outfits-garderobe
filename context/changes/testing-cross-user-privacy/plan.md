@@ -538,8 +538,8 @@ No schema changes. The middleware is a behaviour change for anonymous visitors o
 
 #### Automated
 
-- [x] 4.1 The guide files exist and §6.1 no longer says TBD
-- [x] 4.2 Full suite still passes
+- [x] 4.1 The guide files exist and §6.1 no longer says TBD — 9ea8e05
+- [x] 4.2 Full suite still passes — 9ea8e05
 
 #### Manual
 
