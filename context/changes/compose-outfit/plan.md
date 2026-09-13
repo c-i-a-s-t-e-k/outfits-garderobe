@@ -488,76 +488,76 @@ Bring the branch up to date with `master`, open a pull request instead of pushin
 
 #### Automated
 
-- [ ] 1.1 The migration applies cleanly: `uv run python manage.py migrate`
-- [ ] 1.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 1.3 The model tests pass: `uv run pytest outfits/tests/test_model.py`
-- [ ] 1.4 The full suite still passes: `uv run pytest`
-- [ ] 1.5 System checks pass: `uv run python manage.py check`
-- [ ] 1.6 Linting passes: `uv run ruff check .`
-- [ ] 1.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 1.1 The migration applies cleanly: `uv run python manage.py migrate` — bdc4d87
+- [x] 1.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run` — bdc4d87
+- [x] 1.3 The model tests pass: `uv run pytest outfits/tests/test_model.py` — bdc4d87
+- [x] 1.4 The full suite still passes: `uv run pytest` — bdc4d87
+- [x] 1.5 System checks pass: `uv run python manage.py check` — bdc4d87
+- [x] 1.6 Linting passes: `uv run ruff check .` — bdc4d87
+- [x] 1.7 Formatting is clean: `uv run ruff format --check .` — bdc4d87
 
 #### Manual
 
-- [ ] 1.8 In `/admin/`, an outfit with a blank name saves as `outfit-1`
-- [ ] 1.9 In `/admin/`, adding another user's garment id to an outfit is refused
+- [x] 1.8 In `/admin/`, an outfit with a blank name saves as `outfit-1` — e239e76
+- [x] 1.9 In `/admin/`, adding another user's garment id to an outfit is refused — e239e76
 
 ### Phase 2: Compose and detail pages
 
 #### Automated
 
-- [ ] 2.1 The view tests pass: `uv run pytest outfits/tests/test_views.py`
-- [ ] 2.2 The full suite passes: `uv run pytest`
-- [ ] 2.3 System checks pass: `uv run python manage.py check`
-- [ ] 2.4 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 2.5 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [ ] 2.6 Linting passes: `uv run ruff check .`
-- [ ] 2.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 2.1 The view tests pass: `uv run pytest outfits/tests/test_views.py` — 8aba5bd
+- [x] 2.2 The full suite passes: `uv run pytest` — 8aba5bd
+- [x] 2.3 System checks pass: `uv run python manage.py check` — 8aba5bd
+- [x] 2.4 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run` — 8aba5bd
+- [x] 2.5 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput` — 8aba5bd
+- [x] 2.6 Linting passes: `uv run ruff check .` — 8aba5bd
+- [x] 2.7 Formatting is clean: `uv run ruff format --check .` — 8aba5bd
 
 #### Manual
 
-- [ ] 2.8 Composing an outfit from three garments with a typed name saves and redirects with "Outfit saved."
-- [ ] 2.9 Ticking and unticking tiles updates the outline and the "N selected" count without JavaScript
-- [ ] 2.10 Saving with one garment ticked shows the error and keeps the selection
-- [ ] 2.11 The detail page shows every garment of a seven-garment outfit
-- [ ] 2.12 At 360 px in headless Chromium the picker shows two tiles per row, the save bar stays visible, and nothing scrolls horizontally
-- [ ] 2.13 A second account gets 404 on the first account's detail URL
+- [x] 2.8 Composing an outfit from three garments with a typed name saves and redirects with "Outfit saved." — e239e76
+- [x] 2.9 Ticking and unticking tiles updates the outline and the "N selected" count without JavaScript — e239e76
+- [x] 2.10 Saving with one garment ticked shows the error and keeps the selection — e239e76
+- [x] 2.11 The detail page shows every garment of a seven-garment outfit — e239e76
+- [x] 2.12 At 360 px in headless Chromium the picker shows two tiles per row, the save bar stays visible, and nothing scrolls horizontally — e239e76
+- [x] 2.13 A second account gets 404 on the first account's detail URL — e239e76
 
 ### Phase 3: Wardrobe grid and landing
 
 #### Automated
 
-- [ ] 3.1 The view tests pass: `uv run pytest outfits/tests/test_views.py`
-- [ ] 3.2 The updated smoke suite passes: `uv run pytest accounts/tests/`
-- [ ] 3.3 The full suite passes: `uv run pytest`
-- [ ] 3.4 System checks pass: `uv run python manage.py check`
-- [ ] 3.5 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [ ] 3.6 Linting passes: `uv run ruff check .`
-- [ ] 3.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 3.1 The view tests pass: `uv run pytest outfits/tests/test_views.py` — f1ddd71
+- [x] 3.2 The updated smoke suite passes: `uv run pytest accounts/tests/` — f1ddd71
+- [x] 3.3 The full suite passes: `uv run pytest` — f1ddd71
+- [x] 3.4 System checks pass: `uv run python manage.py check` — f1ddd71
+- [x] 3.5 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput` — f1ddd71
+- [x] 3.6 Linting passes: `uv run ruff check .` — f1ddd71
+- [x] 3.7 Formatting is clean: `uv run ruff format --check .` — f1ddd71
 
 #### Manual
 
-- [ ] 3.8 Logging in lands on *Wardrobe*; the header shows *Wardrobe* then *Garments*
-- [ ] 3.9 A new outfit appears first in the grid after saving
-- [ ] 3.10 Tiles for two-, three-, four- and seven-garment outfits each read as one square, with `+3` readable
-- [ ] 3.11 A new account with no garments sees the "add at least 2 garments" state
-- [ ] 3.12 At 360 px in headless Chromium the grid shows two tiles per row with no horizontal scrolling
-- [ ] 3.13 Tapping a tile opens its detail page
+- [x] 3.8 Logging in lands on *Wardrobe*; the header shows *Wardrobe* then *Garments* — e239e76
+- [x] 3.9 A new outfit appears first in the grid after saving — e239e76
+- [x] 3.10 Tiles for two-, three-, four- and seven-garment outfits each read as one square, with `+3` readable — e239e76
+- [x] 3.11 A new account with no garments sees the "add at least 2 garments" state — e239e76
+- [x] 3.12 At 360 px in headless Chromium the grid shows two tiles per row with no horizontal scrolling — e239e76
+- [x] 3.13 Tapping a tile opens its detail page — e239e76
 
 ### Phase 4: Pull request and production
 
 #### Automated
 
-- [ ] 4.1 The full suite passes on the rebased branch: `uv run pytest`
-- [ ] 4.2 Nothing is left unmigrated after the rebase: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 4.3 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
-- [ ] 4.4 The PR against `master` exists and contains only this slice's commits: `gh pr view feat/compose-outfit --json baseRefName,commits`
-- [ ] 4.5 The PR has no merge conflicts: `gh pr view feat/compose-outfit --json mergeable`
-- [ ] 4.6 After merge, the deployment reaches a healthy state — `/health/` returns 200
-- [ ] 4.7 After merge, deploy logs show `migrate` applying `outfits.0001_initial`
+- [x] 4.1 The full suite passes on the rebased branch: `uv run pytest`
+- [x] 4.2 Nothing is left unmigrated after the rebase: `uv run python manage.py makemigrations --check --dry-run`
+- [x] 4.3 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
+- [x] 4.4 The PR against `master` exists and contains only this slice's commits: `gh pr view feat/compose-outfit --json baseRefName,commits`
+- [x] 4.5 The PR has no merge conflicts: `gh pr view feat/compose-outfit --json mergeable`
+- [x] 4.6 After merge, the deployment reaches a healthy state — `/health/` returns 200 — e239e76
+- [x] 4.7 After merge, deploy logs show `migrate` applying `outfits.0001_initial` — e239e76
 
 #### Manual
 
-- [ ] 4.8 The developer reviews and merges the PR
-- [ ] 4.9 Against production, composing an outfit and seeing it first in the wardrobe grid works end to end
-- [ ] 4.10 A second production account sees an empty wardrobe, 404 on the first account's detail URL, and none of the first account's garments in its picker
-- [ ] 4.11 Production wardrobe and compose pages at 360 px in headless Chromium show two tiles per row with no horizontal scrolling
+- [x] 4.8 The developer reviews and merges the PR — e239e76
+- [x] 4.9 Against production, composing an outfit and seeing it first in the wardrobe grid works end to end — f8dba93
+- [x] 4.10 A second production account sees an empty wardrobe, 404 on the first account's detail URL, and none of the first account's garments in its picker — f8dba93
+- [x] 4.11 Production wardrobe and compose pages at 360 px in headless Chromium show two tiles per row with no horizontal scrolling — f8dba93

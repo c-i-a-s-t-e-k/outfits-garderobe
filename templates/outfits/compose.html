@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Compose outfit{% endblock %}
+
+{% block content %}
+  <h1>Compose outfit</h1>
+
+  {% if form %}
+    {% comment %}
+      No JavaScript: the selected outline and the "N selected" count are CSS
+      (:has(:checked) and a counter). The counter only shows increments that
+      come earlier in the document, so the bar that displays it must stay
+      after the picker.
+    {% endcomment %}
+    <form method="post" class="outfit-compose">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+
+      <div>
+        {{ form.name.label_tag }}
+        {{ form.name }}
+        <small>{{ form.name.help_text }}</small>
+        {{ form.name.errors }}
+      </div>
+
+      <p id="garments-label">Tick the garments that make the outfit.</p>
+      {{ form.garments.errors }}
+      <ul class="outfit-picker" aria-labelledby="garments-label">
+        {% for option in form.garments %}
+          <li>
+            <label for="{{ option.id_for_label }}">
+              {{ option.tag }}
+              {% comment %}
+                photo_url is the gate, never the file's .url. alt is empty
+                because the caption below names the garment.
+              {% endcomment %}
+              <img src="{{ option.data.value.instance.photo_url }}" alt=""
+                   loading="lazy" decoding="async">
+              <span>{{ option.data.value.instance.display_type }}</span>
+            </label>
+          </li>
+        {% endfor %}
+      </ul>
+
+      <div class="outfit-picker-bar">
+        <output class="outfit-picker-count" aria-live="polite"></output>
+        <button type="submit">Save outfit</button>
+      </div>
+      <p><a href="{% url 'wardrobe' %}">Cancel</a></p>
+    </form>
+  {% else %}
+    <p>Add at least 2 garments to compose an outfit.</p>
+    <p><a href="{% url 'garments:add' %}" role="button">Add garment</a></p>
+  {% endif %}
+{% endblock %}

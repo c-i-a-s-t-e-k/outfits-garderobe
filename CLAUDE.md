@@ -23,6 +23,13 @@ Outfits Garderobe is a Django 6 wardrobe app where users compose and revisit *ou
 - A garment can belong to many outfits (many-to-many) — model accordingly.
 - Domain apps so far: `privatemedia` (the private media gate) and `accounts` (allauth adapter, signup form, root and wardrobe routes). Create further apps as the work needs them.
 
+## Deployment
+
+- Railway: `production` deploys `master` (`railway.toml`); changes land only through PRs.
+- Every PR gets a Railway PR environment with its own empty Postgres; its build is the PR status check. When that check is red, read the Railway deploy logs before touching code — see `context/foundation/infrastructure.md` §Preview Deploys.
+- The app's `DATABASE_URL` stays the reference `${{Postgres.DATABASE_URL}}` — a pasted connection string breaks every PR environment.
+- Railway changes: confirm with the developer first and scope every call to an explicit environment id.
+
 <!-- BEGIN @przeprogramowani/10x-cli -->
 
 ## 10xDevs AI Toolkit - Module 3, Lesson 1

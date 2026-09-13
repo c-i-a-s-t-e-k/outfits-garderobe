@@ -80,7 +80,34 @@ The team chose Railway for its MCP integration and low Hobby tier cost. They shi
 
 ### Preview Deploys
 
-Railway creates a preview environment for any branch push (if auto-deploy is enabled) at a URL like `<service-name>-<branch>.up.railway.app`. Preview databases are separate snapshots of production (configurable). No automatic approval gate—a branch push immediately creates a live preview. For security on sensitive features, you must manually disable auto-deploy or use GitHub branch protection + manual approval before merge.
+*As configured (updated 2026-09-13):* Railway **PR Environments** are enabled; **Focused PR Environments** are disabled. Opening a PR against `master` creates an ephemeral environment `outfits-garderobe-pr-<N>` that copies every service and variable from `production`, gives Postgres its own new, empty volume (no production data), builds the PR branch, runs the pre-deploy `migrate`, and reports the result to the PR as the status check `outfits-garderobe - outfits-garderobe`. The environment and its volumes are deleted when the PR is merged or closed.
+
+What this implies:
+
+- **A red PR check can be an environment problem, not a code problem.** Read the failure stage in the Railway deploy logs and the Railway bot's comment on the PR before changing code.
+- **Variables must be references, not pasted values.** The app's `DATABASE_URL` is `${{Postgres.DATABASE_URL}}` so each environment resolves to its own Postgres. A pasted URL carries production's host and password into the PR environment and `migrate` fails with `password authentication failed for user "postgres"`.
+- **Production secrets are copied too.** PR environments inherit keys such as `BREVO_API_KEY`, so a preview can send real e-mail.
+- **Don't turn Focused PR Environments back on.** It deploys only services whose files the PR changed; Postgres has no files, so it is skipped ("not affected by this PR" in the bot comment) and `migrate` fails with `failed to resolve host 'postgres.railway.internal'`. A skipped Postgres can only be started from the PR environment's canvas (*Deploy*); attaching a volume to it through the API or CLI returns a volume id but attaches nothing.
+
+History: first hit on PR #2 (S-03); both fixes above were applied on 2026-09-13.
+
+### Watch paths (docs-only changes skip deploys)
+
+*As configured (2026-09-13):* the `outfits-garderobe` service in `production` has watch paths set in its **service settings** (not in `railway.toml`):
+
+```gitignore
+**
+!/context/**
+!/.claude/**
+!/*.md
+```
+
+A push to `master` whose changed files all match an exclusion creates no deployment. Before this, the docs-only commit `29fe28a` triggered a full production build and deploy.
+
+- **Why service settings, not `railway.toml`:** Railway deprecated Config as Code, and `railway.toml` stops applying on **2026-12-01**. Migrating what that file carries (`migrate` pre-deploy, gunicorn start command, healthcheck) is tracked in Jira OG-10.
+- **Exclude, don't enumerate.** The first rule `**` watches everything, and later rules only remove paths. A new code directory therefore deploys without anyone remembering to add it. Gitignore negations only work after an including rule.
+- **Unverified: PR environments.** Watch paths are documented for push deploys and for Focused PR Environments (disabled here, see above). Whether a PR that only touches `context/` still creates `outfits-garderobe-pr-<N>` with a new Postgres was not known on 2026-09-13. The first context-only PR is the test. If it still spins up an environment, the cost is accepted and tracked in Jira.
+- **Context lands on `master` only through PRs.** Watch paths remove the deploy cost, not the PR rule from CLAUDE.md.
 
 ### Secrets
 
