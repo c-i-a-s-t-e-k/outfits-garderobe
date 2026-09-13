@@ -510,34 +510,34 @@ Give gunicorn enough workers that one upload cannot block everyone else, deploy,
 
 #### Automated
 
-- [x] 1.1 The new processing tests pass: `uv run pytest privatemedia/tests/test_processing.py`
-- [x] 1.2 The full suite still passes: `uv run pytest`
-- [x] 1.3 System checks pass: `uv run python manage.py check`
-- [x] 1.4 Linting passes: `uv run ruff check .`
-- [x] 1.5 Formatting is clean: `uv run ruff format --check .`
-- [x] 1.6 pillow-heif introduces no known vulnerability: `uv run pip-audit`
+- [x] 1.1 The new processing tests pass: `uv run pytest privatemedia/tests/test_processing.py` — 48906bb
+- [x] 1.2 The full suite still passes: `uv run pytest` — 48906bb
+- [x] 1.3 System checks pass: `uv run python manage.py check` — 48906bb
+- [x] 1.4 Linting passes: `uv run ruff check .` — 48906bb
+- [x] 1.5 Formatting is clean: `uv run ruff format --check .` — 48906bb
+- [x] 1.6 pillow-heif introduces no known vulnerability: `uv run pip-audit` — 48906bb
 
 #### Manual
 
-- [x] 1.7 A real iPhone HEIC and a real Android JPEG normalize upright, with natural colours, under ~500 KB, with no EXIF
-- [x] 1.8 Normalizing a 12 MP camera JPEG takes under one second locally
+- [x] 1.7 A real iPhone HEIC and a real Android JPEG normalize upright, with natural colours, under ~500 KB, with no EXIF — 48906bb
+- [x] 1.8 Normalizing a 12 MP camera JPEG takes under one second locally — 48906bb
 
 ### Phase 2: `Garment` model
 
 #### Automated
 
-- [ ] 2.1 The migration applies cleanly: `uv run python manage.py migrate`
-- [ ] 2.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 2.3 The model tests pass: `uv run pytest garments/tests/test_model.py`
-- [ ] 2.4 The full suite still passes: `uv run pytest`
-- [ ] 2.5 System checks pass: `uv run python manage.py check`
-- [ ] 2.6 Linting passes: `uv run ruff check .`
-- [ ] 2.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 2.1 The migration applies cleanly: `uv run python manage.py migrate`
+- [x] 2.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
+- [x] 2.3 The model tests pass: `uv run pytest garments/tests/test_model.py`
+- [x] 2.4 The full suite still passes: `uv run pytest`
+- [x] 2.5 System checks pass: `uv run python manage.py check`
+- [x] 2.6 Linting passes: `uv run ruff check .`
+- [x] 2.7 Formatting is clean: `uv run ruff format --check .`
 
 #### Manual
 
-- [ ] 2.8 In `/admin/`, *Other* with the text "shirt" saves as *Shirt*
-- [ ] 2.9 The admin refuses *Other* with no text and shows the error on that field
+- [x] 2.8 In `/admin/`, *Other* with the text "shirt" saves as *Shirt*
+- [x] 2.9 The admin refuses *Other* with no text and shows the error on that field
 
 ### Phase 3: Add and list pages
 

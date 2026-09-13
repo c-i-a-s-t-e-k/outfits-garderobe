@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     'anymail',
     'accounts',
     'privatemedia',
+    'garments',
 ]
 
 MIDDLEWARE = [
