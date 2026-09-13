@@ -64,6 +64,22 @@ The suite has its own settings module, `outfits_garderobe.settings_test`, which
 stubs the deploy-time environment variables — so `uv run pytest` works without
 any of the exports above.
 
+### Pre-commit gate
+
+Install the git hook once per clone:
+
+```bash
+uv run pre-commit install
+```
+
+Each commit then runs, on the staged files only, `ruff check`, `ruff format
+--check` and the affected tests (`scripts/pytest_staged.py`): the tests of an
+app you touched, of every app that imports it, and the risk tests in `tests/`;
+or the full suite when a shared file (settings, `conftest.py`, `tests/`,
+dependencies, shared templates) is staged. Docs-only
+commits skip all three. Run it by hand with `uv run pre-commit run`; fix format
+failures with `uv run ruff format .`.
+
 ## Configuration
 
 Settings are read from environment variables; see

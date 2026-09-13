@@ -15,6 +15,7 @@ Outfits Garderobe is a Django 6 wardrobe app where users compose and revisit *ou
 - Tests: `uv run pytest` (pytest-django; settings come from `pyproject.toml`). Single test: `uv run pytest path/to/test.py::TestClass::test_method`.
 - Lint/format: `uv run ruff check .` and `uv run ruff format .`.
 - Security audit: `uv run pip-audit`.
+- Pre-commit gate (`.pre-commit-config.yaml`, install with `uv run pre-commit install`): ruff check + format check and affected tests (apps + `tests/` risk suite) on staged files. Never bypass it with `--no-verify`; fix the reported failure instead.
 
 ## Conventions & gotchas
 
