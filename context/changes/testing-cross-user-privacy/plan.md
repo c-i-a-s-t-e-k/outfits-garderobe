@@ -507,7 +507,7 @@ No schema changes. The middleware is a behaviour change for anonymous visitors o
 #### Manual
 
 - [x] 1.6 runserver logged-out smoke: health 200, root to login, allauth screens render, guarded pages redirect with next — 1e4efee
-- [ ] 1.7 Railway healthcheck green after the deploy that ships this change
+- [x] 1.7 Railway healthcheck green after the deploy that ships this change — 1e4efee
 
 ### Phase 2: Risk #1 — cross-user visibility
 
