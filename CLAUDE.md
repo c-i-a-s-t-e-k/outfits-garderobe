@@ -23,12 +23,12 @@ Outfits Garderobe is a Django 6 wardrobe app where users compose and revisit *ou
 - A garment can belong to many outfits (many-to-many) — model accordingly.
 - Domain apps so far: `privatemedia` (the private media gate) and `accounts` (allauth adapter, signup form, root and wardrobe routes). Create further apps as the work needs them.
 
-## Deployment & pull requests
+## Deployment
 
-- **Railway, project `outfits-garderobe`.** Environment `production` deploys `master` on every push (config in `railway.toml`: pre-deploy `migrate`, `/health/` check). Work reaches `master` through PRs, never a direct push.
-- **Every PR gets a test build.** Railway PR environments are on: opening a PR creates an ephemeral environment `outfits-garderobe-pr-<N>` that builds the PR branch, runs the pre-deploy `migrate` against **its own, empty Postgres** (not production data), and reports the result to the PR as the status check `outfits-garderobe - outfits-garderobe`. The environment is removed when the PR closes.
-- **A red PR check is not automatically a code failure.** Read the failure stage in the Railway deploy logs and the Railway bot's comment on the PR first. Known infra case (PR #2, 2026-09-13): with *Focused PR Environments* on, Railway deploys only services whose files the PR changed and skips the rest — the bot comment lists "Postgres" under "not affected by this PR" — so the app's pre-deploy `migrate` fails with `failed to resolve host 'postgres.railway.internal'`. The fix is the Railway setting, not the code: Focused PR Environments are turned off (Project Settings → Environments) so every PR gets its own Postgres. For an already-open PR, deploy the skipped Postgres from that environment's canvas, then redeploy the app. Don't try to attach a volume to the skipped Postgres through the API or CLI — it returns a volume id but attaches nothing.
-- Changes to Railway resources (volumes, deploys, variables) are outward-facing — confirm with the developer first, and always scope them to one environment id so `production` is never touched by accident.
+- Railway: `production` deploys `master` (`railway.toml`); changes land only through PRs.
+- Every PR gets a Railway PR environment with its own empty Postgres; its build is the PR status check. When that check is red, read the Railway deploy logs before touching code — see `context/foundation/infrastructure.md` §Preview Deploys.
+- The app's `DATABASE_URL` stays the reference `${{Postgres.DATABASE_URL}}` — a pasted connection string breaks every PR environment.
+- Railway changes: confirm with the developer first and scope every call to an explicit environment id.
 
 <!-- BEGIN @przeprogramowani/10x-cli -->
 
