@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 
 from outfits.models import Outfit, Tag
-from outfits.tests.test_model import make_garment
+from tests.factories import make_garment
 
 pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('temp_media_root')]
 

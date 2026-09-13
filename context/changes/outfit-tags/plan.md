@@ -571,9 +571,9 @@ Never merge the PR.
 
 #### Automated
 
-- [ ] 4.1 The full suite passes on the rebased branch: `uv run pytest`
-- [ ] 4.2 Nothing is left unmigrated after the rebase: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 4.3 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
+- [x] 4.1 The full suite passes on the rebased branch: `uv run pytest`
+- [x] 4.2 Nothing is left unmigrated after the rebase: `uv run python manage.py makemigrations --check --dry-run`
+- [x] 4.3 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
 - [ ] 4.4 The PR against `master` exists and contains only this slice's commits: `gh pr view feat/outfit-tags --json baseRefName,commits`
 - [ ] 4.5 The PR has no merge conflicts: `gh pr view feat/outfit-tags --json mergeable`
 - [ ] 4.6 The Railway PR environment build (the PR status check) is green

@@ -7,10 +7,11 @@ import pytest
 from django.db.models import F, Q
 
 from garments.models import Garment
-from outfits.models import Outfit
+from outfits.models import Outfit, Tag
 from privatemedia.models import PrivateImage
 
 OutfitGarment = Outfit.garments.through
+OutfitTag = Outfit.tags.through
 
 
 @pytest.fixture
@@ -18,7 +19,7 @@ def snapshot_of():
     """A comparable picture of everything one user owns, links included.
 
     Links count if either end is the user's, so a foreign outfit gaining one of
-    their garments shows up as a change too.
+    their garments or tags shows up as a change too.
     """
 
     def snapshot(user):
@@ -26,9 +27,15 @@ def snapshot_of():
             'images': list(PrivateImage.objects.filter(owner=user).order_by('pk').values()),
             'garments': list(Garment.objects.filter(owner=user).order_by('pk').values()),
             'outfits': list(Outfit.objects.filter(owner=user).order_by('pk').values()),
+            'tags': list(Tag.objects.filter(owner=user).order_by('pk').values()),
             'links': sorted(
                 OutfitGarment.objects.filter(Q(outfit__owner=user) | Q(garment__owner=user))
                 .values_list('outfit_id', 'garment_id')
+                .distinct()
+            ),
+            'tag_links': sorted(
+                OutfitTag.objects.filter(Q(outfit__owner=user) | Q(tag__owner=user))
+                .values_list('outfit_id', 'tag_id')
                 .distinct()
             ),
         }
@@ -50,6 +57,12 @@ def assert_no_cross_owner_links():
         assert not mixed_links.exists(), (
             f'outfit–garment links across owners: '
             f'{list(mixed_links.values_list("outfit_id", "garment_id"))}'
+        )
+
+        mixed_tag_links = OutfitTag.objects.exclude(outfit__owner=F('tag__owner'))
+        assert not mixed_tag_links.exists(), (
+            f'outfit–tag links across owners: '
+            f'{list(mixed_tag_links.values_list("outfit_id", "tag_id"))}'
         )
 
     return check

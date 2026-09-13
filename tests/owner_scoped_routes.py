@@ -11,6 +11,8 @@ A declaration says:
 - `seed(user)`: builds that user's data and returns the `reverse` kwargs plus the
   markers — names, descriptions, photo URLs, pks — that must never reach anyone else;
 - `shows_photos`: whether the owner's page renders their photos as `<img src>`;
+- `post_only`: the view answers POST alone (a GET is 405), so there is no page to
+  inspect and scenarios probe it with a POST instead;
 - `foreign_payload(seeded, requester)` (writes only): a POST body pointing at the
   seeded user's objects. `requester` is the user posting it, or `None` for an
   anonymous visitor, who has nothing of their own to mix in.
@@ -31,6 +33,7 @@ from django.urls import URLPattern, get_resolver
 from PIL import Image
 
 from garments.models import GarmentType
+from outfits.models import Tag
 from tests.factories import make_garment, make_outfit
 
 
@@ -48,6 +51,7 @@ class OwnerScopedRoute:
     seed: Callable[..., Seeded]
     shows_photos: bool
     foreign_payload: Callable[[Seeded, object], dict] | None = None
+    post_only: bool = False
 
 
 @dataclass(frozen=True)
@@ -71,6 +75,8 @@ def _seed_wardrobe(user, kwargs_for=lambda garments, outfit: {}):
         make_garment(user, type=GarmentType.SHOES, description=f'{user.username} brown loafers'),
     ]
     outfit = make_outfit(user, garments=garments, name=f'{user.username} autumn walk')
+    tag = Tag.objects.create(owner=user, name=f'{user.username} letnie')
+    outfit.tags.add(tag)
     markers = [
         *(garment.description for garment in garments),
         *(garment.photo_url for garment in garments),
@@ -78,6 +84,8 @@ def _seed_wardrobe(user, kwargs_for=lambda garments, outfit: {}):
         outfit.name,
         str(outfit.pk),
         outfit.get_absolute_url(),
+        tag.name,
+        str(tag.pk),
     ]
     return Seeded(
         kwargs=kwargs_for(garments, outfit),
@@ -89,6 +97,13 @@ def _seed_wardrobe(user, kwargs_for=lambda garments, outfit: {}):
 
 def _seed_outfit_detail(user):
     return _seed_wardrobe(user, kwargs_for=lambda garments, outfit: {'pk': outfit.pk})
+
+
+def _seed_outfit_tag(user):
+    return _seed_wardrobe(
+        user,
+        kwargs_for=lambda garments, outfit: {'pk': outfit.pk, 'tag_pk': outfit.tags.get().pk},
+    )
 
 
 def _seed_photo(user):
@@ -129,6 +144,19 @@ def _compose_payload(seeded, requester):
     return {'name': 'hostile compose', 'garments': garment_ids}
 
 
+def _tags_add_payload(seeded, requester):
+    """Tag names, including the seeded user's own tag spelled exactly as they typed it."""
+    names = [seeded.outfits[0].tags.get().name]
+    if requester is not None:
+        names.insert(0, f'{requester.username} letnie')
+    return {'tag_names': ', '.join(names)}
+
+
+def _tag_remove_payload(seeded, requester):
+    """The seeded user's outfit and tag are in the URL; the body carries nothing."""
+    return {}
+
+
 ROUTES = {
     'wardrobe': OwnerScopedRoute(kind='read', seed=_seed_wardrobe, shows_photos=True),
     'outfits:detail': OwnerScopedRoute(kind='read', seed=_seed_outfit_detail, shows_photos=True),
@@ -146,6 +174,20 @@ ROUTES = {
         seed=_seed_wardrobe,
         shows_photos=True,
         foreign_payload=_compose_payload,
+    ),
+    'outfits:tags_add': OwnerScopedRoute(
+        kind='write',
+        seed=_seed_outfit_detail,
+        shows_photos=False,
+        foreign_payload=_tags_add_payload,
+        post_only=True,
+    ),
+    'outfits:tag_remove': OwnerScopedRoute(
+        kind='write',
+        seed=_seed_outfit_tag,
+        shows_photos=False,
+        foreign_payload=_tag_remove_payload,
+        post_only=True,
     ),
 }
 

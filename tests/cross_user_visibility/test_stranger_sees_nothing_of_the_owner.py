@@ -2,7 +2,8 @@
 
 A route that takes the owner's id must answer the stranger exactly as it answers
 an id that never existed — same status, same bytes, no validator header — so a
-probe cannot even learn the object exists. A route without an id shows the
+probe cannot even learn the object exists. A POST-only route is probed with its
+hostile payload instead of a GET. A route without an id shows the
 stranger their own data and none of the owner's.
 """
 
@@ -26,17 +27,22 @@ def test_stranger_learns_nothing_of_the_owner(client, owner, stranger, name):
     theirs = declaration.seed(owner)
 
     if theirs.kwargs:
-        _assert_owner_id_answers_like_a_missing_one(client, stranger, name, theirs)
+        _assert_owner_id_answers_like_a_missing_one(client, stranger, name, theirs, declaration)
     else:
         _assert_page_shows_only_the_strangers_own_data(client, owner, stranger, name, theirs)
 
 
-def _assert_owner_id_answers_like_a_missing_one(client, stranger, name, theirs):
+def _assert_owner_id_answers_like_a_missing_one(client, stranger, name, theirs, declaration):
     client.force_login(stranger)
     missing_kwargs = {key: uuid.uuid4() for key in theirs.kwargs}
 
-    not_yours = client.get(reverse(name, kwargs=theirs.kwargs))
-    never_existed = client.get(reverse(name, kwargs=missing_kwargs))
+    if declaration.post_only:
+        payload = declaration.foreign_payload(theirs, stranger)
+        not_yours = client.post(reverse(name, kwargs=theirs.kwargs), payload)
+        never_existed = client.post(reverse(name, kwargs=missing_kwargs), payload)
+    else:
+        not_yours = client.get(reverse(name, kwargs=theirs.kwargs))
+        never_existed = client.get(reverse(name, kwargs=missing_kwargs))
 
     assert not_yours.status_code == never_existed.status_code == 404
     assert not_yours.content == never_existed.content
