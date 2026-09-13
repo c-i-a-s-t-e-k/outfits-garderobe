@@ -20,6 +20,7 @@ from django.http import JsonResponse
 from django.urls import include, path
 
 from accounts import views as account_views
+from outfits import views as outfit_views
 
 
 def health(request):
@@ -29,10 +30,11 @@ def health(request):
 urlpatterns = [
     path('health/', health),
     # `/` carries no content — it reads authentication state and redirects.
-    # `wardrobe` is reserved here so S-02 and S-03 fill a page in rather than
-    # relocate one; the route name is what survives the move into its own app.
+    # `wardrobe` was reserved here as a placeholder; S-03 filled it in with the
+    # outfit grid. It keeps its name outside the `outfits` namespace because
+    # LOGIN_REDIRECT_URL and every "back" link reverse it by that name.
     path('', account_views.home, name='home'),
-    path('wardrobe/', account_views.wardrobe, name='wardrobe'),
+    path('wardrobe/', outfit_views.wardrobe, name='wardrobe'),
     # Compose and outfit detail pages live under the same prefix.
     path('wardrobe/', include('outfits.urls')),
     path('admin/', admin.site.urls),

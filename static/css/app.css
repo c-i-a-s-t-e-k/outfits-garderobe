@@ -56,10 +56,12 @@
   margin-bottom: 0;
 }
 
-/* Garment list and outfit picker: as many ~9rem tiles per row as fit, two on
-   a 360px phone. The picker is the same grid with a checkbox in each tile. */
+/* Garment list, outfit picker and outfit grid: as many ~9rem tiles per row as
+   fit, two on a 360px phone. The picker is the same grid with a checkbox in
+   each tile; the outfit grid puts a collage in the same footprint. */
 .garment-grid,
-.outfit-picker {
+.outfit-picker,
+.outfit-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
   gap: var(--pico-spacing);
@@ -68,7 +70,8 @@
 }
 
 .garment-grid > li,
-.outfit-picker > li {
+.outfit-picker > li,
+.outfit-grid > li {
   list-style: none;
 }
 
@@ -135,6 +138,75 @@
 .outfit-picker-bar button {
   width: auto;
   margin-bottom: 0;
+}
+
+/* Outfit tile: a square collage of up to four garment photos that reads as one
+   tile and keeps a garment tile's footprint, so S-04 can drop a single photo
+   into the same slot. Layout by photo count: two side by side, three with the
+   first spanning the left column, four in a 2×2. */
+.outfit-grid a {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.outfit-preview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--pico-border-radius);
+  background: var(--pico-muted-border-color);
+}
+
+.outfit-preview > * {
+  min-width: 0;
+  min-height: 0;
+}
+
+.outfit-preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.outfit-preview-1 > *,
+.outfit-preview-0 > * {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+}
+
+.outfit-preview-2 > * {
+  grid-row: 1 / -1;
+}
+
+.outfit-preview-3 > :first-child {
+  grid-row: 1 / -1;
+}
+
+/* The "+N" badge covers the last cell with a dark veil so it reads on any photo. */
+.outfit-preview-cell {
+  position: relative;
+  display: block;
+}
+
+.outfit-preview-more {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.outfit-name {
+  display: block;
+  margin-top: 0.25rem;
 }
 
 /* The Other field is only relevant once Other is chosen. Browsers without

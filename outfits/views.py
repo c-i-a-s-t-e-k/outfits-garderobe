@@ -1,4 +1,4 @@
-"""Composing an outfit and reading one back — for its owner only."""
+"""The wardrobe grid, composing an outfit and reading one back — for its owner only."""
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -13,6 +13,18 @@ from outfits.models import Outfit
 
 class OutfitNameTaken(Exception):
     """A typed name that was free when the form validated is taken at save time."""
+
+
+@login_required
+def wardrobe(request):
+    # Two queries however many outfits and garments there are: the outfits and
+    # one prefetch of their garments. Preview order is computed in Python, and
+    # each tile's images are photo_url, which needs no photo row.
+    outfits = Outfit.objects.filter(owner=request.user).prefetch_related('garments')
+    can_compose = Garment.objects.filter(owner=request.user).count() >= MIN_GARMENTS
+    return render(
+        request, 'outfits/wardrobe.html', {'outfits': outfits, 'can_compose': can_compose}
+    )
 
 
 @login_required

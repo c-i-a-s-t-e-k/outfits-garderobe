@@ -5,6 +5,7 @@ Every assertion re-reads the database rather than trusting a status code.
 
 import re
 import uuid
+from datetime import timedelta
 
 import pytest
 from django.conf import settings
@@ -250,3 +251,136 @@ def test_detail_shows_every_garment_to_its_owner_only(client, owner, stranger):
     client.force_login(stranger)
     assert client.get(outfit.get_absolute_url()).status_code == 404
     assert client.get(_detail_url(uuid.uuid4())).status_code == 404
+
+
+# --- the wardrobe grid -------------------------------------------------------
+
+
+def _tile(page, outfit):
+    """The <li> that links to this outfit, or None."""
+    match = re.search(
+        rf'<li>\s*<a href="{outfit.get_absolute_url()}".*?</li>', page, flags=re.DOTALL
+    )
+    return match.group(0) if match else None
+
+
+def _image_urls(fragment):
+    return re.findall(r'<img src="([^"]+)"', fragment)
+
+
+def test_grid_lists_own_outfits_newest_first_and_nothing_of_anyone_else(
+    client, owner, stranger, wardrobe
+):
+    older = Outfit.objects.create(owner=owner, name='Older look')
+    older.garments.set(wardrobe)
+    newer = Outfit.objects.create(owner=owner, name='Newer look')
+    newer.garments.set(wardrobe)
+    # Two inserts can share a timestamp on a coarse clock; pin the order.
+    Outfit.objects.filter(pk=older.pk).update(created_at=newer.created_at - timedelta(minutes=1))
+
+    client.force_login(owner)
+    page = client.get(WARDROBE_URL).content.decode()
+    assert page.index('Newer look') < page.index('Older look')
+    for outfit in (older, newer):
+        assert _tile(page, outfit)
+
+    client.force_login(stranger)
+    page = client.get(WARDROBE_URL).content.decode()
+    for outfit in (older, newer):
+        assert outfit.name not in page
+        assert outfit.get_absolute_url() not in page
+    for garment in wardrobe:
+        assert garment.photo_url not in page
+
+
+def test_tile_shows_four_photos_in_type_order_and_counts_the_rest(client, owner):
+    outfit = Outfit.objects.create(owner=owner, name='Everything')
+    by_type = {
+        type: make_garment(owner, type=type)
+        for type in [
+            GarmentType.SHOES,
+            GarmentType.ACCESSORY,
+            GarmentType.TROUSERS,
+            GarmentType.TSHIRT,
+            GarmentType.OUTERWEAR,
+            GarmentType.SKIRT,
+            GarmentType.SHIRT,
+        ]
+    }
+    outfit.garments.set(by_type.values())
+    client.force_login(owner)
+
+    tile = _tile(client.get(WARDROBE_URL).content.decode(), outfit)
+
+    assert _image_urls(tile) == [
+        by_type[type].photo_url
+        for type in [
+            GarmentType.OUTERWEAR,
+            GarmentType.SHIRT,
+            GarmentType.TSHIRT,
+            GarmentType.TROUSERS,
+        ]
+    ]
+    assert '+3' in tile
+    assert 'outfit-preview-4' in tile
+
+
+def test_tile_of_two_garments_shows_both_and_no_badge(client, owner, wardrobe):
+    outfit = Outfit.objects.create(owner=owner, name='Pair')
+    outfit.garments.set(wardrobe)
+    client.force_login(owner)
+
+    tile = _tile(client.get(WARDROBE_URL).content.decode(), outfit)
+
+    assert sorted(_image_urls(tile)) == sorted(g.photo_url for g in wardrobe)
+    assert 'outfit-preview-more' not in tile
+    assert 'outfit-preview-2' in tile
+
+
+def test_tile_links_to_the_detail_page(client, owner, wardrobe):
+    outfit = Outfit.objects.create(owner=owner, name='Pair')
+    outfit.garments.set(wardrobe)
+    client.force_login(owner)
+
+    page = client.get(WARDROBE_URL).content.decode()
+
+    assert f'<a href="{_detail_url(outfit.pk)}"' in page
+    assert client.get(_detail_url(outfit.pk)).status_code == 200
+
+
+def test_empty_wardrobe_with_two_garments_offers_compose(client, owner, wardrobe):
+    client.force_login(owner)
+
+    page = client.get(WARDROBE_URL).content.decode()
+
+    assert 'No outfits yet' in page
+    assert COMPOSE_URL in page
+    assert 'outfit-grid' not in page
+
+
+def test_empty_wardrobe_with_one_garment_sends_to_add_garments(client, owner):
+    make_garment(owner)
+    client.force_login(owner)
+
+    page = client.get(WARDROBE_URL).content.decode()
+
+    assert 'Add at least 2 garments' in page
+    assert reverse('garments:add') in page
+    assert COMPOSE_URL not in page
+
+
+def test_grid_query_count_does_not_grow_with_outfits_or_garments(client, owner, wardrobe):
+    outfit = Outfit.objects.create(owner=owner)
+    outfit.garments.set(wardrobe)
+    client.force_login(owner)
+    with CaptureQueriesContext(connection) as one:
+        client.get(WARDROBE_URL)
+
+    extra = [make_garment(owner, type=type) for type in [GarmentType.TROUSERS] * 5]
+    for _ in range(4):
+        big = Outfit.objects.create(owner=owner)
+        big.garments.set(wardrobe + extra)
+    with CaptureQueriesContext(connection) as five:
+        client.get(WARDROBE_URL)
+
+    assert len(five.captured_queries) == len(one.captured_queries)

@@ -82,14 +82,14 @@ def test_root_sends_anonymous_visitors_to_login(client):
     assert response.headers['Location'] == settings.LOGIN_URL
 
 
-def test_root_sends_authenticated_visitors_to_the_garment_list(client, user):
-    """The garment list is the landing page until S-03 makes the wardrobe real."""
+def test_root_sends_authenticated_visitors_to_the_wardrobe(client, user):
+    """The outfit grid is the landing page — S-03 pointed `/` back at it."""
     client.force_login(user)
 
     response = client.get('/')
 
     assert response.status_code == 302
-    assert response.headers['Location'] == reverse('garments:list')
+    assert response.headers['Location'] == reverse('wardrobe')
 
 
 def test_wardrobe_renders_for_an_authenticated_visitor(client, user):
@@ -218,11 +218,11 @@ def test_unverified_account_cannot_log_in(client, django_user_model, password):
     assert client.get(reverse('wardrobe')).status_code == 302
 
 
-def test_verified_account_logs_in_and_lands_on_the_garment_list(client, user, password):
+def test_verified_account_logs_in_and_lands_on_the_wardrobe(client, user, password):
     response = client.post(
         reverse('account_login'),
         {'login': user.email, 'password': password},
     )
 
     assert response.status_code == 302
-    assert response.headers['Location'] == reverse('garments:list')
+    assert response.headers['Location'] == reverse('wardrobe')
