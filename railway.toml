@@ -8,8 +8,13 @@ preDeployCommand = ".venv/bin/python manage.py migrate"
 # own request through the private media gate — with one worker both queue
 # behind the upload. Each worker's memory peak includes decoding one photo
 # (HEIC has no draft mode, so a full-size decode), so check Railway memory
-# metrics before raising this. Keep in step with the Procfile.
-startCommand = ".venv/bin/gunicorn --workers 2 --bind 0.0.0.0:$PORT outfits_garderobe.wsgi:application"
+# metrics before raising this.
+# --timeout 120, not the default 30: a sync worker reports it is alive only
+# between requests, so one still receiving a full-size photo (no JS, or HEIC
+# the browser cannot shrink) over slow mobile data is killed mid-upload and
+# the garment is lost; 6 MB on Fast 4G measured 36.8 s.
+# Keep in step with the Procfile.
+startCommand = ".venv/bin/gunicorn --workers 2 --timeout 120 --bind 0.0.0.0:$PORT outfits_garderobe.wsgi:application"
 healthcheckPath = "/health/"
 healthcheckTimeout = 30
 restartPolicyType = "on_failure"
