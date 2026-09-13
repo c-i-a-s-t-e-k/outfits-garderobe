@@ -3,7 +3,13 @@ builder = "nixpacks"
 
 [deploy]
 preDeployCommand = ".venv/bin/python manage.py migrate"
-startCommand = ".venv/bin/gunicorn --bind 0.0.0.0:$PORT outfits_garderobe.wsgi:application"
+# Two sync workers, not gunicorn's default one: a slow mobile photo upload holds
+# its worker for the whole transfer, and every tile on the garment list is its
+# own request through the private media gate — with one worker both queue
+# behind the upload. Each worker's memory peak includes decoding one photo
+# (HEIC has no draft mode, so a full-size decode), so check Railway memory
+# metrics before raising this. Keep in step with the Procfile.
+startCommand = ".venv/bin/gunicorn --workers 2 --bind 0.0.0.0:$PORT outfits_garderobe.wsgi:application"
 healthcheckPath = "/health/"
 healthcheckTimeout = 30
 restartPolicyType = "on_failure"

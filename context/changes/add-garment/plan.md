@@ -556,36 +556,36 @@ Give gunicorn enough workers that one upload cannot block everyone else, deploy,
 
 - [x] 3.9 Logging in lands on the garment list; the header shows *Garments* — bf6b1d5
 - [x] 3.10 Adding a garment with a large desktop JPEG works and the new tile appears first with a "Garment added." message — bf6b1d5
-- [x] 3.11 Picking *Other* reveals the text field; picking another type hides it
+- [x] 3.11 Picking *Other* reveals the text field; picking another type hides it — 3fb2459
 - [x] 3.12 A form error shows next to the field — bf6b1d5
 - [x] 3.13 A second account sees an empty list and gets 404 on the first account's photo URL — bf6b1d5
-- [x] 3.14 At 360 px the list shows a tidy grid and the form fits without horizontal scrolling
+- [x] 3.14 At 360 px the list shows a tidy grid and the form fits without horizontal scrolling — 3fb2459
 - [x] 3.15 With JavaScript disabled the whole flow still works — bf6b1d5
 
 ### Phase 4: Browser-side photo shrinking
 
 #### Automated
 
-- [x] 4.1 The full suite passes: `uv run pytest`
-- [x] 4.2 `collectstatic` picks up the script under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [x] 4.3 Linting passes: `uv run ruff check .`
-- [x] 4.4 Formatting is clean: `uv run ruff format --check .`
+- [x] 4.1 The full suite passes: `uv run pytest` — 3fb2459
+- [x] 4.2 `collectstatic` picks up the script under manifest storage: `uv run python manage.py collectstatic --noinput` — 3fb2459
+- [x] 4.3 Linting passes: `uv run ruff check .` — 3fb2459
+- [x] 4.4 Formatting is clean: `uv run ruff format --check .` — 3fb2459
 
 #### Manual
 
-- [x] 4.5 In desktop Chrome with a 4+ MB JPEG, the POST body is well under 1 MB and the stored photo is upright
-- [x] 4.6 Under *Fast 4G* throttling, *Save* → list takes under five seconds
+- [x] 4.5 In desktop Chrome with a 4+ MB JPEG, the POST body is well under 1 MB and the stored photo is upright — 3fb2459
+- [x] 4.6 Under *Fast 4G* throttling, *Save* → list takes under five seconds — 3fb2459
 - [ ] 4.7 On a real iPhone (Safari) against local `runserver`, a freshly taken photo stores upright
 - [ ] 4.8 On a real Android phone (Chrome), both *Take photo* and *Choose from library* work
-- [x] 4.9 A HEIC file from a Mac in Chrome still saves
-- [x] 4.10 With JavaScript disabled, adding a garment still works
+- [x] 4.9 A HEIC file from a Mac in Chrome still saves — 3fb2459
+- [x] 4.10 With JavaScript disabled, adding a garment still works — 3fb2459
 
 ### Phase 5: Production
 
 #### Automated
 
-- [ ] 5.1 The full suite passes on the commit being deployed: `uv run pytest`
-- [ ] 5.2 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
+- [x] 5.1 The full suite passes on the commit being deployed: `uv run pytest`
+- [x] 5.2 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
 - [ ] 5.3 The deployment reaches a healthy state — `/health/` returns 200 after deploy
 - [ ] 5.4 Deploy logs show pillow-heif installed, `collectstatic` and `migrate` completing, and two gunicorn workers booting
 
