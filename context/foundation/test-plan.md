@@ -78,7 +78,7 @@ orchestrator updates Status as artifacts appear on disk.
 
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|------------|-----------------|---------------|------------|--------|---------------|
-| 1 | Cross-user privacy contract | Prove no photo or owner data crosses accounts, on reads and writes, and make new owner-scoped views inherit the check before S-03 lands | #1, #2 | integration | change opened | testing-cross-user-privacy |
+| 1 | Cross-user privacy contract | Prove no photo or owner data crosses accounts, on reads and writes, and make new owner-scoped views inherit the check before S-03 lands | #1, #2 | integration | complete | testing-cross-user-privacy |
 | 2 | Upload abuse and deploy durability | Prove hostile images cannot take the service down, real phone photos survive, and production settings keep photos persistent and the deploy healthy | #3, #4 | unit + config pin tests | not started | — |
 | 3 | Outfit consistency and tag filtering | Prove garment deletion flags outfits incomplete without losing them, and tag filters return exactly the right own outfits — start only after roadmap S-05 and S-06 are done | #5, #6 | integration | not started | — |
 | 4 | Agent-loop guardrails and gates | Run lint + the relevant tests at edit time in the agent loop and block deploys on a red suite, since code is agent-written and no CI exists | cross-cutting | post-edit hook + pre-deploy gate | not started | — |
