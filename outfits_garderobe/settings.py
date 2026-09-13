@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'accounts',
     'privatemedia',
     'garments',
+    'outfits',
 ]
 
 MIDDLEWARE = [
@@ -277,10 +278,10 @@ ACCOUNT_PREVENT_ENUMERATION = False
 # since F-01, a URL that did not exist until this change created it.
 LOGIN_URL = '/accounts/login/'
 
-# These two are route names on purpose. Until the wardrobe is real, login lands
-# on the garment list; S-03 points it back at the outfit grid ('wardrobe') by
-# changing this one string, together with the redirect in accounts.views.home.
-LOGIN_REDIRECT_URL = 'garments:list'
+# These two are route names on purpose. Login lands on the outfit grid — the
+# `wardrobe` route, served by outfits.views since S-03 — as does `/` through
+# accounts.views.home; the two must keep pointing at the same place.
+LOGIN_REDIRECT_URL = 'wardrobe'
 LOGOUT_REDIRECT_URL = 'account_login'
 
 ACCOUNT_ADAPTER = 'accounts.adapter.AccountAdapter'

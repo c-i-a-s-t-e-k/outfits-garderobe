@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}{{ outfit.name }}{% endblock %}
+
+{% block content %}
+  <h1>{{ outfit.name }}</h1>
+  <p>Composed {{ outfit.created_at|date:"j F Y" }}.</p>
+
+  <ul class="garment-grid">
+    {% for garment in outfit.ordered_garments %}
+      <li>
+        <figure>
+          <img src="{{ garment.photo_url }}"
+               alt="{{ garment.display_type }}{% if garment.description %}: {{ garment.description }}{% endif %}"
+               loading="lazy" decoding="async">
+          <figcaption>
+            <strong>{{ garment.display_type }}</strong>
+            {% if garment.description %}<br>{{ garment.description }}{% endif %}
+          </figcaption>
+        </figure>
+      </li>
+    {% endfor %}
+  </ul>
+
+  <p><a href="{% url 'wardrobe' %}">Back to wardrobe</a></p>
+{% endblock %}

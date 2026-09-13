@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Wardrobe{% endblock %}
+
+{% block content %}
+  <h1>Your wardrobe</h1>
+
+  {% if can_compose %}
+    <p><a href="{% url 'outfits:compose' %}" role="button">Compose outfit</a></p>
+  {% else %}
+    <p>
+      Add at least 2 garments to compose an outfit.
+      <a href="{% url 'garments:add' %}">Add a garment</a>.
+    </p>
+  {% endif %}
+
+  {% if outfits %}
+    <ul class="outfit-grid">
+      {% for outfit in outfits %}
+        <li>
+          {% comment %}
+            aria-label keeps the link's accessible name to the outfit's name:
+            the preview images are decorative and the "+N" badge is a visual
+            hint. Until S-04 adds the user's own photo, every tile is this
+            collage of up to four garment photos in type order.
+          {% endcomment %}
+          <a href="{{ outfit.get_absolute_url }}" aria-label="{{ outfit.name }}">
+            <div class="outfit-preview outfit-preview-{{ outfit.preview_garments|length }}">
+              {% for garment in outfit.preview_garments %}
+                {% if forloop.last and outfit.hidden_garment_count %}
+                  <span class="outfit-preview-cell">
+                    <img src="{{ garment.photo_url }}" alt="" loading="lazy" decoding="async">
+                    <span class="outfit-preview-more">+{{ outfit.hidden_garment_count }}</span>
+                  </span>
+                {% else %}
+                  <img src="{{ garment.photo_url }}" alt="" loading="lazy" decoding="async">
+                {% endif %}
+              {% endfor %}
+            </div>
+            <span class="outfit-name">{{ outfit.name }}</span>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% elif can_compose %}
+    <p>No outfits yet. Compose your first one from the garments you added.</p>
+  {% endif %}
+{% endblock %}

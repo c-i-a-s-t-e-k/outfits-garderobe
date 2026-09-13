@@ -488,13 +488,13 @@ Bring the branch up to date with `master`, open a pull request instead of pushin
 
 #### Automated
 
-- [ ] 1.1 The migration applies cleanly: `uv run python manage.py migrate`
-- [ ] 1.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 1.3 The model tests pass: `uv run pytest outfits/tests/test_model.py`
-- [ ] 1.4 The full suite still passes: `uv run pytest`
-- [ ] 1.5 System checks pass: `uv run python manage.py check`
-- [ ] 1.6 Linting passes: `uv run ruff check .`
-- [ ] 1.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 1.1 The migration applies cleanly: `uv run python manage.py migrate` — bdc4d87
+- [x] 1.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run` — bdc4d87
+- [x] 1.3 The model tests pass: `uv run pytest outfits/tests/test_model.py` — bdc4d87
+- [x] 1.4 The full suite still passes: `uv run pytest` — bdc4d87
+- [x] 1.5 System checks pass: `uv run python manage.py check` — bdc4d87
+- [x] 1.6 Linting passes: `uv run ruff check .` — bdc4d87
+- [x] 1.7 Formatting is clean: `uv run ruff format --check .` — bdc4d87
 
 #### Manual
 
@@ -505,13 +505,13 @@ Bring the branch up to date with `master`, open a pull request instead of pushin
 
 #### Automated
 
-- [ ] 2.1 The view tests pass: `uv run pytest outfits/tests/test_views.py`
-- [ ] 2.2 The full suite passes: `uv run pytest`
-- [ ] 2.3 System checks pass: `uv run python manage.py check`
-- [ ] 2.4 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 2.5 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [ ] 2.6 Linting passes: `uv run ruff check .`
-- [ ] 2.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 2.1 The view tests pass: `uv run pytest outfits/tests/test_views.py` — 8aba5bd
+- [x] 2.2 The full suite passes: `uv run pytest` — 8aba5bd
+- [x] 2.3 System checks pass: `uv run python manage.py check` — 8aba5bd
+- [x] 2.4 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run` — 8aba5bd
+- [x] 2.5 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput` — 8aba5bd
+- [x] 2.6 Linting passes: `uv run ruff check .` — 8aba5bd
+- [x] 2.7 Formatting is clean: `uv run ruff format --check .` — 8aba5bd
 
 #### Manual
 
@@ -526,13 +526,13 @@ Bring the branch up to date with `master`, open a pull request instead of pushin
 
 #### Automated
 
-- [ ] 3.1 The view tests pass: `uv run pytest outfits/tests/test_views.py`
-- [ ] 3.2 The updated smoke suite passes: `uv run pytest accounts/tests/`
-- [ ] 3.3 The full suite passes: `uv run pytest`
-- [ ] 3.4 System checks pass: `uv run python manage.py check`
-- [ ] 3.5 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [ ] 3.6 Linting passes: `uv run ruff check .`
-- [ ] 3.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 3.1 The view tests pass: `uv run pytest outfits/tests/test_views.py` — f1ddd71
+- [x] 3.2 The updated smoke suite passes: `uv run pytest accounts/tests/` — f1ddd71
+- [x] 3.3 The full suite passes: `uv run pytest` — f1ddd71
+- [x] 3.4 System checks pass: `uv run python manage.py check` — f1ddd71
+- [x] 3.5 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput` — f1ddd71
+- [x] 3.6 Linting passes: `uv run ruff check .` — f1ddd71
+- [x] 3.7 Formatting is clean: `uv run ruff format --check .` — f1ddd71
 
 #### Manual
 
@@ -547,11 +547,11 @@ Bring the branch up to date with `master`, open a pull request instead of pushin
 
 #### Automated
 
-- [ ] 4.1 The full suite passes on the rebased branch: `uv run pytest`
-- [ ] 4.2 Nothing is left unmigrated after the rebase: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 4.3 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
-- [ ] 4.4 The PR against `master` exists and contains only this slice's commits: `gh pr view feat/compose-outfit --json baseRefName,commits`
-- [ ] 4.5 The PR has no merge conflicts: `gh pr view feat/compose-outfit --json mergeable`
+- [x] 4.1 The full suite passes on the rebased branch: `uv run pytest`
+- [x] 4.2 Nothing is left unmigrated after the rebase: `uv run python manage.py makemigrations --check --dry-run`
+- [x] 4.3 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
+- [x] 4.4 The PR against `master` exists and contains only this slice's commits: `gh pr view feat/compose-outfit --json baseRefName,commits`
+- [x] 4.5 The PR has no merge conflicts: `gh pr view feat/compose-outfit --json mergeable`
 - [ ] 4.6 After merge, the deployment reaches a healthy state — `/health/` returns 200
 - [ ] 4.7 After merge, deploy logs show `migrate` applying `outfits.0001_initial`
 
