@@ -91,6 +91,24 @@ What this implies:
 
 History: first hit on PR #2 (S-03); both fixes above were applied on 2026-09-13.
 
+### Watch paths (docs-only changes skip deploys)
+
+*As configured (2026-09-13):* the `outfits-garderobe` service in `production` has watch paths set in its **service settings** (not in `railway.toml`):
+
+```gitignore
+**
+!/context/**
+!/.claude/**
+!/*.md
+```
+
+A push to `master` whose changed files all match an exclusion creates no deployment. Before this, the docs-only commit `29fe28a` triggered a full production build and deploy.
+
+- **Why service settings, not `railway.toml`:** Railway deprecated Config as Code, and `railway.toml` stops applying on **2026-12-01**. Migrating what that file carries (`migrate` pre-deploy, gunicorn start command, healthcheck) is tracked in Jira OG-10.
+- **Exclude, don't enumerate.** The first rule `**` watches everything, and later rules only remove paths. A new code directory therefore deploys without anyone remembering to add it. Gitignore negations only work after an including rule.
+- **Unverified: PR environments.** Watch paths are documented for push deploys and for Focused PR Environments (disabled here, see above). Whether a PR that only touches `context/` still creates `outfits-garderobe-pr-<N>` with a new Postgres was not known on 2026-09-13. The first context-only PR is the test. If it still spins up an environment, the cost is accepted and tracked in Jira.
+- **Context lands on `master` only through PRs.** Watch paths remove the deploy cost, not the PR rule from CLAUDE.md.
+
 ### Secrets
 
 Environment variables live in Railway's vault (encrypted at rest). Accessed via the Railway dashboard or `railway env` CLI. Only workspace members with admin role can read/write secrets. Rotation is manual: update the value, commit, redeploy. No automatic secret expiry or rotation policies. The `RAILWAY_API_TOKEN` env var in CI/CD grants programmatic access for agents—store this in GitHub Actions Secrets, never in code.
