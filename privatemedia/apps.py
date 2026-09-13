@@ -6,3 +6,13 @@ class PrivatemediaConfig(AppConfig):
     # first domain app and sets the default the next model here inherits.
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'privatemedia'
+
+    def ready(self):
+        # Photos from Apple devices arrive as HEIC, which Pillow cannot read on
+        # its own. Both the model's validate_image_file_extension and
+        # forms.ImageField ask Pillow's registry at call time which formats
+        # exist, so registering here — before any request — is what lets them
+        # accept .heic at all.
+        from pillow_heif import register_heif_opener
+
+        register_heif_opener()
