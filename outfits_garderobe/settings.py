@@ -88,6 +88,10 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # Default-deny: every view needs a signed-in user unless it opts out with
+    # @login_not_required, so a view that forgets @login_required stays closed.
+    # Must come after AuthenticationMiddleware: it reads request.user.
+    'django.contrib.auth.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # Must come after AuthenticationMiddleware: it inspects request.user.

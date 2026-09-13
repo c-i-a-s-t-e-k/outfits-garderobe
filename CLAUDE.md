@@ -21,6 +21,7 @@ Outfits Garderobe is a Django 6 wardrobe app where users compose and revisit *ou
 - **User photos are private.** Garment and outfit images must never be served publicly or be reachable by another user — enforce per-user ownership checks on every media access (guardrail FR in the PRD). Do not drop uploads into `MEDIA_URL` static serving without an auth gate.
 - DB is SQLite in dev (`settings.py`), but the target is PostgreSQL — don't rely on SQLite-only behavior (e.g. loose typing, lack of real constraints).
 - A garment can belong to many outfits (many-to-many) — model accordingly.
+- **Tests are organised by risk.** Risk tests live in `tests/<risk>/`, one file per failure scenario — read `tests/CLAUDE.md` before adding a test or an owner-scoped route. Authentication is default-deny (`LoginRequiredMiddleware`): a new view is guarded unless it opts out with `@login_not_required`, and the suite fails until a guarded route is registered in `tests/owner_scoped_routes.py`.
 - Domain apps so far: `privatemedia` (the private media gate) and `accounts` (allauth adapter, signup form, root and wardrobe routes). Create further apps as the work needs them.
 
 ## Deployment

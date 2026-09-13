@@ -16,7 +16,7 @@ from django.urls import reverse
 from garments.models import GarmentType
 from outfits.forms import OutfitForm
 from outfits.models import Outfit
-from outfits.tests.test_model import make_garment
+from tests.factories import make_garment
 
 pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('temp_media_root')]
 

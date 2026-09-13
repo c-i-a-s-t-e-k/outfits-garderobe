@@ -16,6 +16,7 @@ Including another URLconf
 """
 
 from django.contrib import admin
+from django.contrib.auth.decorators import login_not_required
 from django.http import JsonResponse
 from django.urls import include, path
 
@@ -23,6 +24,8 @@ from accounts import views as account_views
 from outfits import views as outfit_views
 
 
+# Public: Railway's healthcheck probes it anonymously and fails the deploy on anything but 200.
+@login_not_required
 def health(request):
     return JsonResponse({'status': 'ok'})
 

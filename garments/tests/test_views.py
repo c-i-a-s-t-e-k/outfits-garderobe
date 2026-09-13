@@ -18,6 +18,7 @@ from privatemedia import uploadhandlers
 from privatemedia.models import PrivateImage
 from privatemedia.processing import MAX_EDGE_PX
 from privatemedia.validators import MAX_UPLOAD_BYTES
+from tests.factories import make_garment
 
 pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('temp_media_root')]
 
@@ -29,13 +30,6 @@ def _image_upload(name='wardrobe-shirt.jpg', size=(2400, 1800), format='JPEG'):
     buffer = io.BytesIO()
     Image.new('RGB', size, 'teal').save(buffer, format=format)
     return SimpleUploadedFile(name, buffer.getvalue())
-
-
-def _garment(user, description='', type=GarmentType.SHIRT):
-    photo = PrivateImage.objects.create(
-        owner=user, image=_image_upload(size=(8, 8)), original_filename='seed.jpg'
-    )
-    return Garment.objects.create(owner=user, photo=photo, type=type, description=description)
 
 
 def _stored_files(media_root):
@@ -57,8 +51,8 @@ def test_anonymous_visitor_is_sent_to_login(client, url):
 
 
 def test_list_shows_own_garments_newest_first_and_nothing_of_anyone_else(client, owner, stranger):
-    older = _garment(owner, description='blue oxford')
-    newer = _garment(owner, description='grey hoodie')
+    older = make_garment(owner, description='blue oxford')
+    newer = make_garment(owner, description='grey hoodie')
     # Two inserts can share a timestamp on a coarse clock; pin the order the list
     # must show instead of relying on the gap between them.
     Garment.objects.filter(pk=older.pk).update(created_at=newer.created_at - timedelta(minutes=1))
@@ -75,7 +69,7 @@ def test_list_shows_own_garments_newest_first_and_nothing_of_anyone_else(client,
 
 
 def test_tile_photo_is_served_to_its_owner_only(client, owner, stranger):
-    garment = _garment(owner)
+    garment = make_garment(owner)
 
     client.force_login(owner)
     page = client.get(LIST_URL).content.decode()
@@ -209,12 +203,12 @@ def test_failure_after_the_photo_is_stored_removes_the_file(
 
 def test_list_query_count_does_not_grow_with_garments(client, owner):
     client.force_login(owner)
-    _garment(owner)
+    make_garment(owner)
     with CaptureQueriesContext(connection) as one:
         client.get(LIST_URL)
 
     for _ in range(4):
-        _garment(owner)
+        make_garment(owner)
     with CaptureQueriesContext(connection) as five:
         client.get(LIST_URL)
 
