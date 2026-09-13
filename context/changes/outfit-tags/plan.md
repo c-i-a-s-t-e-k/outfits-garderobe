@@ -516,38 +516,38 @@ Never merge the PR.
 
 #### Automated
 
-- [x] 1.1 The migration applies cleanly: `uv run python manage.py migrate`
-- [x] 1.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [x] 1.3 The tag model tests pass: `uv run pytest outfits/tests/test_tags_model.py`
-- [x] 1.4 The full suite still passes: `uv run pytest`
-- [x] 1.5 System checks pass: `uv run python manage.py check`
-- [x] 1.6 Linting passes: `uv run ruff check .`
-- [x] 1.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 1.1 The migration applies cleanly: `uv run python manage.py migrate` — 708195d
+- [x] 1.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run` — 708195d
+- [x] 1.3 The tag model tests pass: `uv run pytest outfits/tests/test_tags_model.py` — 708195d
+- [x] 1.4 The full suite still passes: `uv run pytest` — 708195d
+- [x] 1.5 System checks pass: `uv run python manage.py check` — 708195d
+- [x] 1.6 Linting passes: `uv run ruff check .` — 708195d
+- [x] 1.7 Formatting is clean: `uv run ruff format --check .` — 708195d
 
 #### Manual
 
-- [x] 1.8 In `/admin/`, adding another user's tag id to an outfit is refused
-- [x] 1.9 In `/admin/`, removing a tag from its only outfit makes it disappear from the tag list
+- [x] 1.8 In `/admin/`, adding another user's tag id to an outfit is refused — 708195d
+- [x] 1.9 In `/admin/`, removing a tag from its only outfit makes it disappear from the tag list — 708195d
 
 ### Phase 2: Tagging on compose and the outfit page
 
 #### Automated
 
-- [ ] 2.1 The view tests pass: `uv run pytest outfits/tests/test_views.py`
-- [ ] 2.2 If the privacy net is on the branch, it covers the new routes: `uv run pytest tests/`
-- [ ] 2.3 The full suite passes: `uv run pytest`
-- [ ] 2.4 System checks pass: `uv run python manage.py check`
-- [ ] 2.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 2.6 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [ ] 2.7 Linting passes: `uv run ruff check .`
-- [ ] 2.8 Formatting is clean: `uv run ruff format --check .`
+- [x] 2.1 The view tests pass: `uv run pytest outfits/tests/test_views.py`
+- [x] 2.2 If the privacy net is on the branch, it covers the new routes: `uv run pytest tests/`
+- [x] 2.3 The full suite passes: `uv run pytest`
+- [x] 2.4 System checks pass: `uv run python manage.py check`
+- [x] 2.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
+- [x] 2.6 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
+- [x] 2.7 Linting passes: `uv run ruff check .`
+- [x] 2.8 Formatting is clean: `uv run ruff format --check .`
 
 #### Manual
 
-- [ ] 2.9 Composing with `Letnie, smart casual` shows both chips on the new outfit's page
-- [ ] 2.10 On the outfit page, adding `letnie` to a second outfit offers `Letnie` in the suggestions and keeps that spelling
-- [ ] 2.11 Removing a chip removes it after the redirect, with "Tag removed."
-- [ ] 2.12 At 360 px in headless Chromium, chips wrap, the remove buttons are tappable, and nothing scrolls horizontally
+- [x] 2.9 Composing with `Letnie, smart casual` shows both chips on the new outfit's page
+- [x] 2.10 On the outfit page, adding `letnie` to a second outfit offers `Letnie` in the suggestions and keeps that spelling
+- [x] 2.11 Removing a chip removes it after the redirect, with "Tag removed."
+- [x] 2.12 At 360 px in headless Chromium, chips wrap, the remove buttons are tappable, and nothing scrolls horizontally
 
 ### Phase 3: Wardrobe filter bar and tile tags
 

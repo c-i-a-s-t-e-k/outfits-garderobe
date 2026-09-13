@@ -23,6 +23,13 @@
         {{ form.name.errors }}
       </div>
 
+      <div>
+        {{ form.tag_names.label_tag }}
+        {{ form.tag_names }}
+        <small>{{ form.tag_names.help_text }}</small>
+        {{ form.tag_names.errors }}
+      </div>
+
       <p id="garments-label">Tick the garments that make the outfit.</p>
       {{ form.garments.errors }}
       <ul class="outfit-picker" aria-labelledby="garments-label">

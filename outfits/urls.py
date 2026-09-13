@@ -9,4 +9,6 @@ app_name = 'outfits'
 urlpatterns = [
     path('compose/', views.outfit_compose, name='compose'),
     path('<uuid:pk>/', views.outfit_detail, name='detail'),
+    path('<uuid:pk>/tags/add/', views.outfit_tags_add, name='tags_add'),
+    path('<uuid:pk>/tags/<uuid:tag_pk>/remove/', views.outfit_tag_remove, name='tag_remove'),
 ]

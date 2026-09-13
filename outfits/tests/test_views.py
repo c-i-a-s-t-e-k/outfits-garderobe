@@ -15,7 +15,7 @@ from django.urls import reverse
 
 from garments.models import GarmentType
 from outfits.forms import OutfitForm
-from outfits.models import Outfit
+from outfits.models import Outfit, Tag
 from tests.factories import make_garment
 
 pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('temp_media_root')]
@@ -384,3 +384,247 @@ def test_grid_query_count_does_not_grow_with_outfits_or_garments(client, owner, 
         client.get(WARDROBE_URL)
 
     assert len(five.captured_queries) == len(one.captured_queries)
+
+
+# --- tagging -----------------------------------------------------------------
+
+
+def _tags_add_url(outfit):
+    return reverse('outfits:tags_add', args=[outfit.pk])
+
+
+def _tag_remove_url(outfit, tag):
+    return reverse('outfits:tag_remove', args=[outfit.pk, tag.pk])
+
+
+def _outfit_with(user, garments, name, tags=()):
+    outfit = Outfit.objects.create(owner=user, name=name)
+    outfit.garments.set(garments)
+    outfit.tags.set(Tag.resolve(user, list(tags)))
+    return outfit
+
+
+def _tag_names(outfit):
+    return sorted(Outfit.objects.get(pk=outfit.pk).tags.values_list('name', flat=True))
+
+
+@pytest.fixture
+def foreign_wardrobe(stranger):
+    return [make_garment(stranger), make_garment(stranger, type=GarmentType.SHOES)]
+
+
+def test_compose_stores_the_typed_tags_with_the_outfit(client, owner, wardrobe):
+    client.force_login(owner)
+
+    response = client.post(
+        COMPOSE_URL,
+        {'garments': [g.pk for g in wardrobe], 'tag_names': 'Letnie, , smart casual, letnie'},
+    )
+
+    assert response.status_code == 302
+    outfit = Outfit.objects.get()
+    assert _tag_names(outfit) == ['Letnie', 'smart casual']
+    assert set(Tag.objects.values_list('owner', flat=True)) == {owner.pk}
+
+
+def test_compose_reuses_an_existing_tag_and_keeps_its_spelling(client, owner, wardrobe):
+    existing = _outfit_with(owner, wardrobe, 'Old', tags=['LETNIE']).tags.get()
+    client.force_login(owner)
+
+    client.post(COMPOSE_URL, {'garments': [g.pk for g in wardrobe], 'tag_names': 'letnie'})
+
+    new = Outfit.objects.exclude(name='Old').get()
+    assert list(new.tags.values_list('pk', 'name')) == [(existing.pk, 'LETNIE')]
+    assert Tag.objects.count() == 1
+
+
+def test_compose_never_attaches_another_users_same_named_tag(
+    client, owner, stranger, wardrobe, foreign_wardrobe
+):
+    foreign_outfit = _outfit_with(stranger, foreign_wardrobe, 'Theirs', tags=['letnie'])
+    foreign = foreign_outfit.tags.get()
+    client.force_login(owner)
+
+    client.post(COMPOSE_URL, {'garments': [g.pk for g in wardrobe], 'tag_names': 'letnie'})
+
+    own = Outfit.objects.get(owner=owner).tags.get()
+    assert own.pk != foreign.pk
+    assert own.owner == owner
+    assert list(foreign.outfits.all()) == [foreign_outfit]
+
+
+def test_a_failed_compose_stores_no_outfit_and_no_tag_and_keeps_the_text(client, owner, wardrobe):
+    client.force_login(owner)
+
+    response = client.post(COMPOSE_URL, {'garments': [wardrobe[0].pk], 'tag_names': 'Nowy'})
+
+    assert response.status_code == 200
+    assert not Outfit.objects.exists()
+    assert not Tag.objects.exists()
+    assert 'value="Nowy"' in response.content.decode()
+
+
+@pytest.mark.parametrize(
+    'tag_names',
+    [', '.join(f'tag{n}' for n in range(21)), 'x' * 31],
+    ids=['21 tags', '31 characters'],
+)
+def test_compose_over_the_tag_limits_is_a_field_error(client, owner, wardrobe, tag_names):
+    client.force_login(owner)
+
+    response = client.post(
+        COMPOSE_URL, {'garments': [g.pk for g in wardrobe], 'tag_names': tag_names}
+    )
+
+    assert response.status_code == 200
+    assert 'tag_names' in response.context['form'].errors
+    assert not Outfit.objects.exists()
+    assert not Tag.objects.exists()
+
+
+def test_detail_lists_tags_with_remove_forms_and_suggests_only_own_other_tags(
+    client, owner, stranger, wardrobe, foreign_wardrobe
+):
+    outfit = _outfit_with(owner, wardrobe, 'Tagged', tags=['Letnie', 'smart casual'])
+    other = _outfit_with(owner, wardrobe, 'Other', tags=['zimowe', 'letnie'])
+    _outfit_with(stranger, foreign_wardrobe, 'Theirs', tags=['obce'])
+    client.force_login(owner)
+
+    page = client.get(outfit.get_absolute_url()).content.decode()
+
+    for tag in outfit.tags.all():
+        assert f'action="{_tag_remove_url(outfit, tag)}"' in page
+        assert f'aria-label="Remove tag {tag.name}"' in page
+    assert f'{WARDROBE_URL}?tag=smart%20casual' in page
+    datalist = re.search(r'<datalist id="tag-suggestions">(.*?)</datalist>', page, re.DOTALL)
+    assert re.findall(r'value="([^"]+)"', datalist.group(1)) == ['zimowe']
+    assert 'obce' not in page
+    assert other.tags.count() == 2
+
+
+def test_detail_without_tags_says_so(client, owner, wardrobe):
+    outfit = _outfit_with(owner, wardrobe, 'Bare')
+    client.force_login(owner)
+
+    page = client.get(outfit.get_absolute_url()).content.decode()
+
+    assert 'No tags yet.' in page
+    assert 'tag-list' not in page
+
+
+def test_add_attaches_new_and_existing_tags_and_returns_to_the_outfit(client, owner, wardrobe):
+    outfit = _outfit_with(owner, wardrobe, 'Target')
+    existing = _outfit_with(owner, wardrobe, 'Other', tags=['letnie']).tags.get()
+    client.force_login(owner)
+
+    response = client.post(_tags_add_url(outfit), {'tag_names': 'Nowy, letnie'})
+
+    assert response.status_code == 302
+    assert response.headers['Location'] == outfit.get_absolute_url()
+    assert _tag_names(outfit) == ['Nowy', 'letnie']
+    assert Outfit.objects.get(pk=outfit.pk).tags.filter(pk=existing.pk).exists()
+    assert Tag.objects.count() == 2
+    assert 'Tags added.' in client.get(response.headers['Location']).content.decode()
+
+
+def test_add_past_twenty_tags_is_refused_and_attaches_nothing(client, owner, wardrobe):
+    outfit = _outfit_with(owner, wardrobe, 'Full', tags=[f'tag{n}' for n in range(19)])
+    client.force_login(owner)
+
+    response = client.post(_tags_add_url(outfit), {'tag_names': 'tag0, new1, new2'})
+
+    assert response.status_code == 200
+    assert 'at most 20 tags' in response.content.decode()
+    assert len(_tag_names(outfit)) == 19
+    assert not Tag.objects.filter(name__startswith='new').exists()
+
+
+def test_add_to_another_users_outfit_is_404_and_changes_nothing(
+    client, owner, stranger, foreign_wardrobe
+):
+    foreign = _outfit_with(stranger, foreign_wardrobe, 'Theirs', tags=['letnie'])
+    client.force_login(owner)
+
+    response = client.post(_tags_add_url(foreign), {'tag_names': 'Nowy'})
+
+    assert response.status_code == 404
+    assert _tag_names(foreign) == ['letnie']
+    assert Tag.objects.count() == 1
+
+
+def test_remove_detaches_the_tag_and_deletes_it_when_unused(client, owner, wardrobe):
+    outfit = _outfit_with(owner, wardrobe, 'Target', tags=['letnie', 'zimowe'])
+    tag = outfit.tags.get(name='letnie')
+    client.force_login(owner)
+
+    response = client.post(_tag_remove_url(outfit, tag))
+
+    assert response.status_code == 302
+    assert response.headers['Location'] == outfit.get_absolute_url()
+    assert _tag_names(outfit) == ['zimowe']
+    assert not Tag.objects.filter(pk=tag.pk).exists()
+    assert 'Tag removed.' in client.get(response.headers['Location']).content.decode()
+
+
+def test_remove_on_another_users_outfit_is_404(client, owner, stranger, foreign_wardrobe):
+    foreign = _outfit_with(stranger, foreign_wardrobe, 'Theirs', tags=['letnie'])
+    client.force_login(owner)
+
+    response = client.post(_tag_remove_url(foreign, foreign.tags.get()))
+
+    assert response.status_code == 404
+    assert _tag_names(foreign) == ['letnie']
+
+
+def test_remove_of_another_users_tag_from_an_own_outfit_is_404(
+    client, owner, stranger, wardrobe, foreign_wardrobe
+):
+    outfit = _outfit_with(owner, wardrobe, 'Mine', tags=['letnie'])
+    foreign = _outfit_with(stranger, foreign_wardrobe, 'Theirs', tags=['letnie'])
+    client.force_login(owner)
+
+    response = client.post(_tag_remove_url(outfit, foreign.tags.get()))
+
+    assert response.status_code == 404
+    assert _tag_names(foreign) == ['letnie']
+    assert _tag_names(outfit) == ['letnie']
+
+
+def test_remove_of_an_own_tag_the_outfit_does_not_carry_is_404(client, owner, wardrobe):
+    outfit = _outfit_with(owner, wardrobe, 'Mine', tags=['letnie'])
+    other = _outfit_with(owner, wardrobe, 'Other', tags=['zimowe'])
+    client.force_login(owner)
+
+    response = client.post(_tag_remove_url(outfit, other.tags.get()))
+
+    assert response.status_code == 404
+    assert _tag_names(outfit) == ['letnie']
+    assert _tag_names(other) == ['zimowe']
+
+
+@pytest.mark.parametrize('action', ['add', 'remove'])
+def test_tag_actions_refuse_get_and_send_anonymous_posts_to_login(client, owner, wardrobe, action):
+    outfit = _outfit_with(owner, wardrobe, 'Mine', tags=['letnie'])
+    tag = outfit.tags.get()
+    url = _tags_add_url(outfit) if action == 'add' else _tag_remove_url(outfit, tag)
+
+    response = client.post(url, {'tag_names': 'Nowy'})
+    assert response.status_code == 302
+    assert response.headers['Location'].startswith(settings.LOGIN_URL)
+    assert _tag_names(outfit) == ['letnie']
+
+    client.force_login(owner)
+    assert client.get(url).status_code == 405
+    assert _tag_names(outfit) == ['letnie']
+
+
+def test_detail_query_count_does_not_grow_with_tags(client, owner, wardrobe):
+    one = _outfit_with(owner, wardrobe, 'One', tags=['a'])
+    eight = _outfit_with(owner, wardrobe, 'Eight', tags=[f't{n}' for n in range(8)])
+    client.force_login(owner)
+    with CaptureQueriesContext(connection) as few:
+        client.get(one.get_absolute_url())
+    with CaptureQueriesContext(connection) as many:
+        client.get(eight.get_absolute_url())
+
+    assert len(many.captured_queries) == len(few.captured_queries)

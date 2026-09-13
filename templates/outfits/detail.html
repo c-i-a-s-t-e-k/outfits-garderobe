@@ -6,6 +6,47 @@
   <h1>{{ outfit.name }}</h1>
   <p>Composed {{ outfit.created_at|date:"j F Y" }}.</p>
 
+  <section aria-labelledby="tags-heading">
+    <h2 id="tags-heading">Tags</h2>
+    {% with tags=outfit.tags.all %}
+      {% if tags %}
+        {% comment %}
+          Each chip links to the wardrobe filtered by it; removing is a POST
+          form because it changes data.
+        {% endcomment %}
+        <ul class="tag-list">
+          {% for tag in tags %}
+            <li class="tag-chip">
+              <a href="{% url 'wardrobe' %}?tag={{ tag.name|urlencode:'' }}">{{ tag.name }}</a>
+              <form method="post" action="{% url 'outfits:tag_remove' outfit.pk tag.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="tag-remove" aria-label="Remove tag {{ tag.name }}">×</button>
+              </form>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No tags yet.</p>
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" action="{% url 'outfits:tags_add' outfit.pk %}" class="tag-add">
+      {% csrf_token %}
+      {{ tag_form.tag_names.label_tag }}
+      <div class="tag-add-row">
+        {{ tag_form.tag_names }}
+        <button type="submit">Add</button>
+      </div>
+      <small>{{ tag_form.tag_names.help_text }}</small>
+      {{ tag_form.tag_names.errors }}
+      <datalist id="tag-suggestions">
+        {% for tag in suggested_tags %}
+          <option value="{{ tag.name }}"></option>
+        {% endfor %}
+      </datalist>
+    </form>
+  </section>
+
   <ul class="garment-grid">
     {% for garment in outfit.ordered_garments %}
       <li>

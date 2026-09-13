@@ -209,6 +209,64 @@
   margin-top: 0.25rem;
 }
 
+/* Tag chips: small rounded labels that wrap onto new lines at 360px. The
+   remove control is a POST form inside the chip, so Pico's full-width button
+   and form bottom margin are undone here only — as for the log-out form. */
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-left: 0;
+  list-style: none;
+}
+
+.tag-list > li {
+  list-style: none;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.25rem 0.125rem 0.75rem;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 1rem;
+  font-size: 0.875rem;
+}
+
+.tag-list form {
+  margin-bottom: 0;
+}
+
+/* 2rem square: small enough to sit in the chip, still a comfortable tap. */
+.tag-list .tag-remove {
+  width: 2rem;
+  height: 2rem;
+  margin-bottom: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--pico-muted-color);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+/* Tag input and its Add button share a row; the button keeps its width. */
+.tag-add-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tag-add-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.tag-add-row button {
+  width: auto;
+}
+
 /* The Other field is only relevant once Other is chosen. Browsers without
    :has() never match this and simply keep showing it. */
 form:has(select[name='type'] option[value='other']:not(:checked)) .garment-type-other {
