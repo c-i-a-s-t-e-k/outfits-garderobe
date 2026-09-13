@@ -526,20 +526,20 @@ No schema changes. The middleware is a behaviour change for anonymous visitors o
 
 #### Automated
 
-- [x] 3.1 The risk #2 folder passes
-- [x] 3.2 Full suite passes
-- [x] 3.3 Lint and format are clean
+- [x] 3.1 The risk #2 folder passes — 93a0957
+- [x] 3.2 Full suite passes — 93a0957
+- [x] 3.3 Lint and format are clean — 93a0957
 
 #### Manual
 
-- [x] 3.4 Sabotage checks (a)–(b) each fail the named test, then reverted
+- [x] 3.4 Sabotage checks (a)–(b) each fail the named test, then reverted — 93a0957
 
 ### Phase 4: Cookbook and test guide
 
 #### Automated
 
-- [ ] 4.1 The guide files exist and §6.1 no longer says TBD
-- [ ] 4.2 Full suite still passes
+- [x] 4.1 The guide files exist and §6.1 no longer says TBD
+- [x] 4.2 Full suite still passes
 
 #### Manual
 

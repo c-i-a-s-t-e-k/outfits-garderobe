@@ -132,7 +132,12 @@ the relevant rollout phase ships; before that, the sub-section reads
 
 ### 6.1 Adding a cross-user access test for a new owner-scoped view
 
-- TBD — see §3 Phase 1 (two-account read denial + write-with-foreign-id refusal pattern, and how a new route gets picked up automatically).
+- **Location:** `tests/cross_user_visibility/` (risk #1) and `tests/foreign_id_writes/` (risk #2), top-level `tests/` package. Local guide: `tests/CLAUDE.md`.
+- **Naming:** a folder is a §2 risk; a file is one failure scenario named as a sentence describing the protection (`test_stranger_sees_nothing_of_the_owner.py`). Module-level behaviour stays in per-app `tests/`.
+- **New owner-scoped route — one step:** add an entry to `ROUTES` in `tests/owner_scoped_routes.py` (`kind` read/write, `seed` returning reverse kwargs + owner-only markers, `shows_photos`, `foreign_payload` for writes). Authentication is default-deny, so the net fails until the route is registered. The anonymous, stranger and photo contracts then cover it automatically, plus the foreign-write contract for writes. A public view needs `@login_not_required` and an entry, with a reason, in the opt-out pin test.
+- **Pattern:** two users (`owner`/`stranger` fixtures, `tests/factories.py`). A stranger's response for the owner's id must equal their response for a random UUID (status, bytes, no validators). Writes are judged by re-reading the database (owner snapshot unchanged, no cross-owner link), never by status alone.
+- **Reference tests:** `tests/cross_user_visibility/test_new_guarded_route_cannot_skip_the_contract.py` (the net), `tests/cross_user_visibility/test_stranger_sees_nothing_of_the_owner.py` (read contract), `tests/foreign_id_writes/test_write_aimed_at_another_users_objects_changes_nothing.py` (write contract).
+- **Run:** `uv run pytest tests/cross_user_visibility`, `uv run pytest tests/foreign_id_writes`, one route across all contracts: `uv run pytest tests -k "outfits:detail"`.
 
 ### 6.2 Adding an image-upload abuse or phone-photo test
 
@@ -154,6 +159,8 @@ the relevant rollout phase ships; before that, the sub-section reads
 
 (After each phase lands, `/10x-implement` appends a 2-3 line note here
 capturing anything surprising the rollout phase taught.)
+
+- **Phase 1 (testing-cross-user-privacy):** authentication became default-deny through Django's `LoginRequiredMiddleware`, so a view that forgets `@login_required` is still closed. The route net relies on this. Only `health` (Railway probe) and `home` (routes `/` by auth state) opt out with `@login_not_required`. Side effect, accepted untested (§7): anonymous `/admin/` now redirects to the allauth login instead of `/admin/login/`.
 
 ## 7. What We Deliberately Don't Test
 
