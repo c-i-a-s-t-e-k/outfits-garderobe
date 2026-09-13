@@ -498,8 +498,8 @@ Bring the branch up to date with `master`, open a pull request instead of pushin
 
 #### Manual
 
-- [x] 1.8 In `/admin/`, an outfit with a blank name saves as `outfit-1`
-- [x] 1.9 In `/admin/`, adding another user's garment id to an outfit is refused
+- [x] 1.8 In `/admin/`, an outfit with a blank name saves as `outfit-1` — e239e76
+- [x] 1.9 In `/admin/`, adding another user's garment id to an outfit is refused — e239e76
 
 ### Phase 2: Compose and detail pages
 
@@ -515,12 +515,12 @@ Bring the branch up to date with `master`, open a pull request instead of pushin
 
 #### Manual
 
-- [x] 2.8 Composing an outfit from three garments with a typed name saves and redirects with "Outfit saved."
-- [x] 2.9 Ticking and unticking tiles updates the outline and the "N selected" count without JavaScript
-- [x] 2.10 Saving with one garment ticked shows the error and keeps the selection
-- [x] 2.11 The detail page shows every garment of a seven-garment outfit
-- [x] 2.12 At 360 px in headless Chromium the picker shows two tiles per row, the save bar stays visible, and nothing scrolls horizontally
-- [x] 2.13 A second account gets 404 on the first account's detail URL
+- [x] 2.8 Composing an outfit from three garments with a typed name saves and redirects with "Outfit saved." — e239e76
+- [x] 2.9 Ticking and unticking tiles updates the outline and the "N selected" count without JavaScript — e239e76
+- [x] 2.10 Saving with one garment ticked shows the error and keeps the selection — e239e76
+- [x] 2.11 The detail page shows every garment of a seven-garment outfit — e239e76
+- [x] 2.12 At 360 px in headless Chromium the picker shows two tiles per row, the save bar stays visible, and nothing scrolls horizontally — e239e76
+- [x] 2.13 A second account gets 404 on the first account's detail URL — e239e76
 
 ### Phase 3: Wardrobe grid and landing
 
@@ -536,12 +536,12 @@ Bring the branch up to date with `master`, open a pull request instead of pushin
 
 #### Manual
 
-- [x] 3.8 Logging in lands on *Wardrobe*; the header shows *Wardrobe* then *Garments*
-- [x] 3.9 A new outfit appears first in the grid after saving
-- [x] 3.10 Tiles for two-, three-, four- and seven-garment outfits each read as one square, with `+3` readable
-- [x] 3.11 A new account with no garments sees the "add at least 2 garments" state
-- [x] 3.12 At 360 px in headless Chromium the grid shows two tiles per row with no horizontal scrolling
-- [x] 3.13 Tapping a tile opens its detail page
+- [x] 3.8 Logging in lands on *Wardrobe*; the header shows *Wardrobe* then *Garments* — e239e76
+- [x] 3.9 A new outfit appears first in the grid after saving — e239e76
+- [x] 3.10 Tiles for two-, three-, four- and seven-garment outfits each read as one square, with `+3` readable — e239e76
+- [x] 3.11 A new account with no garments sees the "add at least 2 garments" state — e239e76
+- [x] 3.12 At 360 px in headless Chromium the grid shows two tiles per row with no horizontal scrolling — e239e76
+- [x] 3.13 Tapping a tile opens its detail page — e239e76
 
 ### Phase 4: Pull request and production
 
@@ -552,12 +552,12 @@ Bring the branch up to date with `master`, open a pull request instead of pushin
 - [x] 4.3 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
 - [x] 4.4 The PR against `master` exists and contains only this slice's commits: `gh pr view feat/compose-outfit --json baseRefName,commits`
 - [x] 4.5 The PR has no merge conflicts: `gh pr view feat/compose-outfit --json mergeable`
-- [x] 4.6 After merge, the deployment reaches a healthy state — `/health/` returns 200
-- [x] 4.7 After merge, deploy logs show `migrate` applying `outfits.0001_initial`
+- [x] 4.6 After merge, the deployment reaches a healthy state — `/health/` returns 200 — e239e76
+- [x] 4.7 After merge, deploy logs show `migrate` applying `outfits.0001_initial` — e239e76
 
 #### Manual
 
-- [x] 4.8 The developer reviews and merges the PR
-- [ ] 4.9 Against production, composing an outfit and seeing it first in the wardrobe grid works end to end
-- [ ] 4.10 A second production account sees an empty wardrobe, 404 on the first account's detail URL, and none of the first account's garments in its picker
-- [ ] 4.11 Production wardrobe and compose pages at 360 px in headless Chromium show two tiles per row with no horizontal scrolling
+- [x] 4.8 The developer reviews and merges the PR — e239e76
+- [x] 4.9 Against production, composing an outfit and seeing it first in the wardrobe grid works end to end
+- [x] 4.10 A second production account sees an empty wardrobe, 404 on the first account's detail URL, and none of the first account's garments in its picker
+- [x] 4.11 Production wardrobe and compose pages at 360 px in headless Chromium show two tiles per row with no horizontal scrolling
