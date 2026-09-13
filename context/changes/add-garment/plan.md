@@ -584,15 +584,15 @@ Give gunicorn enough workers that one upload cannot block everyone else, deploy,
 
 #### Automated
 
-- [x] 5.1 The full suite passes on the commit being deployed: `uv run pytest`
-- [x] 5.2 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
-- [x] 5.3 The deployment reaches a healthy state — `/health/` returns 200 after deploy
-- [x] 5.4 Deploy logs show pillow-heif installed, `collectstatic` and `migrate` completing, and two gunicorn workers booting
+- [x] 5.1 The full suite passes on the commit being deployed: `uv run pytest` — 1f0d575
+- [x] 5.2 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py` — 1f0d575
+- [x] 5.3 The deployment reaches a healthy state — `/health/` returns 200 after deploy — 1f0d575
+- [x] 5.4 Deploy logs show pillow-heif installed, `collectstatic` and `migrate` completing, and two gunicorn workers booting — 1f0d575
 
 #### Manual
 
 - [ ] 5.5 On a real iPhone over mobile data, *Save* → list takes under five seconds
-- [x] 5.6 On a real Android phone over mobile data, *Save* → list takes under five seconds
-- [x] 5.7 The stored production photo is upright, a few hundred kilobytes, and has no GPS metadata
-- [x] 5.8 A second production account sees an empty list and gets 404 on the first account's photo URL
+- [x] 5.6 On a real Android phone over mobile data, *Save* → list takes under five seconds — 1f0d575
+- [x] 5.7 The stored production photo is upright, a few hundred kilobytes, and has no GPS metadata — 1f0d575
+- [x] 5.8 A second production account sees an empty list and gets 404 on the first account's photo URL — 1f0d575
 - [ ] 5.9 The list with at least ten garments loads acceptably on the phone, and Railway memory metrics show no alarm during uploads
