@@ -586,8 +586,8 @@ Give gunicorn enough workers that one upload cannot block everyone else, deploy,
 
 - [x] 5.1 The full suite passes on the commit being deployed: `uv run pytest`
 - [x] 5.2 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
-- [ ] 5.3 The deployment reaches a healthy state — `/health/` returns 200 after deploy
-- [ ] 5.4 Deploy logs show pillow-heif installed, `collectstatic` and `migrate` completing, and two gunicorn workers booting
+- [x] 5.3 The deployment reaches a healthy state — `/health/` returns 200 after deploy
+- [x] 5.4 Deploy logs show pillow-heif installed, `collectstatic` and `migrate` completing, and two gunicorn workers booting
 
 #### Manual
 

@@ -126,8 +126,25 @@ WSGI_APPLICATION = 'outfits_garderobe.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
-DATABASES = {'default': dj_database_url.config(default=f'sqlite:///{BASE_DIR / "db.sqlite3"}')}
+#
+# Persistent connections. In production the app runs in europe-west4 and
+# Postgres in sfo: a query round trip is ~150 ms and opening a connection
+# ~1.1 s, which Django's default (a new connection per request) paid on every
+# page and every photo tile. Measured 2026-09-13, see add-garment change.md.
+#
+# conn_max_age counts from when the connection was opened, not from its last
+# use, so each gunicorn worker reconnects at most once every 5 minutes.
+# conn_health_checks sends a SELECT 1 before a connection is reused in a new
+# request — one extra round trip, but no 500 on the first request after Railway
+# restarts Postgres for its scheduled updates. Moving Postgres to the app's
+# region would shrink both costs; deliberately deferred until after the MVP.
+DATABASES = {
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        conn_max_age=300,
+        conn_health_checks=True,
+    )
+}
 
 
 # Password validation

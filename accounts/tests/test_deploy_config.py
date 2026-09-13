@@ -106,3 +106,14 @@ def test_production_transport_settings_are_pinned():
     assert production.SECURE_PROXY_SSL_HEADER == ('HTTP_X_FORWARDED_PROTO', 'https')
     assert production.SECURE_REDIRECT_EXEMPT == [r'^health/$']
     assert production.EMAIL_BACKEND == 'anymail.backends.brevo.EmailBackend'
+
+
+def test_database_connections_are_reused_and_health_checked():
+    """Without reuse, every request re-opens the cross-region Postgres connection (~1.1 s).
+
+    Health checks stay on with it: a reused connection that died when Railway
+    restarted Postgres would otherwise turn the next request into a 500.
+    """
+    database = production.DATABASES['default']
+    assert database['CONN_MAX_AGE'] == 300
+    assert database['CONN_HEALTH_CHECKS'] is True
