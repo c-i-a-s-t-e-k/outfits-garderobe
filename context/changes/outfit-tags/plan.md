@@ -553,19 +553,19 @@ Never merge the PR.
 
 #### Automated
 
-- [x] 3.1 The view tests pass: `uv run pytest outfits/tests/test_views.py`
-- [x] 3.2 The full suite passes: `uv run pytest`
-- [x] 3.3 System checks pass: `uv run python manage.py check`
-- [x] 3.4 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [x] 3.5 Linting passes: `uv run ruff check .`
-- [x] 3.6 Formatting is clean: `uv run ruff format --check .`
+- [x] 3.1 The view tests pass: `uv run pytest outfits/tests/test_views.py` — 61f02e6
+- [x] 3.2 The full suite passes: `uv run pytest` — 61f02e6
+- [x] 3.3 System checks pass: `uv run python manage.py check` — 61f02e6
+- [x] 3.4 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput` — 61f02e6
+- [x] 3.5 Linting passes: `uv run ruff check .` — 61f02e6
+- [x] 3.6 Formatting is clean: `uv run ruff format --check .` — 61f02e6
 
 #### Manual
 
-- [x] 3.7 Tapping a chip filters the grid; a second narrows to outfits with both; a selected chip widens again; *All* clears
-- [x] 3.8 With one tag selected, the bar offers only tags that keep at least one outfit on screen
-- [x] 3.9 Tiles show their tags on one line with an ellipsis when long, and tiles in a row stay the same height
-- [x] 3.10 At 360 px in headless Chromium, the bar wraps, the grid shows two tiles per row, and nothing scrolls horizontally
+- [x] 3.7 Tapping a chip filters the grid; a second narrows to outfits with both; a selected chip widens again; *All* clears — 61f02e6
+- [x] 3.8 With one tag selected, the bar offers only tags that keep at least one outfit on screen — 61f02e6
+- [x] 3.9 Tiles show their tags on one line with an ellipsis when long, and tiles in a row stay the same height — 61f02e6
+- [x] 3.10 At 360 px in headless Chromium, the bar wraps, the grid shows two tiles per row, and nothing scrolls horizontally — 61f02e6
 
 ### Phase 4: Pull request and production
 
