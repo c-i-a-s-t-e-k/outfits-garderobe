@@ -3,7 +3,8 @@
 This ties the page to the gate: a photo rendered for the owner must answer 200
 to the owner, 404 to a stranger and the login redirect to a visitor. A route
 that declares it shows no photos is held to that too, so the declaration
-cannot drift out of date.
+cannot drift out of date. A POST-only route has no page: it must refuse the GET
+and declare no photos.
 """
 
 from html.parser import HTMLParser
@@ -51,6 +52,10 @@ def test_photos_on_the_owners_page_are_served_to_the_owner_only(client, owner, s
     client.force_login(owner)
 
     page = client.get(reverse(name, kwargs=seeded.kwargs))
+    if declaration.post_only:
+        assert page.status_code == 405, f'{name} declares post_only but answered a GET'
+        assert not declaration.shows_photos, f'{name} has no page to show photos on'
+        return
     assert page.status_code == 200
     sources = _gated_photo_sources(page)
 

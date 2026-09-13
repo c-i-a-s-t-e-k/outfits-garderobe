@@ -14,7 +14,7 @@ from django.conf import settings
 from django.urls import reverse
 
 from garments.models import Garment
-from outfits.models import Outfit
+from outfits.models import Outfit, Tag
 from privatemedia.models import PrivateImage
 from tests.factories import make_garment
 from tests.owner_scoped_routes import ROUTES
@@ -22,7 +22,7 @@ from tests.owner_scoped_routes import ROUTES
 pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('temp_media_root')]
 
 WRITE_ROUTES = [name for name, declaration in ROUTES.items() if declaration.kind == 'write']
-OWNED_MODELS = (PrivateImage, Garment, Outfit)
+OWNED_MODELS = (PrivateImage, Garment, Outfit, Tag)
 
 
 def _pks():

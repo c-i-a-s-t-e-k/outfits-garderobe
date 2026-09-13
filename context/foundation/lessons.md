@@ -15,3 +15,10 @@
 - **Problem**: After a whole slice is implemented, Jira doesn't show that the work is done or what to pick up next. The roadmap and Jira drift apart.
 - **Rule**: Whenever you touch roadmap.md, including when /10x-implement finishes the last phase, check whether the state change belongs in Jira too. If it does, update the linked issue (transition its status and note what's next). Don't leave that to the developer.
 - **Applies to**: implement
+
+## Done means all checks pass on the PR deploy, not on production after merge
+
+- **Context**: The final verification phase of any plan in context/changes/<change-id>/plan.md: the manual/smoke checks that currently run against Railway production after merging to master.
+- **Problem**: If checks only run on production after merge, a failure needs a second fix PR, and the plan/roadmap close-out needs yet another docs PR (compose-outfit went p4 production checks → separate close-out PR #3). Production ends up being the first real deploy the paths run on.
+- **Rule**: Done means every plan check passes on the Railway PR environment. Before merging, run the verification paths against the PR deploy. Put any fixes in the same PR, and once everything passes, put the plan Progress and roadmap close-out there too. Production checks after merge are only a confirmation.
+- **Applies to**: plan, plan-review, implement
