@@ -7,6 +7,7 @@ import pytest
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
+from django.templatetags.static import static
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from PIL import Image
@@ -214,3 +215,14 @@ def test_photo_input_offers_both_camera_and_library(client, owner):
     photo_input = re.search(r'<input[^>]*name="photo"[^>]*>', page).group(0)
     assert 'accept="image/*"' in photo_input
     assert 'capture' not in photo_input
+
+
+def test_add_page_wires_up_the_photo_shrink_script(client, owner):
+    client.force_login(owner)
+
+    page = client.get(ADD_URL).content.decode()
+
+    photo_input = re.search(r'<input[^>]*name="photo"[^>]*>', page).group(0)
+    assert 'data-shrink-photo' in photo_input
+    assert f'<script src="{static("js/photo-shrink.js")}" defer>' in page
+    assert 'data-shrink-status' in page

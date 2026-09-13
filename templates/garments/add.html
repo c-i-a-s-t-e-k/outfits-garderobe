@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Add garment{% endblock %}
 
@@ -21,7 +22,14 @@
       </div>
     {% endfor %}
 
+    {# Filled by photo-shrink.js while it prepares the photo. #}
+    <p data-shrink-status aria-live="polite"></p>
+
     <button type="submit">Save garment</button>
     <p><a href="{% url 'garments:list' %}">Cancel</a></p>
   </form>
+{% endblock %}
+
+{% block extra_body %}
+  <script src="{% static 'js/photo-shrink.js' %}" defer></script>
 {% endblock %}

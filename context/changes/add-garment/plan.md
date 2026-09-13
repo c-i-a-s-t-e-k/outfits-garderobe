@@ -543,42 +543,42 @@ Give gunicorn enough workers that one upload cannot block everyone else, deploy,
 
 #### Automated
 
-- [x] 3.1 The view tests pass: `uv run pytest garments/tests/test_views.py`
-- [x] 3.2 The updated smoke suite passes: `uv run pytest accounts/tests/`
-- [x] 3.3 The full suite passes: `uv run pytest`
-- [x] 3.4 System checks pass: `uv run python manage.py check`
-- [x] 3.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [x] 3.6 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [x] 3.7 Linting passes: `uv run ruff check .`
-- [x] 3.8 Formatting is clean: `uv run ruff format --check .`
+- [x] 3.1 The view tests pass: `uv run pytest garments/tests/test_views.py` — bf6b1d5
+- [x] 3.2 The updated smoke suite passes: `uv run pytest accounts/tests/` — bf6b1d5
+- [x] 3.3 The full suite passes: `uv run pytest` — bf6b1d5
+- [x] 3.4 System checks pass: `uv run python manage.py check` — bf6b1d5
+- [x] 3.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run` — bf6b1d5
+- [x] 3.6 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput` — bf6b1d5
+- [x] 3.7 Linting passes: `uv run ruff check .` — bf6b1d5
+- [x] 3.8 Formatting is clean: `uv run ruff format --check .` — bf6b1d5
 
 #### Manual
 
-- [x] 3.9 Logging in lands on the garment list; the header shows *Garments*
-- [x] 3.10 Adding a garment with a large desktop JPEG works and the new tile appears first with a "Garment added." message
-- [ ] 3.11 Picking *Other* reveals the text field; picking another type hides it
-- [x] 3.12 A form error shows next to the field
-- [x] 3.13 A second account sees an empty list and gets 404 on the first account's photo URL
-- [ ] 3.14 At 360 px the list shows a tidy grid and the form fits without horizontal scrolling
-- [x] 3.15 With JavaScript disabled the whole flow still works
+- [x] 3.9 Logging in lands on the garment list; the header shows *Garments* — bf6b1d5
+- [x] 3.10 Adding a garment with a large desktop JPEG works and the new tile appears first with a "Garment added." message — bf6b1d5
+- [x] 3.11 Picking *Other* reveals the text field; picking another type hides it
+- [x] 3.12 A form error shows next to the field — bf6b1d5
+- [x] 3.13 A second account sees an empty list and gets 404 on the first account's photo URL — bf6b1d5
+- [x] 3.14 At 360 px the list shows a tidy grid and the form fits without horizontal scrolling
+- [x] 3.15 With JavaScript disabled the whole flow still works — bf6b1d5
 
 ### Phase 4: Browser-side photo shrinking
 
 #### Automated
 
-- [ ] 4.1 The full suite passes: `uv run pytest`
-- [ ] 4.2 `collectstatic` picks up the script under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [ ] 4.3 Linting passes: `uv run ruff check .`
-- [ ] 4.4 Formatting is clean: `uv run ruff format --check .`
+- [x] 4.1 The full suite passes: `uv run pytest`
+- [x] 4.2 `collectstatic` picks up the script under manifest storage: `uv run python manage.py collectstatic --noinput`
+- [x] 4.3 Linting passes: `uv run ruff check .`
+- [x] 4.4 Formatting is clean: `uv run ruff format --check .`
 
 #### Manual
 
-- [ ] 4.5 In desktop Chrome with a 4+ MB JPEG, the POST body is well under 1 MB and the stored photo is upright
-- [ ] 4.6 Under *Fast 4G* throttling, *Save* → list takes under five seconds
+- [x] 4.5 In desktop Chrome with a 4+ MB JPEG, the POST body is well under 1 MB and the stored photo is upright
+- [x] 4.6 Under *Fast 4G* throttling, *Save* → list takes under five seconds
 - [ ] 4.7 On a real iPhone (Safari) against local `runserver`, a freshly taken photo stores upright
 - [ ] 4.8 On a real Android phone (Chrome), both *Take photo* and *Choose from library* work
-- [ ] 4.9 A HEIC file from a Mac in Chrome still saves
-- [ ] 4.10 With JavaScript disabled, adding a garment still works
+- [x] 4.9 A HEIC file from a Mac in Chrome still saves
+- [x] 4.10 With JavaScript disabled, adding a garment still works
 
 ### Phase 5: Production
 

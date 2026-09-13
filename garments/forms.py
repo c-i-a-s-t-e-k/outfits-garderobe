@@ -11,8 +11,11 @@ class GarmentForm(forms.ModelForm):
     # Not a model field: the view turns the normalized file into a PrivateImage
     # and links it, so owner and photo never come from the request.
     # No `capture` attribute — with it, phones offer only the camera and hide
-    # the photo library.
-    photo = forms.ImageField(widget=forms.FileInput(attrs={'accept': 'image/*'}))
+    # the photo library. data-shrink-photo hands the input to
+    # static/js/photo-shrink.js, which only ever swaps in a smaller file.
+    photo = forms.ImageField(
+        widget=forms.FileInput(attrs={'accept': 'image/*', 'data-shrink-photo': True})
+    )
 
     field_order = ['photo', 'type', 'type_other', 'description']
 

@@ -17,6 +17,13 @@
   gap: var(--pico-spacing);
 }
 
+/* Pico lays nav links out in a non-wrapping flex row. Signed in, the links plus
+   the account email are ~410px wide, so without wrapping the header alone
+   scrolls the page sideways at 360px. */
+.site-header nav ul {
+  flex-wrap: wrap;
+}
+
 .site-header > .site-brand {
   margin-bottom: 0;
   font-size: 1.25rem;
