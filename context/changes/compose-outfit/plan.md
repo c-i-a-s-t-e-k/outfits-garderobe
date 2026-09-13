@@ -558,6 +558,6 @@ Bring the branch up to date with `master`, open a pull request instead of pushin
 #### Manual
 
 - [x] 4.8 The developer reviews and merges the PR — e239e76
-- [x] 4.9 Against production, composing an outfit and seeing it first in the wardrobe grid works end to end
-- [x] 4.10 A second production account sees an empty wardrobe, 404 on the first account's detail URL, and none of the first account's garments in its picker
-- [x] 4.11 Production wardrobe and compose pages at 360 px in headless Chromium show two tiles per row with no horizontal scrolling
+- [x] 4.9 Against production, composing an outfit and seeing it first in the wardrobe grid works end to end — f8dba93
+- [x] 4.10 A second production account sees an empty wardrobe, 404 on the first account's detail URL, and none of the first account's garments in its picker — f8dba93
+- [x] 4.11 Production wardrobe and compose pages at 360 px in headless Chromium show two tiles per row with no horizontal scrolling — f8dba93
