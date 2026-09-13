@@ -65,15 +65,26 @@
       var canvas = document.createElement('canvas');
       canvas.width = Math.round(bitmap.width * scale);
       canvas.height = Math.round(bitmap.height * scale);
-      var context = canvas.getContext('2d');
-      // JPEG has no transparency; white matches what the server composites onto.
-      context.fillStyle = '#fff';
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.imageSmoothingQuality = 'high';
-      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      bitmap.close();
+      try {
+        // Null when the browser is out of canvas memory (iOS Safari); the
+        // property access below then throws into the caller's catch().
+        var context = canvas.getContext('2d');
+        // JPEG has no transparency; white matches what the server composites onto.
+        context.fillStyle = '#fff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.imageSmoothingQuality = 'high';
+        context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      } finally {
+        // Decoded pixels of a camera photo are tens of megabytes; free them
+        // whether or not drawing worked.
+        bitmap.close();
+      }
 
       return canvasToBlob(canvas).then(function (blob) {
+        // iOS Safari caps total canvas memory per page and frees it late, so a
+        // few photo picks in a row would otherwise exhaust it.
+        canvas.width = 0;
+        canvas.height = 0;
         // Re-encoding an already-compact photo can make it bigger.
         if (blob.size >= file.size) {
           return null;

@@ -2,14 +2,16 @@
 
 import io
 import uuid
+from pathlib import Path
 
 import pytest
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import IntegrityError, connection
 from django.forms import modelform_factory
 from PIL import Image
 
-from privatemedia.models import PrivateImage, upload_to_uuid
+from privatemedia.models import PrivateImage, stored_private_image, upload_to_uuid
 from privatemedia.validators import MAX_UPLOAD_BYTES, validate_max_size
 
 
@@ -113,3 +115,59 @@ def test_original_filename_is_kept_as_metadata_only(settings, tmp_path, django_u
 
     assert image.original_filename == 'holiday-photo.png'
     assert 'holiday' not in image.image.name
+
+
+def _stored_files(media_root):
+    return [path for path in Path(media_root).rglob('*') if path.is_file()]
+
+
+@pytest.mark.django_db
+def test_stored_private_image_keeps_the_row_and_file(settings, tmp_path, django_user_model):
+    settings.MEDIA_ROOT = tmp_path / 'media'
+    owner = django_user_model.objects.create_user(username='owner', password='pw-owner-12345')
+    upload = SimpleUploadedFile('photo.png', _png_bytes(), content_type='image/png')
+
+    with stored_private_image(owner, upload, 'holiday-photo.png') as image:
+        pass
+
+    assert PrivateImage.objects.get() == image
+    assert _stored_files(settings.MEDIA_ROOT) == [Path(image.image.path)]
+
+
+@pytest.mark.django_db
+def test_stored_private_image_leaves_nothing_when_the_block_fails(
+    settings, tmp_path, django_user_model
+):
+    settings.MEDIA_ROOT = tmp_path / 'media'
+    owner = django_user_model.objects.create_user(username='owner', password='pw-owner-12345')
+    upload = SimpleUploadedFile('photo.png', _png_bytes(), content_type='image/png')
+
+    with pytest.raises(RuntimeError):
+        with stored_private_image(owner, upload, 'photo.png') as image:
+            assert Path(image.image.path).is_file()
+            raise RuntimeError('the caller failed')
+
+    assert not PrivateImage.objects.exists()
+    assert _stored_files(settings.MEDIA_ROOT) == []
+
+
+@pytest.mark.django_db
+def test_stored_private_image_leaves_nothing_when_the_insert_fails(
+    settings, tmp_path, django_user_model
+):
+    """The file is written while the INSERT is compiled, so this fails after the write."""
+    settings.MEDIA_ROOT = tmp_path / 'media'
+    owner = django_user_model.objects.create_user(username='owner', password='pw-owner-12345')
+    upload = SimpleUploadedFile('photo.png', _png_bytes(), content_type='image/png')
+
+    def fail_image_insert(execute, sql, params, many, context):
+        if sql.startswith('INSERT') and PrivateImage._meta.db_table in sql:
+            raise IntegrityError('insert failed after the file was written')
+        return execute(sql, params, many, context)
+
+    with connection.execute_wrapper(fail_image_insert), pytest.raises(IntegrityError):
+        with stored_private_image(owner, upload, 'photo.png'):
+            pass
+
+    assert not PrivateImage.objects.exists()
+    assert _stored_files(settings.MEDIA_ROOT) == []

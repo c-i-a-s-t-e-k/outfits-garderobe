@@ -2,6 +2,7 @@
 
 import io
 import re
+from datetime import timedelta
 
 import pytest
 from django.conf import settings
@@ -13,11 +14,12 @@ from django.urls import reverse
 from PIL import Image
 
 from garments.models import Garment, GarmentType
+from privatemedia import uploadhandlers
 from privatemedia.models import PrivateImage
 from privatemedia.processing import MAX_EDGE_PX
 from privatemedia.validators import MAX_UPLOAD_BYTES
 
-pytestmark = pytest.mark.django_db
+pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('temp_media_root')]
 
 LIST_URL = reverse('garments:list')
 ADD_URL = reverse('garments:add')
@@ -27,23 +29,6 @@ def _image_upload(name='wardrobe-shirt.jpg', size=(2400, 1800), format='JPEG'):
     buffer = io.BytesIO()
     Image.new('RGB', size, 'teal').save(buffer, format=format)
     return SimpleUploadedFile(name, buffer.getvalue())
-
-
-@pytest.fixture(autouse=True)
-def temp_media_root(settings, tmp_path):
-    """Keep every test's uploads out of the real MEDIA_ROOT."""
-    settings.MEDIA_ROOT = tmp_path / 'media'
-    return settings.MEDIA_ROOT
-
-
-@pytest.fixture
-def owner(django_user_model):
-    return django_user_model.objects.create_user(username='owner', password='pw-owner-12345')
-
-
-@pytest.fixture
-def stranger(django_user_model):
-    return django_user_model.objects.create_user(username='stranger', password='pw-other-12345')
 
 
 def _garment(user, description='', type=GarmentType.SHIRT):
@@ -74,6 +59,9 @@ def test_anonymous_visitor_is_sent_to_login(client, url):
 def test_list_shows_own_garments_newest_first_and_nothing_of_anyone_else(client, owner, stranger):
     older = _garment(owner, description='blue oxford')
     newer = _garment(owner, description='grey hoodie')
+    # Two inserts can share a timestamp on a coarse clock; pin the order the list
+    # must show instead of relying on the gap between them.
+    Garment.objects.filter(pk=older.pk).update(created_at=newer.created_at - timedelta(minutes=1))
 
     client.force_login(owner)
     page = client.get(LIST_URL).content.decode()
@@ -161,6 +149,19 @@ def test_corrupt_photo_is_a_field_error_and_stores_nothing(client, owner, temp_m
     assert _stored_files(temp_media_root) == []
 
 
+def test_photo_with_too_many_pixels_says_so(client, owner, temp_media_root, monkeypatch):
+    # Pillow raises (rather than warns) above twice MAX_IMAGE_PIXELS.
+    monkeypatch.setattr(Image, 'MAX_IMAGE_PIXELS', 100)
+    client.force_login(owner)
+
+    response = _add(client, photo=_image_upload(size=(40, 40)))
+
+    assert response.status_code == 200
+    assert 'too many pixels' in ' '.join(response.context['form'].errors['photo'])
+    assert not PrivateImage.objects.exists()
+    assert _stored_files(temp_media_root) == []
+
+
 def test_oversized_upload_is_a_field_error_and_stores_nothing(client, owner, temp_media_root):
     # An uncompressed BMP is a real image and passes ImageField's own check, so
     # it is the size ceiling that has to refuse it.
@@ -172,6 +173,19 @@ def test_oversized_upload_is_a_field_error_and_stores_nothing(client, owner, tem
 
     assert response.status_code == 200
     assert 'too large' in ' '.join(response.context['form'].errors['photo'])
+    assert not PrivateImage.objects.exists()
+    assert _stored_files(temp_media_root) == []
+
+
+def test_request_over_the_size_ceiling_is_refused_before_it_is_parsed(
+    client, owner, temp_media_root, monkeypatch
+):
+    monkeypatch.setattr(uploadhandlers, 'MAX_REQUEST_BYTES', 1024)
+    client.force_login(owner)
+
+    response = _add(client, photo=_image_upload())
+
+    assert response.status_code == 400
     assert not PrivateImage.objects.exists()
     assert _stored_files(temp_media_root) == []
 

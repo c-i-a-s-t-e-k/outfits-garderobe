@@ -13,7 +13,10 @@ class GarmentForm(forms.ModelForm):
     # No `capture` attribute — with it, phones offer only the camera and hide
     # the photo library. data-shrink-photo hands the input to
     # static/js/photo-shrink.js, which only ever swaps in a smaller file.
-    photo = forms.ImageField(
+    # A FileField, not an ImageField: ImageField opens the upload itself and
+    # reports every failure — too many pixels included — as "not an image", so
+    # recognising the image is left to normalize_photo, which says what went wrong.
+    photo = forms.FileField(
         widget=forms.FileInput(attrs={'accept': 'image/*', 'data-shrink-photo': True})
     )
 

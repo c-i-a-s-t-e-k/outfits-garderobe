@@ -13,6 +13,8 @@ from privatemedia.processing import MAX_EDGE_PX, normalize_photo
 
 ORIENTATION = ExifTags.Base.Orientation
 
+pytestmark = pytest.mark.usefixtures('temp_media_root')
+
 
 def _upload(image, format='JPEG', name=None, **save_kwargs):
     buffer = io.BytesIO()
@@ -24,13 +26,6 @@ def _upload(image, format='JPEG', name=None, **save_kwargs):
 def _open(content_file):
     content_file.seek(0)
     return Image.open(io.BytesIO(content_file.read()))
-
-
-@pytest.fixture(autouse=True)
-def temp_media_root(settings, tmp_path):
-    """Keep every test's uploads out of the real MEDIA_ROOT."""
-    settings.MEDIA_ROOT = tmp_path / 'media'
-    return settings.MEDIA_ROOT
 
 
 @pytest.mark.parametrize(
@@ -133,6 +128,32 @@ def test_truncated_jpeg_is_an_invalid_image():
 
     with pytest.raises(ValidationError) as excinfo:
         normalize_photo(SimpleUploadedFile('photo.jpg', truncated))
+
+    assert excinfo.value.code == 'invalid_image'
+
+
+def test_corrupt_heic_is_an_invalid_image():
+    """libheif reports a broken bitstream as EOFError, not the OSError Pillow uses."""
+    buffer = io.BytesIO()
+    Image.new('RGB', (400, 300), 'navy').save(buffer, format='HEIF')
+    data = bytearray(buffer.getvalue())
+    # The first mdat payload bytes are an HEVC NAL unit length; flipping them
+    # makes the decoder read past the end of the data.
+    data[data.find(b'mdat') + 4] ^= 0xFF
+
+    with pytest.raises(ValidationError) as excinfo:
+        normalize_photo(SimpleUploadedFile('photo.heic', bytes(data)))
+
+    assert excinfo.value.code == 'invalid_image'
+
+
+@pytest.mark.parametrize('format', ['EPS', 'TIFF'])
+def test_formats_outside_the_allowlist_are_an_invalid_image(format):
+    buffer = io.BytesIO()
+    Image.new('RGB', (40, 40), 'navy').save(buffer, format=format)
+
+    with pytest.raises(ValidationError) as excinfo:
+        normalize_photo(SimpleUploadedFile(f'photo.{format.lower()}', buffer.getvalue()))
 
     assert excinfo.value.code == 'invalid_image'
 

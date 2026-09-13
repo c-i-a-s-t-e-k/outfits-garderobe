@@ -1,11 +1,12 @@
 """Storage for user-uploaded photos, and the single record of who owns each one."""
 
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 from django.conf import settings
 from django.core.validators import validate_image_file_extension
-from django.db import models
+from django.db import models, transaction
 from django.urls import reverse
 
 from privatemedia.validators import validate_max_size
@@ -71,3 +72,26 @@ class PrivateImage(models.Model):
         file's path. Nothing serves MEDIA_ROOT, and nothing ever should.
         """
         return reverse('privatemedia:image', args=[self.pk])
+
+
+@contextmanager
+def stored_private_image(owner, file, original_filename=''):
+    """Store a PrivateImage for use inside the block, or leave nothing behind.
+
+    The file is written to the volume during the insert, before anything the
+    caller links to it exists. A rollback removes rows but never bytes, so if the
+    insert or anything in the block fails, the written file is deleted before the
+    exception propagates. Garments and outfit photos store through this instead
+    of each cleaning up after themselves.
+    """
+    image = PrivateImage(owner=owner, image=file, original_filename=original_filename)
+    try:
+        with transaction.atomic():
+            image.save()
+            yield image
+    except BaseException:
+        # FieldFile._committed turns True as soon as storage has written the
+        # file, which also covers an insert that failed after the write.
+        if image.image._committed:
+            image.image.delete(save=False)
+        raise

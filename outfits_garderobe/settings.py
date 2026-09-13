@@ -211,6 +211,14 @@ else:
 # the storage name and resolves to nothing. Use PrivateImage.get_absolute_url().
 MEDIA_URL = 'media/'
 
+# A request-size ceiling checked before any upload is spooled to disk; see
+# privatemedia/uploadhandlers.py. The other two are Django's defaults.
+FILE_UPLOAD_HANDLERS = [
+    'privatemedia.uploadhandlers.RequestSizeLimitUploadHandler',
+    'django.core.files.uploadhandler.MemoryFileUploadHandler',
+    'django.core.files.uploadhandler.TemporaryFileUploadHandler',
+]
+
 
 # Storage backends
 # https://docs.djangoproject.com/en/6.0/ref/settings/#storages

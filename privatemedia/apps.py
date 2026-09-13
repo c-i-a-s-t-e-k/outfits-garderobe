@@ -9,10 +9,10 @@ class PrivatemediaConfig(AppConfig):
 
     def ready(self):
         # Photos from Apple devices arrive as HEIC, which Pillow cannot read on
-        # its own. Both the model's validate_image_file_extension and
-        # forms.ImageField ask Pillow's registry at call time which formats
-        # exist, so registering here — before any request — is what lets them
-        # accept .heic at all.
+        # its own. normalize_photo decodes through this registration, and the
+        # model's validate_image_file_extension asks Pillow's registry at call
+        # time which formats exist, so registering here — before any request —
+        # is what lets them accept HEIC at all.
         from pillow_heif import register_heif_opener
 
         register_heif_opener()

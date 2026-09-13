@@ -13,7 +13,7 @@ from PIL import Image
 from garments.models import Garment, GarmentType
 from privatemedia.models import PrivateImage
 
-pytestmark = pytest.mark.django_db
+pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('temp_media_root')]
 
 
 def _png_bytes():
@@ -23,23 +23,6 @@ def _png_bytes():
 
 
 IMAGE_BYTES = _png_bytes()
-
-
-@pytest.fixture(autouse=True)
-def temp_media_root(settings, tmp_path):
-    """Keep every test's uploads out of the real MEDIA_ROOT."""
-    settings.MEDIA_ROOT = tmp_path / 'media'
-    return settings.MEDIA_ROOT
-
-
-@pytest.fixture
-def owner(django_user_model):
-    return django_user_model.objects.create_user(username='owner', password='pw-owner-12345')
-
-
-@pytest.fixture
-def stranger(django_user_model):
-    return django_user_model.objects.create_user(username='stranger', password='pw-other-12345')
 
 
 def _photo(user):

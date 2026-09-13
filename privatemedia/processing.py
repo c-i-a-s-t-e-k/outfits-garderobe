@@ -11,6 +11,14 @@ from PIL import Image, ImageOps
 MAX_EDGE_PX = 1600
 JPEG_QUALITY = 85
 
+# What a phone, a browser export or a desktop screenshot actually produces. JPEG
+# also covers multi-picture JPEGs (iPhones write them): Pillow has no separate
+# MPO opener, its JPEG plugin returns them. HEIF is registered by pillow-heif.
+# Everything else Pillow can decode is refused before decoding: EPS/PS would hand
+# the upload to Ghostscript, and rarer decoders are attack surface with no
+# product value.
+ACCEPTED_FORMATS = ('JPEG', 'PNG', 'WEBP', 'HEIF', 'GIF')
+
 # Pillow's own decompression-bomb ceiling (Image.MAX_IMAGE_PIXELS, ~89 MP, with
 # a hard error at twice that, ~179 MP) is deliberately left at its default: it
 # is what stops a small crafted file from exhausting a worker's memory on decode.
@@ -30,7 +38,7 @@ def normalize_photo(upload):
     """
     upload.seek(0)
     try:
-        with Image.open(upload) as source:
+        with Image.open(upload, formats=ACCEPTED_FORMATS) as source:
             icc_profile = source.info.get('icc_profile')
             # draft() only works before pixel data is loaded, and exif_transpose()
             # loads it — so this order is the difference between libjpeg decoding
@@ -43,9 +51,10 @@ def normalize_photo(upload):
             'This image has too many pixels to process.',
             code='image_too_many_pixels',
         ) from exc
-    except (OSError, SyntaxError, ValueError) as exc:
+    except (OSError, SyntaxError, ValueError, EOFError, RuntimeError) as exc:
         # UnidentifiedImageError and "image file is truncated" are both OSError;
-        # Pillow's format plugins raise SyntaxError/ValueError on malformed headers.
+        # Pillow's format plugins raise SyntaxError/ValueError on malformed headers;
+        # pillow-heif's libheif decoder raises EOFError and RuntimeError instead.
         raise ValidationError(
             'Upload a valid image. The file is either not an image or is corrupted.',
             code='invalid_image',

@@ -25,7 +25,11 @@
     {# Filled by photo-shrink.js while it prepares the photo. #}
     <p data-shrink-status aria-live="polite"></p>
 
-    <button type="submit">Save garment</button>
+    {% comment %}
+      autocomplete="off": Firefox otherwise restores the disabled state the
+      shrink script set if the page is reloaded mid-processing.
+    {% endcomment %}
+    <button type="submit" autocomplete="off">Save garment</button>
     <p><a href="{% url 'garments:list' %}">Cancel</a></p>
   </form>
 {% endblock %}
