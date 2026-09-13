@@ -23,6 +23,13 @@ Outfits Garderobe is a Django 6 wardrobe app where users compose and revisit *ou
 - A garment can belong to many outfits (many-to-many) — model accordingly.
 - Domain apps so far: `privatemedia` (the private media gate) and `accounts` (allauth adapter, signup form, root and wardrobe routes). Create further apps as the work needs them.
 
+## Deployment & pull requests
+
+- **Railway, project `outfits-garderobe`.** Environment `production` deploys `master` on every push (config in `railway.toml`: pre-deploy `migrate`, `/health/` check). Work reaches `master` through PRs, never a direct push.
+- **Every PR gets a test build.** Railway PR environments are on: opening a PR creates an ephemeral environment `outfits-garderobe-pr-<N>` that builds the PR branch, runs the pre-deploy `migrate` against **its own, empty Postgres** (not production data), and reports the result to the PR as the status check `outfits-garderobe - outfits-garderobe`. The environment is removed when the PR closes.
+- **A red PR check is not automatically a code failure.** Read the failure stage in the Railway deploy logs first. Known infra case (PR #2, 2026-09-13): the PR environment's Postgres comes up without a volume, never deploys (its image requires a mount at `/var/lib/postgresql/data`), and the app's pre-deploy `migrate` fails with `failed to resolve host 'postgres.railway.internal'`. This is not fixable in the code. Adding the volume through the Railway API or CLI did **not** work — both returned a volume id, but nothing was attached and the Postgres deploy was rejected with the same missing-mount error — so don't retry that; hand it to the developer (Railway dashboard / PR environment settings).
+- Changes to Railway resources (volumes, deploys, variables) are outward-facing — confirm with the developer first, and always scope them to one environment id so `production` is never touched by accident.
+
 <!-- BEGIN @przeprogramowani/10x-cli -->
 
 ## 10xDevs AI Toolkit - Module 3, Lesson 1
