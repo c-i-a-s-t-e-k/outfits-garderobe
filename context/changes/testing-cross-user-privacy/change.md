@@ -1,7 +1,7 @@
 ---
 change_id: testing-cross-user-privacy
 title: Cross-user privacy contract tests (test-plan rollout Phase 1)
-status: implementing
+status: implemented
 created: 2026-09-13
 updated: 2026-09-13
 archived_at: null

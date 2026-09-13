@@ -543,4 +543,4 @@ No schema changes. The middleware is a behaviour change for anonymous visitors o
 
 #### Manual
 
-- [ ] 4.3 S-07 thought experiment answered from tests/CLAUDE.md alone
+- [x] 4.3 S-07 thought experiment answered from tests/CLAUDE.md alone — 9ea8e05
