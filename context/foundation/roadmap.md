@@ -3,7 +3,7 @@ project: "Outfits Garderobe"
 version: 1
 status: draft
 created: 2026-09-04
-updated: 2026-09-13
+updated: 2026-09-14
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -46,7 +46,7 @@ Osoby dbające o styl hobbystycznie zapominają wcześniej dobrane zestawienia, 
 | S-02 | add-garment        | dodać ubranie (zdjęcie, typ, opis) i zobaczyć swoją prywatną listę ubrań                   | S-01, F-01    | FR-003, US-01                     | done |
 | S-03 | compose-outfit     | wizualnie złożyć outfit z ubrań i zobaczyć go w siatce garderoby                           | S-02          | FR-005, FR-008, US-01             | done |
 | S-04 | outfit-photo       | dodać do outfitu własne zdjęcie w tym stroju i widzieć je jako kafelek w siatce            | S-03, F-01    | FR-007, FR-008, US-01             | proposed |
-| S-05 | outfit-tags        | tagować outfity i filtrować siatkę garderoby po wybranym tagu                              | S-03          | FR-009, FR-010, US-02             | in-progress |
+| S-05 | outfit-tags        | tagować outfity i filtrować siatkę garderoby po wybranym tagu                              | S-03          | FR-009, FR-010, US-02             | done |
 | S-06 | garment-lifecycle  | edytować i usunąć ubranie, a dotknięte outfity widzieć jako niekompletne z szybką naprawą  | S-03          | FR-004, US-01                     | proposed |
 | S-07 | outfit-lifecycle   | edytować i usunąć outfit, z ostrzeżeniem przy usuwaniu otagowanego                         | S-03, S-05    | FR-006, US-01, US-02              | proposed |
 
@@ -151,7 +151,7 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** domyka drugą historyjkę PRD i ostatni brakujący krok głównego kryterium sukcesu; ryzykiem jest swobodne wpisywanie tagów, które bez normalizacji rozjeżdża się na warianty tego samego słowa i psuje filtrowanie.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-06: Cykl życia ubrania i niekompletne outfity
 
@@ -186,9 +186,9 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 | S-02 | `add-garment` | Dodawanie ubrania ze zdjęciem i prywatna lista ubrań | OG-3 | yes | Uruchom `/10x-plan add-garment` (S-01 i F-01 done) |
 | S-03 | `compose-outfit` | Wizualne składanie outfitu i siatka garderoby | OG-4 | yes | Zmergowane do `master` 2026-09-13 (PR #2 kod, PR #3 domknięcie); produkcja zweryfikowana |
 | S-04 | `outfit-photo` | Własne zdjęcie w stroju jako kafelek outfitu | OG-5 | yes | S-03 i F-01 done — uruchom `/10x-plan outfit-photo` |
-| S-05 | `outfit-tags` | Tagowanie outfitów i filtrowanie siatki po tagu | OG-6 | yes | S-03 done — uruchom `/10x-plan outfit-tags` |
+| S-05 | `outfit-tags` | Tagowanie outfitów i filtrowanie siatki po tagu | OG-6 | yes | Zaimplementowane 2026-09-14 w PR #5 (tagi per użytkownik z kluczem `normalized`, filtr AND, pasek zawężający, trasy tagów w sieci prywatności). Manualne checki na PR i produkcji pominięte decyzją developera |
 | S-06 | `garment-lifecycle` | Edycja i usuwanie ubrania z oznaczeniem niekompletnych outfitów | OG-7 | yes | S-03 done — uruchom `/10x-plan garment-lifecycle` |
-| S-07 | `outfit-lifecycle` | Edycja i usuwanie outfitu z ostrzeżeniem o tagach | OG-8 | no | Czeka na S-03 i S-05 |
+| S-07 | `outfit-lifecycle` | Edycja i usuwanie outfitu z ostrzeżeniem o tagach | OG-8 | yes | S-03 i S-05 done — uruchom `/10x-plan outfit-lifecycle` |
 
 Ta tabela jest przekazaniem do narzędzia backlogowego. Jeden wiersz na każdy element roadmapy, bez powielania szczegółów z treści powyżej. Zgłoszenia założone w projekcie Jira **OG (outfits-garderobe)** dnia 2026-09-04; zależności z pola `Prerequisites` odwzorowano tam jako powiązania typu „Blocks".
 
