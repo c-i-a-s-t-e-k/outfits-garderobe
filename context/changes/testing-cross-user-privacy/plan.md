@@ -498,29 +498,29 @@ No schema changes. The middleware is a behaviour change for anonymous visitors o
 
 #### Automated
 
-- [x] 1.1 Full suite passes, including the healthcheck, root-redirect and allauth smoke tests
-- [x] 1.2 Middleware pin tests pass
-- [x] 1.3 No test module defines or cross-imports a garment factory any more
-- [x] 1.4 Lint and format are clean
-- [x] 1.5 Django system checks pass
+- [x] 1.1 Full suite passes, including the healthcheck, root-redirect and allauth smoke tests — 1e4efee
+- [x] 1.2 Middleware pin tests pass — 1e4efee
+- [x] 1.3 No test module defines or cross-imports a garment factory any more — 1e4efee
+- [x] 1.4 Lint and format are clean — 1e4efee
+- [x] 1.5 Django system checks pass — 1e4efee
 
 #### Manual
 
-- [x] 1.6 runserver logged-out smoke: health 200, root to login, allauth screens render, guarded pages redirect with next
+- [x] 1.6 runserver logged-out smoke: health 200, root to login, allauth screens render, guarded pages redirect with next — 1e4efee
 - [ ] 1.7 Railway healthcheck green after the deploy that ships this change
 
 ### Phase 2: Risk #1 — cross-user visibility
 
 #### Automated
 
-- [ ] 2.1 The risk #1 folder passes
-- [ ] 2.2 Full suite passes
-- [ ] 2.3 Every registry route is exercised by the anonymous, stranger and photo contracts
-- [ ] 2.4 Lint and format are clean
+- [x] 2.1 The risk #1 folder passes
+- [x] 2.2 Full suite passes
+- [x] 2.3 Every registry route is exercised by the anonymous, stranger and photo contracts
+- [x] 2.4 Lint and format are clean
 
 #### Manual
 
-- [ ] 2.5 Sabotage checks (a)–(d) each fail the named test, then reverted
+- [x] 2.5 Sabotage checks (a)–(d) each fail the named test, then reverted
 
 ### Phase 3: Risk #2 — foreign-id writes
 
