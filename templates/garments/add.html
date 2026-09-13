@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Add garment{% endblock %}
+
+{% block content %}
+  <h1>Add garment</h1>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    {% for field in form %}
+      {% comment %}
+        garment-type-other is what app.css hides unless Other is selected.
+        Without :has() support the field simply stays visible.
+      {% endcomment %}
+      <div{% if field.name == 'type_other' %} class="garment-type-other"{% endif %}>
+        {{ field.label_tag }}
+        {{ field }}
+        {{ field.errors }}
+      </div>
+    {% endfor %}
+
+    <button type="submit">Save garment</button>
+    <p><a href="{% url 'garments:list' %}">Cancel</a></p>
+  </form>
+{% endblock %}

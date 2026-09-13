@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Garments{% endblock %}
+
+{% block content %}
+  <h1>Your garments</h1>
+  <p><a href="{% url 'garments:add' %}" role="button">Add garment</a></p>
+
+  {% if garments %}
+    <ul class="garment-grid">
+      {% for garment in garments %}
+        <li>
+          <figure>
+            {% comment %}
+              photo_url is the gate, never the file's .url — see
+              PrivateImage.get_absolute_url(). Each tile is its own gated
+              request, so lazy loading keeps a long list from firing them all.
+            {% endcomment %}
+            <img src="{{ garment.photo_url }}"
+                 alt="{{ garment.display_type }}{% if garment.description %}: {{ garment.description }}{% endif %}"
+                 loading="lazy" decoding="async">
+            <figcaption>
+              <strong>{{ garment.display_type }}</strong>
+              {% if garment.description %}<br>{{ garment.description }}{% endif %}
+            </figcaption>
+          </figure>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No garments yet. <a href="{% url 'garments:add' %}">Add your first garment</a> to start building outfits.</p>
+  {% endif %}
+{% endblock %}

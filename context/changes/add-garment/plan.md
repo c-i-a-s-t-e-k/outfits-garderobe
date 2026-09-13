@@ -526,41 +526,41 @@ Give gunicorn enough workers that one upload cannot block everyone else, deploy,
 
 #### Automated
 
-- [x] 2.1 The migration applies cleanly: `uv run python manage.py migrate`
-- [x] 2.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [x] 2.3 The model tests pass: `uv run pytest garments/tests/test_model.py`
-- [x] 2.4 The full suite still passes: `uv run pytest`
-- [x] 2.5 System checks pass: `uv run python manage.py check`
-- [x] 2.6 Linting passes: `uv run ruff check .`
-- [x] 2.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 2.1 The migration applies cleanly: `uv run python manage.py migrate` — 0925621
+- [x] 2.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run` — 0925621
+- [x] 2.3 The model tests pass: `uv run pytest garments/tests/test_model.py` — 0925621
+- [x] 2.4 The full suite still passes: `uv run pytest` — 0925621
+- [x] 2.5 System checks pass: `uv run python manage.py check` — 0925621
+- [x] 2.6 Linting passes: `uv run ruff check .` — 0925621
+- [x] 2.7 Formatting is clean: `uv run ruff format --check .` — 0925621
 
 #### Manual
 
-- [x] 2.8 In `/admin/`, *Other* with the text "shirt" saves as *Shirt*
-- [x] 2.9 The admin refuses *Other* with no text and shows the error on that field
+- [x] 2.8 In `/admin/`, *Other* with the text "shirt" saves as *Shirt* — 0925621
+- [x] 2.9 The admin refuses *Other* with no text and shows the error on that field — 0925621
 
 ### Phase 3: Add and list pages
 
 #### Automated
 
-- [ ] 3.1 The view tests pass: `uv run pytest garments/tests/test_views.py`
-- [ ] 3.2 The updated smoke suite passes: `uv run pytest accounts/tests/`
-- [ ] 3.3 The full suite passes: `uv run pytest`
-- [ ] 3.4 System checks pass: `uv run python manage.py check`
-- [ ] 3.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 3.6 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [ ] 3.7 Linting passes: `uv run ruff check .`
-- [ ] 3.8 Formatting is clean: `uv run ruff format --check .`
+- [x] 3.1 The view tests pass: `uv run pytest garments/tests/test_views.py`
+- [x] 3.2 The updated smoke suite passes: `uv run pytest accounts/tests/`
+- [x] 3.3 The full suite passes: `uv run pytest`
+- [x] 3.4 System checks pass: `uv run python manage.py check`
+- [x] 3.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
+- [x] 3.6 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
+- [x] 3.7 Linting passes: `uv run ruff check .`
+- [x] 3.8 Formatting is clean: `uv run ruff format --check .`
 
 #### Manual
 
-- [ ] 3.9 Logging in lands on the garment list; the header shows *Garments*
-- [ ] 3.10 Adding a garment with a large desktop JPEG works and the new tile appears first with a "Garment added." message
+- [x] 3.9 Logging in lands on the garment list; the header shows *Garments*
+- [x] 3.10 Adding a garment with a large desktop JPEG works and the new tile appears first with a "Garment added." message
 - [ ] 3.11 Picking *Other* reveals the text field; picking another type hides it
-- [ ] 3.12 A form error shows next to the field
-- [ ] 3.13 A second account sees an empty list and gets 404 on the first account's photo URL
+- [x] 3.12 A form error shows next to the field
+- [x] 3.13 A second account sees an empty list and gets 404 on the first account's photo URL
 - [ ] 3.14 At 360 px the list shows a tidy grid and the form fits without horizontal scrolling
-- [ ] 3.15 With JavaScript disabled the whole flow still works
+- [x] 3.15 With JavaScript disabled the whole flow still works
 
 ### Phase 4: Browser-side photo shrinking
 

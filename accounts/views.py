@@ -2,7 +2,7 @@
 
 Both views live here for now. S-03 moves the wardrobe into its own app; the URL
 *name* is the contract that survives that move, which is why every redirect
-below reverses `wardrobe` rather than writing the path out.
+below reverses a route name rather than writing the path out.
 """
 
 from django.conf import settings
@@ -16,9 +16,13 @@ def home(request):
     Anonymous visitors land on the login page, which is the *Access Control*
     section of the PRD ("niezalogowany użytkownik trafia na stronę
     logowania/rejestracji") expressed as a route rather than as a template.
+
+    Signed-in visitors go to the garment list — the only real content until
+    S-03 brings the outfit grid and points this, and LOGIN_REDIRECT_URL, back
+    at `wardrobe`.
     """
     if request.user.is_authenticated:
-        return redirect('wardrobe')
+        return redirect('garments:list')
     return redirect(settings.LOGIN_URL)
 
 

@@ -252,9 +252,10 @@ ACCOUNT_PREVENT_ENUMERATION = False
 # since F-01, a URL that did not exist until this change created it.
 LOGIN_URL = '/accounts/login/'
 
-# These two are route names on purpose — S-03 repoints the landing page by
-# changing one string once the wardrobe is real.
-LOGIN_REDIRECT_URL = 'wardrobe'
+# These two are route names on purpose. Until the wardrobe is real, login lands
+# on the garment list; S-03 points it back at the outfit grid ('wardrobe') by
+# changing this one string, together with the redirect in accounts.views.home.
+LOGIN_REDIRECT_URL = 'garments:list'
 LOGOUT_REDIRECT_URL = 'account_login'
 
 ACCOUNT_ADAPTER = 'accounts.adapter.AccountAdapter'

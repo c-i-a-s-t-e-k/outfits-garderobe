@@ -48,3 +48,33 @@
 .site-header nav form {
   margin-bottom: 0;
 }
+
+/* Garment list: as many ~9rem tiles per row as fit, two on a 360px phone. */
+.garment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: var(--pico-spacing);
+  padding-left: 0;
+  list-style: none;
+}
+
+.garment-grid > li {
+  list-style: none;
+}
+
+.garment-grid figure {
+  margin: 0;
+}
+
+/* Square before the image loads, so lazy-loaded tiles do not shift the page. */
+.garment-grid img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+/* The Other field is only relevant once Other is chosen. Browsers without
+   :has() never match this and simply keep showing it. */
+form:has(select[name='type'] option[value='other']:not(:checked)) .garment-type-other {
+  display: none;
+}
