@@ -44,7 +44,7 @@ Osoby dbające o styl hobbystycznie zapominają wcześniej dobrane zestawienia, 
 | F-01 | private-media-gate | (fundament) zdjęcia leżą poza publicznym katalogiem, a dostęp do pliku sprawdza właściciela | —             | Prywatność (NFR), Access Control, FR-003, FR-007 | done |
 | S-01 | user-accounts      | zarejestrować się, zalogować, wylogować i zmienić hasło                                    | —             | FR-001, FR-002, Access Control    | done |
 | S-02 | add-garment        | dodać ubranie (zdjęcie, typ, opis) i zobaczyć swoją prywatną listę ubrań                   | S-01, F-01    | FR-003, US-01                     | done |
-| S-03 | compose-outfit     | wizualnie złożyć outfit z ubrań i zobaczyć go w siatce garderoby                           | S-02          | FR-005, FR-008, US-01             | in-progress |
+| S-03 | compose-outfit     | wizualnie złożyć outfit z ubrań i zobaczyć go w siatce garderoby                           | S-02          | FR-005, FR-008, US-01             | done |
 | S-04 | outfit-photo       | dodać do outfitu własne zdjęcie w tym stroju i widzieć je jako kafelek w siatce            | S-03, F-01    | FR-007, FR-008, US-01             | proposed |
 | S-05 | outfit-tags        | tagować outfity i filtrować siatkę garderoby po wybranym tagu                              | S-03          | FR-009, FR-010, US-02             | proposed |
 | S-06 | garment-lifecycle  | edytować i usunąć ubranie, a dotknięte outfity widzieć jako niekompletne z szybką naprawą  | S-03          | FR-004, US-01                     | proposed |
@@ -127,7 +127,7 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** to jest teza produktu — kompozycja stroju zamiast katalogu ubrań — więc leży najwcześniej, jak pozwalają zależności; ryzykiem jest wizualny wybór ubrań na ekranie 360 pikseli, gdzie siatka miniatur i zaznaczanie łatwo stają się nieużywalne.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-04: Własne zdjęcie w stroju
 
@@ -184,10 +184,10 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 | F-01 | `private-media-gate` | Prywatna brama dostępu do zdjęć użytkownika | OG-1 | yes | Uruchom `/10x-plan private-media-gate` |
 | S-01 | `user-accounts` | Rejestracja, logowanie, wylogowanie i zmiana hasła | OG-2 | yes | Uruchom `/10x-plan user-accounts` |
 | S-02 | `add-garment` | Dodawanie ubrania ze zdjęciem i prywatna lista ubrań | OG-3 | yes | Uruchom `/10x-plan add-garment` (S-01 i F-01 done) |
-| S-03 | `compose-outfit` | Wizualne składanie outfitu i siatka garderoby | OG-4 | yes | W toku od 2026-09-13 (OG-4 In progress, zmiana otwarta); następnie `/10x-plan compose-outfit` |
-| S-04 | `outfit-photo` | Własne zdjęcie w stroju jako kafelek outfitu | OG-5 | no | Czeka na S-03 i F-01 |
-| S-05 | `outfit-tags` | Tagowanie outfitów i filtrowanie siatki po tagu | OG-6 | no | Czeka na S-03 |
-| S-06 | `garment-lifecycle` | Edycja i usuwanie ubrania z oznaczeniem niekompletnych outfitów | OG-7 | no | Czeka na S-03 |
+| S-03 | `compose-outfit` | Wizualne składanie outfitu i siatka garderoby | OG-4 | yes | Zmergowane do `master` 2026-09-13 (PR #2 kod, PR #3 domknięcie); produkcja zweryfikowana |
+| S-04 | `outfit-photo` | Własne zdjęcie w stroju jako kafelek outfitu | OG-5 | yes | S-03 i F-01 done — uruchom `/10x-plan outfit-photo` |
+| S-05 | `outfit-tags` | Tagowanie outfitów i filtrowanie siatki po tagu | OG-6 | yes | S-03 done — uruchom `/10x-plan outfit-tags` |
+| S-06 | `garment-lifecycle` | Edycja i usuwanie ubrania z oznaczeniem niekompletnych outfitów | OG-7 | yes | S-03 done — uruchom `/10x-plan garment-lifecycle` |
 | S-07 | `outfit-lifecycle` | Edycja i usuwanie outfitu z ostrzeżeniem o tagach | OG-8 | no | Czeka na S-03 i S-05 |
 
 Ta tabela jest przekazaniem do narzędzia backlogowego. Jeden wiersz na każdy element roadmapy, bez powielania szczegółów z treści powyżej. Zgłoszenia założone w projekcie Jira **OG (outfits-garderobe)** dnia 2026-09-04; zależności z pola `Prerequisites` odwzorowano tam jako powiązania typu „Blocks".
