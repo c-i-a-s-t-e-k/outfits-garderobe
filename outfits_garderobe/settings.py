@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'accounts',
     'privatemedia',
     'garments',
+    'outfits',
 ]
 
 MIDDLEWARE = [
