@@ -14,6 +14,13 @@
     </p>
   {% endif %}
 
+  {% if incomplete_count %}
+    <p class="notice">
+      {{ incomplete_count }} outfit{{ incomplete_count|pluralize }} need{{ incomplete_count|pluralize:"s," }} attention.
+      <a href="{{ show_incomplete_url }}">Show them</a>
+    </p>
+  {% endif %}
+
   {% if selected or available or filtering %}
     {% comment %}
       Links, not a form: each chip is the wardrobe URL with that tag added or
@@ -22,6 +29,9 @@
     {% endcomment %}
     <nav class="tag-bar" aria-label="Filter by tag">
       <a href="{% url 'wardrobe' %}" class="tag-chip"{% if not filtering %} aria-current="page"{% endif %}>All</a>
+      {% if only_incomplete %}
+        <a href="{{ drop_incomplete_url }}" class="tag-chip tag-chip-selected" aria-label="Remove filter Incomplete">Incomplete <span aria-hidden="true">×</span></a>
+      {% endif %}
       {% for tag in selected %}
         <a href="{{ tag.url }}" class="tag-chip tag-chip-selected" aria-label="Remove filter {{ tag.name }}">{{ tag.name }} <span aria-hidden="true">×</span></a>
       {% endfor %}
@@ -40,12 +50,15 @@
             the preview images are decorative and the "+N" badge is a visual
             hint. An outfit with the user's own photo shows that photo; any
             other shows a collage of up to four garment photos in type order.
-            Both fill the same portrait box.
+            Both fill the same portrait box. An incomplete outfit says so in its
+            accessible name and with a badge inside the box, on either kind.
           {% endcomment %}
-          <a href="{{ outfit.get_absolute_url }}" aria-label="{{ outfit.name }}">
+          {% with missing=outfit.missing_count %}
+          <a href="{{ outfit.get_absolute_url }}" aria-label="{{ outfit.name }}{% if missing %}, incomplete{% endif %}">
             {% if outfit.photo_id %}
               <div class="outfit-preview outfit-preview-photo">
                 <img src="{{ outfit.photo_url }}" alt="" loading="lazy" decoding="async">
+                {% if missing %}<span class="outfit-incomplete">Incomplete · {{ missing }} missing</span>{% endif %}
               </div>
             {% else %}
               <div class="outfit-preview outfit-preview-{{ outfit.preview_garments|length }}">
@@ -59,6 +72,7 @@
                     <img src="{{ garment.photo_url }}" alt="" loading="lazy" decoding="async">
                   {% endif %}
                 {% endfor %}
+                {% if missing %}<span class="outfit-incomplete">Incomplete · {{ missing }} missing</span>{% endif %}
               </div>
             {% endif %}
             <span class="outfit-name">{{ outfit.name }}</span>
@@ -72,9 +86,12 @@
               {% endif %}
             {% endwith %}
           </a>
+          {% endwith %}
         </li>
       {% endfor %}
     </ul>
+  {% elif only_incomplete %}
+    <p>No incomplete outfits match. <a href="{% url 'wardrobe' %}">Show all outfits</a></p>
   {% elif filtering %}
     <p>No outfits have all these tags. <a href="{% url 'wardrobe' %}">Show all outfits</a></p>
   {% elif can_compose %}

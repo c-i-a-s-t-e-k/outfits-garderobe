@@ -839,39 +839,39 @@ Bring the branch up to date, open the pull request, run every manual check again
 
 #### Automated
 
-- [x] 3.1 Outfit tests pass: `uv run pytest outfits/tests`
-- [x] 3.2 The privacy contracts cover the new routes: `uv run pytest tests/`
-- [x] 3.3 The full suite passes: `uv run pytest`
-- [x] 3.4 System checks pass: `uv run python manage.py check`
-- [x] 3.5 Linting passes: `uv run ruff check .`
-- [x] 3.6 Formatting is clean: `uv run ruff format --check .`
+- [x] 3.1 Outfit tests pass: `uv run pytest outfits/tests` — f995583
+- [x] 3.2 The privacy contracts cover the new routes: `uv run pytest tests/` — f995583
+- [x] 3.3 The full suite passes: `uv run pytest` — f995583
+- [x] 3.4 System checks pass: `uv run python manage.py check` — f995583
+- [x] 3.5 Linting passes: `uv run ruff check .` — f995583
+- [x] 3.6 Formatting is clean: `uv run ruff format --check .` — f995583
 
 #### Manual
 
-- [x] 3.7 *Edit outfit* shows the picker with current garments ticked; renaming and unticking a garment saves and returns to the outfit page with its tags and photo intact
-- [x] 3.8 *Delete outfit* on a tagged outfit with a photo shows the tag warning and the photo sentence; confirming lands on the wardrobe without the outfit, and the photo file is gone
-- [x] 3.9 Compose still works exactly as before
-- [x] 3.10 At 360 px in headless Chromium the edit and delete pages fit without horizontal scrolling
+- [x] 3.7 *Edit outfit* shows the picker with current garments ticked; renaming and unticking a garment saves and returns to the outfit page with its tags and photo intact — f995583
+- [x] 3.8 *Delete outfit* on a tagged outfit with a photo shows the tag warning and the photo sentence; confirming lands on the wardrobe without the outfit, and the photo file is gone — f995583
+- [x] 3.9 Compose still works exactly as before — f995583
+- [x] 3.10 At 360 px in headless Chromium the edit and delete pages fit without horizontal scrolling — f995583
 
 ### Phase 4: Incomplete outfits in the grid and on the outfit page
 
 #### Automated
 
-- [ ] 4.1 Outfit tests pass: `uv run pytest outfits/tests`
-- [ ] 4.2 Risk #5 scenarios pass: `uv run pytest tests/garment_deletion_keeps_outfits`
-- [ ] 4.3 The privacy contracts cover the new routes and markers: `uv run pytest tests/`
-- [ ] 4.4 The full suite passes: `uv run pytest`
-- [ ] 4.5 System checks pass: `uv run python manage.py check`
-- [ ] 4.6 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [ ] 4.7 Linting passes: `uv run ruff check .`
-- [ ] 4.8 Formatting is clean: `uv run ruff format --check .`
+- [x] 4.1 Outfit tests pass: `uv run pytest outfits/tests`
+- [x] 4.2 Risk #5 scenarios pass: `uv run pytest tests/garment_deletion_keeps_outfits`
+- [x] 4.3 The privacy contracts cover the new routes and markers: `uv run pytest tests/`
+- [x] 4.4 The full suite passes: `uv run pytest`
+- [x] 4.5 System checks pass: `uv run python manage.py check`
+- [x] 4.6 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
+- [x] 4.7 Linting passes: `uv run ruff check .`
+- [x] 4.8 Formatting is clean: `uv run ruff format --check .`
 
 #### Manual
 
-- [ ] 4.9 After deleting a garment used by a collage outfit and a photo outfit, both tiles show the *Incomplete* badge legibly and the banner links to a grid of just those two
-- [ ] 4.10 On the outfit page, *Replace* lists same-type garments first; picking one adds it and the section disappears
-- [ ] 4.11 *Keep without it* closes the slot; on an outfit with no garments left only *Replace* and *Delete outfit* are offered
-- [ ] 4.12 At 360 px in headless Chromium the badge, banner, missing section and replace picker fit without horizontal scrolling, with and without a tag filter
+- [x] 4.9 After deleting a garment used by a collage outfit and a photo outfit, both tiles show the *Incomplete* badge legibly and the banner links to a grid of just those two
+- [x] 4.10 On the outfit page, *Replace* lists same-type garments first; picking one adds it and the section disappears
+- [x] 4.11 *Keep without it* closes the slot; on an outfit with no garments left only *Replace* and *Delete outfit* are offered
+- [x] 4.12 At 360 px in headless Chromium the badge, banner, missing section and replace picker fit without horizontal scrolling, with and without a tag filter
 
 ### Phase 5: Pull request and PR-environment verification
 
@@ -891,4 +891,3 @@ Bring the branch up to date, open the pull request, run every manual check again
 - [ ] 5.9 On the PR environment, repair one outfit with *Replace* and the other with *Keep without it*; the badges and banner disappear
 - [ ] 5.10 On the PR environment at 360 px, edit a garment's photo and an outfit's name and garments, then delete a tagged outfit through its warning page
 - [ ] 5.11 On the PR environment, a second account gets 404 on the first account's garment edit/delete pages, outfit edit/delete pages and replace page, and sees none of its garments or outfits
-- [ ] 5.12 The developer reviews and merges the PR; production `/health/` returns 200 afterwards

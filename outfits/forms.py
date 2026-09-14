@@ -1,7 +1,8 @@
-"""Compose and edit forms, the outfit photo form, and the tag input used wherever tags are typed."""
+"""Compose, edit and replacement forms, the outfit photo form, and the tag input for typed tags."""
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.forms.models import ModelChoiceIteratorValue
 
 from garments.models import Garment
 from outfits.models import Outfit, Tag
@@ -115,6 +116,40 @@ class OutfitEditForm(OutfitForm):
         # the lowest free outfit-N. clean_name() runs before the form copies its
         # values onto the instance, so instance.name is still the stored one.
         return super().clean_name() or self.instance.name
+
+
+class ReplaceMissingGarmentForm(forms.Form):
+    """One of the owner's garments to fill a missing slot, garments of the same kind first.
+
+    Garments already in the outfit are not offered. A posted id outside the
+    offered garments fails as an invalid choice.
+    """
+
+    garment = forms.ModelChoiceField(
+        queryset=Garment.objects.none(),
+        widget=forms.RadioSelect,
+        label='Replacement',
+        error_messages={'required': 'Choose a garment.'},
+    )
+
+    def __init__(self, data=None, *, outfit, missing):
+        super().__init__(data)
+        field = self.fields['garment']
+        field.queryset = Garment.objects.filter(owner=outfit.owner_id).exclude(
+            pk__in=[garment.pk for garment in outfit.garments.all()]
+        )
+        # Ordered in Python: a stable sort keeps the default order within each group.
+        candidates = sorted(field.queryset, key=lambda garment: not _same_kind(garment, missing))
+        field.choices = [
+            (ModelChoiceIteratorValue(garment.pk, garment), field.label_from_instance(garment))
+            for garment in candidates
+        ]
+
+
+def _same_kind(garment, missing):
+    if garment.type != missing.type:
+        return False
+    return garment.type_other.casefold() == missing.type_other.casefold()
 
 
 class OutfitPhotoForm(NormalizedPhotoMixin, forms.Form):

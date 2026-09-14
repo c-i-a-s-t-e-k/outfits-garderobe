@@ -65,12 +65,13 @@ class ProjectRoute:
 
 
 def _seed_wardrobe(user, kwargs_for=lambda garments, outfit: {}):
-    """Two garments and two outfits made of them — enough for every page to render data.
+    """Three garments and two outfits — enough for every page to render data.
 
-    The first outfit is tagged and carries a photo of its owner; the second has
-    neither, so the wardrobe renders both kinds of tile. Every text marker
-    carries the username, so two users seeded the same way never share a marker
-    by accident.
+    The first outfit is tagged, carries a photo of its owner, and lost a garment,
+    so it has a missing slot; the second has none of these, so the wardrobe
+    renders both kinds of tile. The third garment is in no outfit, a spare to
+    replace the missing one with. Every text marker carries the username, so two
+    users seeded the same way never share a marker by accident.
     """
     garments = [
         make_garment(user, type=GarmentType.SHIRT, description=f'{user.username} navy oxford'),
@@ -80,6 +81,13 @@ def _seed_wardrobe(user, kwargs_for=lambda garments, outfit: {}):
     tag = Tag.objects.create(owner=user, name=f'{user.username} letnie')
     outfit.tags.add(tag)
     bare = make_outfit(user, garments=garments, name=f'{user.username} city errand')
+    missing = _lose_garment(
+        outfit,
+        make_garment(user, type=GarmentType.ACCESSORY, description=f'{user.username} red belt'),
+    )
+    garments.append(
+        make_garment(user, type=GarmentType.SHOES, description=f'{user.username} grey sneakers')
+    )
     markers = [
         *(garment.description for garment in garments),
         *(garment.photo_url for garment in garments),
@@ -93,6 +101,8 @@ def _seed_wardrobe(user, kwargs_for=lambda garments, outfit: {}):
         str(bare.pk),
         tag.name,
         str(tag.pk),
+        missing.description,
+        str(missing.pk),
     ]
     return Seeded(
         kwargs=kwargs_for(garments, outfit),
@@ -100,6 +110,19 @@ def _seed_wardrobe(user, kwargs_for=lambda garments, outfit: {}):
         garments=garments,
         outfits=[outfit, bare],
     )
+
+
+def _lose_garment(outfit, garment):
+    """Delete a garment of the outfit through the ORM, so the rule records the slot.
+
+    The garment's photo goes with it, file included: the seeder leaves no orphan.
+    """
+    outfit.garments.add(garment)
+    photo = garment.photo
+    garment.delete()
+    photo.image.delete(save=False)
+    photo.delete()
+    return outfit.missing_garments.get()
 
 
 def _seed_outfit_detail(user):
@@ -110,6 +133,16 @@ def _seed_outfit_tag(user):
     return _seed_wardrobe(
         user,
         kwargs_for=lambda garments, outfit: {'pk': outfit.pk, 'tag_pk': outfit.tags.get().pk},
+    )
+
+
+def _seed_missing_slot(user):
+    return _seed_wardrobe(
+        user,
+        kwargs_for=lambda garments, outfit: {
+            'pk': outfit.pk,
+            'missing_pk': outfit.missing_garments.get().pk,
+        },
     )
 
 
@@ -172,6 +205,19 @@ def _outfit_edit_payload(seeded, requester):
 
 def _outfit_delete_payload(seeded, requester):
     """The seeded user's outfit is in the URL; confirming carries nothing."""
+    return {}
+
+
+def _missing_replace_payload(seeded, requester):
+    """A replacement for the seeded user's slot: the requester's own garment, else their spare."""
+    garment = seeded.garments[2]
+    if requester is not None:
+        garment = requester.garments.first() or garment
+    return {'garment': garment.pk}
+
+
+def _missing_dismiss_payload(seeded, requester):
+    """The seeded user's outfit and slot are in the URL; the body carries nothing."""
     return {}
 
 
@@ -269,6 +315,20 @@ ROUTES = {
         seed=_seed_outfit_detail,
         shows_photos=True,
         foreign_payload=_photo_remove_payload,
+    ),
+    # The picker shows the owner's garment photos.
+    'outfits:missing_replace': OwnerScopedRoute(
+        kind='write',
+        seed=_seed_missing_slot,
+        shows_photos=True,
+        foreign_payload=_missing_replace_payload,
+    ),
+    'outfits:missing_dismiss': OwnerScopedRoute(
+        kind='write',
+        seed=_seed_missing_slot,
+        shows_photos=False,
+        foreign_payload=_missing_dismiss_payload,
+        post_only=True,
     ),
 }
 

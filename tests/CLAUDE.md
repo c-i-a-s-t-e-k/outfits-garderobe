@@ -7,6 +7,7 @@ Tests here are organised by **risk**, not by module. Strategy and risk numbers: 
 - **A folder is a test-plan §2 risk.** Current folders:
   - `cross_user_visibility/`: #1, a photo or owner record visible to another user or to an anonymous visitor.
   - `foreign_id_writes/`: #2, a write carrying another user's ids changes their data.
+  - `garment_deletion_keeps_outfits/`: #5, deleting a garment deletes its outfits or leaves them looking complete.
 - **A file is one failure scenario**, named as a sentence describing the protection: `test_<scenario>.py`, e.g. `test_stranger_sees_nothing_of_the_owner.py`. Its docstring says what the scenario proves.
 - **Per-app `tests/` packages** (`garments/tests/`, `outfits/tests/`, …) keep module-level behaviour: forms, models, a single view's happy path. Don't put cross-cutting risk scenarios there.
 

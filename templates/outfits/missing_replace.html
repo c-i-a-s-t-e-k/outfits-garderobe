@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Replace a missing garment{% endblock %}
+
+{% block content %}
+  <h1>Replace a missing garment</h1>
+
+  <p>Missing: {{ missing.display_type }}{% if missing.description %} — {{ missing.description }}{% endif %}</p>
+
+  {% if form.garment.field.choices %}
+    <form method="post">
+      {% csrf_token %}
+      {{ form.garment.errors }}
+      <p id="replacement-label">Pick the garment that takes its place. Garments of the same kind come first.</p>
+      <ul class="outfit-picker" aria-labelledby="replacement-label">
+        {% for option in form.garment %}
+          <li>
+            <label for="{{ option.id_for_label }}">
+              {{ option.tag }}
+              {# photo_url is the gate; alt is empty because the caption names the garment. #}
+              <img src="{{ option.data.value.instance.photo_url }}" alt=""
+                   loading="lazy" decoding="async">
+              <span>{{ option.data.value.instance.display_type }}</span>
+            </label>
+          </li>
+        {% endfor %}
+      </ul>
+      <button type="submit">Add to outfit</button>
+    </form>
+  {% else %}
+    <p>You have no other garments to use. <a href="{% url 'garments:add' %}">Add a garment</a></p>
+  {% endif %}
+  <p><a href="{{ outfit.get_absolute_url }}">Cancel</a></p>
+{% endblock %}
