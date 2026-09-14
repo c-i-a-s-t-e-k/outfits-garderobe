@@ -95,3 +95,19 @@ def stored_private_image(owner, file, original_filename=''):
         if image.image._committed:
             image.image.delete(save=False)
         raise
+
+
+def discard_private_image(image):
+    """Retire a PrivateImage: the row now, the file only once the change commits.
+
+    Call inside a transaction. If it rolls back, the row comes back and the file
+    was never touched, so a failed replace or remove never loses the photo. After
+    commit nothing points at the file, so it is deleted rather than left on the
+    volume. Unlink the image from any RESTRICT relation (Garment.photo,
+    Outfit.photo) first, or the row delete is refused.
+    """
+    storage = image.image.storage
+    name = image.image.name
+    image.delete()
+    # FileSystemStorage.delete() ignores a file that is already gone.
+    transaction.on_commit(lambda: storage.delete(name))
