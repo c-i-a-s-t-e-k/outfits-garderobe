@@ -163,7 +163,7 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** leży po kompozycji, bo dopiero wtedy reguła spójności z logiki biznesowej ma co naruszać i da się ją sprawdzić na realnym outficie; ryzykiem jest to, że stan niekompletności musi być widoczny w siatce, a nie tylko zapisany w bazie.
-- **Status:** done — zaimplementowane w PR #8 (garment edit/delete, tombstones, incomplete grid + repair). Ta sama PR dostarczyła też outfit edit/delete (FR-006), więc jej close-out domyka równolegle S-07.
+- **Status:** done
 
 ### S-07: Cykl życia outfitu
 
@@ -222,3 +222,4 @@ PRD nie ma nierozstrzygniętych pytań. Poniższe wyszły w trakcie układania r
 - **S-01: użytkownik może się zarejestrować, zalogować, wylogować i zmienić hasło; niezalogowany trafia na stronę logowania zamiast na treść.** — Archived 2026-09-14 → `context/archive/2026-09-12-user-accounts/`. Lesson: —.
 - **F-01: (fundament) pliki wgrywane przez użytkownika lądują poza publicznie serwowanym katalogiem, a każde ich pobranie przechodzi przez widok, który wymaga zalogowania i sprawdza własność pliku; próba pobrania cudzego pliku kończy się odmową.** — Archived 2026-09-14 → `context/archive/2026-09-05-private-media-gate/`. Lesson: —.
 - **S-02: użytkownik może dodać ubranie ze zdjęciem, typem i opisem, a potem zobaczyć swoją prywatną listę ubrań ze zdjęciami.** — Archived 2026-09-14 → `context/archive/2026-09-13-add-garment/`. Lesson: —.
+- **S-06: użytkownik może edytować i usunąć ubranie, a outfity, które go używały, wyróżniają się w siatce jako niekompletne i dają natychmiastowy wybór: uzupełnij zamiennikiem albo usuń outfit.** — Archived 2026-09-14 → `context/archive/2026-09-14-garment-lifecycle/`. Lesson: —.
