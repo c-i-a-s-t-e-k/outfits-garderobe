@@ -140,10 +140,11 @@
   margin-bottom: 0;
 }
 
-/* Outfit tile: a square collage of up to four garment photos that reads as one
-   tile and keeps a garment tile's footprint, so S-04 can drop a single photo
-   into the same slot. Layout by photo count: two side by side, three with the
-   first spanning the left column, four in a 2×2. */
+/* Outfit tile: a portrait 3:4 box holding either the user's own photo of the
+   outfit or a collage of up to four garment photos, so both kinds line up in
+   one grid. The photo is cropped from the top down, losing feet before the
+   head. Collage layout by photo count: two side by side, three with the first
+   spanning the left column, four in a 2×2. Garment tiles stay square. */
 .outfit-grid a {
   display: block;
   color: inherit;
@@ -155,7 +156,7 @@
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
   gap: 2px;
-  aspect-ratio: 1;
+  aspect-ratio: 3 / 4;
   overflow: hidden;
   border-radius: var(--pico-border-radius);
   background: var(--pico-muted-border-color);
@@ -173,10 +174,15 @@
   object-fit: cover;
 }
 
+.outfit-preview-photo > *,
 .outfit-preview-1 > *,
 .outfit-preview-0 > * {
   grid-column: 1 / -1;
   grid-row: 1 / -1;
+}
+
+.outfit-preview-photo img {
+  object-position: center top;
 }
 
 .outfit-preview-2 > * {

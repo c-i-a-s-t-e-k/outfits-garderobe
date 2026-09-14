@@ -498,39 +498,39 @@ Never merge the PR.
 
 #### Automated
 
-- [x] 2.1 View tests pass: `uv run pytest outfits/tests/test_views.py`
-- [x] 2.2 The privacy contracts cover the new routes: `uv run pytest tests/`
-- [x] 2.3 The full suite passes: `uv run pytest`
-- [x] 2.4 System checks pass: `uv run python manage.py check`
-- [x] 2.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [x] 2.6 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [x] 2.7 Linting passes: `uv run ruff check .`
-- [x] 2.8 Formatting is clean: `uv run ruff format --check .`
+- [x] 2.1 View tests pass: `uv run pytest outfits/tests/test_views.py` — 1568a51
+- [x] 2.2 The privacy contracts cover the new routes: `uv run pytest tests/` — 1568a51
+- [x] 2.3 The full suite passes: `uv run pytest` — 1568a51
+- [x] 2.4 System checks pass: `uv run python manage.py check` — 1568a51
+- [x] 2.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run` — 1568a51
+- [x] 2.6 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput` — 1568a51
+- [x] 2.7 Linting passes: `uv run ruff check .` — 1568a51
+- [x] 2.8 Formatting is clean: `uv run ruff format --check .` — 1568a51
 
 #### Manual
 
-- [x] 2.9 Composing an outfit lands on its page with "Outfit saved." and the *Photo* section under *Tags*
-- [x] 2.10 Uploading a large phone-sized photo shows "Preparing photo…", then "Uploading…" with the button disabled, then the page with the photo shown whole
-- [x] 2.11 Replacing shows the new photo; the old file is gone from the dev `MEDIA_ROOT`
-- [x] 2.12 *Remove photo* → confirmation page with the photo → confirm → "Photo removed." and "No photo yet."
-- [x] 2.13 At 360 px in headless Chromium the Photo section, the upload form and the confirmation page fit without horizontal scrolling
+- [x] 2.9 Composing an outfit lands on its page with "Outfit saved." and the *Photo* section under *Tags* — 1568a51
+- [x] 2.10 Uploading a large phone-sized photo shows "Preparing photo…", then "Uploading…" with the button disabled, then the page with the photo shown whole — 1568a51
+- [x] 2.11 Replacing shows the new photo; the old file is gone from the dev `MEDIA_ROOT` — 1568a51
+- [x] 2.12 *Remove photo* → confirmation page with the photo → confirm → "Photo removed." and "No photo yet." — 1568a51
+- [x] 2.13 At 360 px in headless Chromium the Photo section, the upload form and the confirmation page fit without horizontal scrolling — 1568a51
 
 ### Phase 3: Portrait tiles in the wardrobe
 
 #### Automated
 
-- [ ] 3.1 View tests pass: `uv run pytest outfits/tests/test_views.py`
-- [ ] 3.2 The privacy contracts still pass: `uv run pytest tests/`
-- [ ] 3.3 The full suite passes: `uv run pytest`
-- [ ] 3.4 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [ ] 3.5 Linting passes: `uv run ruff check .`
-- [ ] 3.6 Formatting is clean: `uv run ruff format --check .`
+- [x] 3.1 View tests pass: `uv run pytest outfits/tests/test_views.py`
+- [x] 3.2 The privacy contracts still pass: `uv run pytest tests/`
+- [x] 3.3 The full suite passes: `uv run pytest`
+- [x] 3.4 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
+- [x] 3.5 Linting passes: `uv run ruff check .`
+- [x] 3.6 Formatting is clean: `uv run ruff format --check .`
 
 #### Manual
 
-- [ ] 3.7 In the wardrobe, a photo tile and a collage tile in the same row have the same size, and the photo shows the upper body and head
-- [ ] 3.8 2-, 3- and 4-garment collages and the `+N` badge still read correctly in the portrait tile
-- [ ] 3.9 At 360 px in headless Chromium the grid shows two portrait tiles per row with no horizontal scrolling, with and without a tag filter
+- [x] 3.7 In the wardrobe, a photo tile and a collage tile in the same row have the same size, and the photo shows the upper body and head
+- [x] 3.8 2-, 3- and 4-garment collages and the `+N` badge still read correctly in the portrait tile
+- [x] 3.9 At 360 px in headless Chromium the grid shows two portrait tiles per row with no horizontal scrolling, with and without a tag filter
 
 ### Phase 4: Pull request and PR-environment verification
 

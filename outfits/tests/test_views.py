@@ -26,7 +26,7 @@ from outfits.models import Outfit, Tag
 from privatemedia.models import PrivateImage
 from privatemedia.processing import MAX_EDGE_PX
 from privatemedia.validators import MAX_UPLOAD_BYTES
-from tests.factories import make_garment, make_outfit
+from tests.factories import make_garment, make_image, make_outfit
 
 pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('temp_media_root')]
 
@@ -943,6 +943,69 @@ def test_detail_query_count_is_the_same_with_and_without_a_photo(
     assert len(with_photo.captured_queries) == len(without_photo.captured_queries)
 
 
+@pytest.fixture
+def photo_and_collage(owner, wardrobe):
+    """A: the owner's photo over both wardrobe garments; B: three garments, no photo."""
+    return {
+        'A': make_outfit(owner, garments=wardrobe, photo=True, name='Outfit A'),
+        'B': make_outfit(
+            owner,
+            garments=[*wardrobe, make_garment(owner, type=GarmentType.TROUSERS)],
+            name='Outfit B',
+        ),
+    }
+
+
+def test_a_photo_tile_shows_the_photo_and_a_bare_tile_its_collage(
+    client, owner, stranger, photo_and_collage, foreign_wardrobe
+):
+    a, b = photo_and_collage['A'], photo_and_collage['B']
+    theirs = make_outfit(stranger, garments=foreign_wardrobe, photo=True, name='Theirs')
+    client.force_login(owner)
+
+    page = client.get(WARDROBE_URL).content.decode()
+
+    a_tile, b_tile = _tile(page, a), _tile(page, b)
+    assert _image_urls(a_tile) == [a.photo_url]
+    assert 'outfit-preview-photo' in a_tile
+    assert '<span class="outfit-name">Outfit A</span>' in a_tile
+    assert sorted(_image_urls(b_tile)) == sorted(g.photo_url for g in b.garments.all())
+    assert 'outfit-preview-3' in b_tile
+    assert 'outfit-preview-photo' not in b_tile
+    assert _shown(page) == {'Outfit A', 'Outfit B'}
+    assert theirs.photo_url not in page
+    assert theirs.get_absolute_url() not in page
+
+
+def test_removing_the_photo_turns_the_tile_back_into_its_collage(
+    client, owner, wardrobe, photo_and_collage, django_capture_on_commit_callbacks
+):
+    a = photo_and_collage['A']
+    photo_url = a.photo_url
+    client.force_login(owner)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        assert client.post(_photo_remove_url(a)).status_code == 302
+
+    tile = _tile(client.get(WARDROBE_URL).content.decode(), a)
+    assert photo_url not in tile
+    assert sorted(_image_urls(tile)) == sorted(g.photo_url for g in wardrobe)
+    assert 'outfit-preview-2' in tile
+
+
+def test_a_tag_filter_leaves_out_the_photo_of_an_outfit_it_hides(client, owner, photo_and_collage):
+    a, b = photo_and_collage['A'], photo_and_collage['B']
+    a.tags.set(Tag.resolve(owner, ['letnie']))
+    b.tags.set(Tag.resolve(owner, ['zimowe']))
+    client.force_login(owner)
+
+    page = _filtered(client, 'zimowe')
+
+    assert _shown(page) == {'Outfit B'}
+    assert a.photo_url not in page
+    assert _filtered(client, 'letnie').count(a.photo_url) == 1
+
+
 def _shown(page):
     """Names of the outfits whose tiles are on the page."""
     return set(re.findall(r'<span class="outfit-name">([^<]+)</span>', page))
@@ -1122,7 +1185,9 @@ def test_a_tag_removed_from_its_last_outfit_leaves_the_filter_and_the_bar(client
     assert _available(client.get(WARDROBE_URL).content.decode()) == ['smart casual', 'zimowe']
 
 
-def test_grid_query_count_does_not_grow_with_outfits_tags_or_selections(client, owner, wardrobe):
+def test_grid_query_count_does_not_grow_with_outfits_tags_selections_or_photos(
+    client, owner, wardrobe
+):
     first = _outfit_with(owner, wardrobe, 'First', tags=['x', 'y'])
     client.force_login(owner)
 
@@ -1134,12 +1199,15 @@ def test_grid_query_count_does_not_grow_with_outfits_tags_or_selections(client, 
     small = (count(), count('x', 'y'))
 
     first.tags.add(*Tag.resolve(owner, ['z0']))
+    first.photo = make_image(owner)
+    first.save()
     for n in range(1, 5):
-        _outfit_with(owner, wardrobe, f'More {n}', tags=['x', 'y', f'z{n}'])
+        more = _outfit_with(owner, wardrobe, f'More {n}', tags=['x', 'y', f'z{n}'])
+        more.photo = make_image(owner)
+        more.save()
     large = (count(), count('x', 'y'))
 
-    assert _shown(client.get(WARDROBE_URL).content.decode()) == {
-        'First',
-        *(f'More {n}' for n in range(1, 5)),
-    }
+    page = client.get(WARDROBE_URL).content.decode()
+    assert _shown(page) == {'First', *(f'More {n}' for n in range(1, 5))}
+    assert page.count('outfit-preview-photo') == 5
     assert large == small
