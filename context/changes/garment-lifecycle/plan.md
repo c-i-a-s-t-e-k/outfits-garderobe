@@ -8,7 +8,7 @@ A signed-in user can edit a garment, including replacing its photo, and delete i
 - *Keep without it* closes that gap and adds nothing;
 - *Delete outfit* removes the whole outfit.
 
-To make those repairs possible, this slice also builds full outfit edit (name and garments) and outfit delete, with a warning when the outfit is tagged. This is roadmap slice **S-06** (Jira OG-7), covering FR-004 and US-01. It also delivers the edit and delete that FR-006 asks for, so its close-out marks roadmap S-07 (`outfit-lifecycle`, Jira OG-8) done as well: research found no scope left for a separate slice (`context/changes/outfit-lifecycle/research.md` in the main checkout, decision 2026-09-14).
+To make those repairs possible, this slice also builds full outfit edit (name and garments) and outfit delete, with a warning when the outfit is tagged. This is roadmap slice **S-06** (Jira OG-7), covering FR-004 and US-01. It also delivers the edit and delete that FR-006 asks for, so its close-out marks roadmap S-07 (`outfit-lifecycle`, Jira OG-8) done as well: research found no scope left for a separate slice (`context/changes/outfit-lifecycle/research.md`, decision 2026-09-14).
 
 ## Current State Analysis
 
