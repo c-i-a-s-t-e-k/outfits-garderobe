@@ -788,33 +788,33 @@ Bring the branch up to date, open the pull request, run every manual check again
 
 #### Automated
 
-- [x] 0.1 S-04 is on `master`: `git ls-tree origin/master outfits/migrations/ | grep 0003_outfit_photo`
-- [x] 0.2 The branch contains current `master`: `git merge-base --is-ancestor origin/master HEAD`
-- [x] 0.3 The only non-merge commits ahead of `master` are docs commits touching `context/`: `git log --oneline --no-merges --stat origin/master..HEAD`
-- [x] 0.4 Migrations apply cleanly: `uv run python manage.py migrate`
-- [x] 0.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [x] 0.6 The full suite passes on the merged branch: `uv run pytest`
-- [x] 0.7 Linting passes: `uv run ruff check .`
+- [x] 0.1 S-04 is on `master`: `git ls-tree origin/master outfits/migrations/ | grep 0003_outfit_photo` — fec1013
+- [x] 0.2 The branch contains current `master`: `git merge-base --is-ancestor origin/master HEAD` — fec1013
+- [x] 0.3 The only non-merge commits ahead of `master` are docs commits touching `context/`: `git log --oneline --no-merges --stat origin/master..HEAD` — fec1013
+- [x] 0.4 Migrations apply cleanly: `uv run python manage.py migrate` — fec1013
+- [x] 0.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run` — fec1013
+- [x] 0.6 The full suite passes on the merged branch: `uv run pytest` — fec1013
+- [x] 0.7 Linting passes: `uv run ruff check .` — fec1013
 
 #### Manual
 
-- [x] 0.8 Every S-04 contract listed in change 4 is confirmed in the merged code, or its deviation is recorded in `change.md` and the plan was adjusted with the developer's agreement
+- [x] 0.8 Every S-04 contract listed in change 4 is confirmed in the merged code, or its deviation is recorded in `change.md` and the plan was adjusted with the developer's agreement — fec1013
 
 ### Phase 1: Missing-garment record and deletion rule
 
 #### Automated
 
-- [ ] 1.1 The migration applies cleanly: `uv run python manage.py migrate`
-- [ ] 1.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 1.3 Model tests pass: `uv run pytest outfits/tests/test_missing_garment_model.py`
-- [ ] 1.4 The full suite passes: `uv run pytest`
-- [ ] 1.5 System checks pass: `uv run python manage.py check`
-- [ ] 1.6 Linting passes: `uv run ruff check .`
-- [ ] 1.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 1.1 The migration applies cleanly: `uv run python manage.py migrate`
+- [x] 1.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
+- [x] 1.3 Model tests pass: `uv run pytest outfits/tests/test_missing_garment_model.py`
+- [x] 1.4 The full suite passes: `uv run pytest`
+- [x] 1.5 System checks pass: `uv run python manage.py check`
+- [x] 1.6 Linting passes: `uv run ruff check .`
+- [x] 1.7 Formatting is clean: `uv run ruff format --check .`
 
 #### Manual
 
-- [ ] 1.8 In `/admin/`, deleting a garment used by two outfits leaves both outfits with a read-only *Missing garment* inline row describing it
+- [x] 1.8 In `/admin/`, deleting a garment used by two outfits leaves both outfits with a read-only *Missing garment* inline row describing it
 
 ### Phase 2: Garment edit and delete
 

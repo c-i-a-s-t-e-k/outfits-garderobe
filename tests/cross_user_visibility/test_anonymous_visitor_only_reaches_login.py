@@ -11,7 +11,7 @@ from django.conf import settings
 from django.urls import reverse
 
 from garments.models import Garment
-from outfits.models import Outfit, Tag
+from outfits.models import MissingGarment, Outfit, Tag
 from privatemedia.models import PrivateImage
 from tests.owner_scoped_routes import ROUTES
 
@@ -19,7 +19,10 @@ pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('temp_media_root')]
 
 
 def _row_counts():
-    return {model.__name__: model.objects.count() for model in (PrivateImage, Garment, Outfit, Tag)}
+    return {
+        model.__name__: model.objects.count()
+        for model in (PrivateImage, Garment, Outfit, Tag, MissingGarment)
+    }
 
 
 @pytest.mark.parametrize('method', ['get', 'post'])

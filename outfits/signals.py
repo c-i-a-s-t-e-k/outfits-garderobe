@@ -11,14 +11,20 @@ form) never call `Outfit.save()`, so `full_clean()` cannot see them.
 
 Deleting an outfit removes its tag links without `m2m_changed`, so an `Outfit`
 `post_delete` receiver runs the same cleanup; by then the links are gone.
+
+Deleting a garment keeps every outfit that used it. A `Garment` `pre_delete`
+receiver records a `MissingGarment` on each of them while the links can still be
+read; Django removes the link rows afterwards, again without `m2m_changed`. It
+fires for an instance delete, a queryset delete (the admin) and the cascade
+from deleting an account alike.
 """
 
 from django.core.exceptions import ValidationError
-from django.db.models.signals import m2m_changed, post_delete
+from django.db.models.signals import m2m_changed, post_delete, pre_delete
 from django.dispatch import receiver
 
 from garments.models import Garment
-from outfits.models import Outfit, Tag
+from outfits.models import MissingGarment, Outfit, Tag
 
 
 @receiver(m2m_changed, sender=Outfit.garments.through)
@@ -64,3 +70,18 @@ def delete_tags_left_unused_by_unlinking(sender, instance, action, **kwargs):
 @receiver(post_delete, sender=Outfit)
 def delete_tags_left_unused_by_outfit_delete(sender, instance, **kwargs):
     _delete_unused_tags(instance.owner_id)
+
+
+@receiver(pre_delete, sender=Garment)
+def record_missing_garment(sender, instance, **kwargs):
+    # bulk_create skips save() and full_clean(): the values are copied from a
+    # garment that already passed them.
+    MissingGarment.objects.bulk_create(
+        MissingGarment(
+            outfit=outfit,
+            type=instance.type,
+            type_other=instance.type_other,
+            description=instance.description,
+        )
+        for outfit in instance.outfits.all()
+    )

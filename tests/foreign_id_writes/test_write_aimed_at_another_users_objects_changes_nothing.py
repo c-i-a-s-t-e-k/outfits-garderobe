@@ -14,7 +14,7 @@ from django.conf import settings
 from django.urls import reverse
 
 from garments.models import Garment
-from outfits.models import Outfit, Tag
+from outfits.models import MissingGarment, Outfit, Tag
 from privatemedia.models import PrivateImage
 from tests.factories import make_garment
 from tests.owner_scoped_routes import ROUTES
@@ -22,7 +22,7 @@ from tests.owner_scoped_routes import ROUTES
 pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('temp_media_root')]
 
 WRITE_ROUTES = [name for name, declaration in ROUTES.items() if declaration.kind == 'write']
-OWNED_MODELS = (PrivateImage, Garment, Outfit, Tag)
+OWNED_MODELS = (PrivateImage, Garment, Outfit, Tag, MissingGarment)
 
 
 def _pks():
@@ -31,6 +31,13 @@ def _pks():
 
 def _new_rows(before):
     return [row for model in OWNED_MODELS for row in model.objects.exclude(pk__in=before[model])]
+
+
+def _owner_id(row):
+    # A missing garment is owned through its outfit; it has no owner field.
+    if isinstance(row, MissingGarment):
+        return row.outfit.owner_id
+    return row.owner_id
 
 
 def _is_success_redirect(response):
@@ -59,7 +66,7 @@ def test_foreign_write_leaves_the_owners_data_untouched(
 
     new_rows = _new_rows(before)
     if _is_success_redirect(response):
-        assert all(row.owner_id == stranger.pk for row in new_rows), (
+        assert all(_owner_id(row) == stranger.pk for row in new_rows), (
             f'{name} accepted the write and stored rows for someone else: {new_rows}'
         )
     else:
