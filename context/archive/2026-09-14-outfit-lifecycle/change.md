@@ -1,10 +1,10 @@
 ---
 change_id: outfit-lifecycle
 title: Edycja i usuwanie outfitu z ostrzeżeniem o tagach
-status: implemented
+status: archived
 created: 2026-09-14
 updated: 2026-09-14
-archived_at: null
+archived_at: 2026-09-14T17:13:14Z
 ---
 
 ## Notes

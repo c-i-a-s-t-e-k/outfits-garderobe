@@ -175,7 +175,7 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** leży po tagach, bo ostrzeżenie wymagane przez FR-006 dotyczy właśnie otagowanego outfitu i wcześniej nie miałoby czego wykrywać; ryzykiem jest przypadkowe usunięcie, gdy ostrzeżenie da się przekliknąć bez czytania.
-- **Status:** done — delivered by `garment-lifecycle` PR #8 (FR-006 in Phase 3); no separate slice was planned (`context/changes/outfit-lifecycle/research.md`, decision 2026-09-14).
+- **Status:** done
 
 ## Backlog Handoff
 
@@ -223,3 +223,4 @@ PRD nie ma nierozstrzygniętych pytań. Poniższe wyszły w trakcie układania r
 - **F-01: (fundament) pliki wgrywane przez użytkownika lądują poza publicznie serwowanym katalogiem, a każde ich pobranie przechodzi przez widok, który wymaga zalogowania i sprawdza własność pliku; próba pobrania cudzego pliku kończy się odmową.** — Archived 2026-09-14 → `context/archive/2026-09-05-private-media-gate/`. Lesson: —.
 - **S-02: użytkownik może dodać ubranie ze zdjęciem, typem i opisem, a potem zobaczyć swoją prywatną listę ubrań ze zdjęciami.** — Archived 2026-09-14 → `context/archive/2026-09-13-add-garment/`. Lesson: —.
 - **S-06: użytkownik może edytować i usunąć ubranie, a outfity, które go używały, wyróżniają się w siatce jako niekompletne i dają natychmiastowy wybór: uzupełnij zamiennikiem albo usuń outfit.** — Archived 2026-09-14 → `context/archive/2026-09-14-garment-lifecycle/`. Lesson: —.
+- **S-07: użytkownik może edytować i usunąć outfit, a przy usuwaniu outfitu, który ma tagi, dostaje ostrzeżenie przed potwierdzeniem.** — Archived 2026-09-14 → `context/archive/2026-09-14-outfit-lifecycle/`. Lesson: —.
