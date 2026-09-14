@@ -10,20 +10,22 @@
     <ul class="garment-grid">
       {% for garment in garments %}
         <li>
-          <figure>
-            {% comment %}
-              photo_url is the gate, never the file's .url — see
-              PrivateImage.get_absolute_url(). Each tile is its own gated
-              request, so lazy loading keeps a long list from firing them all.
-            {% endcomment %}
-            <img src="{{ garment.photo_url }}"
-                 alt="{{ garment.display_type }}{% if garment.description %}: {{ garment.description }}{% endif %}"
-                 loading="lazy" decoding="async">
-            <figcaption>
-              <strong>{{ garment.display_type }}</strong>
-              {% if garment.description %}<br>{{ garment.description }}{% endif %}
-            </figcaption>
-          </figure>
+          <a href="{% url 'garments:edit' garment.pk %}">
+            <figure>
+              {% comment %}
+                photo_url is the gate, never the file's .url — see
+                PrivateImage.get_absolute_url(). Each tile is its own gated
+                request, so lazy loading keeps a long list from firing them all.
+              {% endcomment %}
+              <img src="{{ garment.photo_url }}"
+                   alt="{{ garment.display_type }}{% if garment.description %}: {{ garment.description }}{% endif %}"
+                   loading="lazy" decoding="async">
+              <figcaption>
+                <strong>{{ garment.display_type }}</strong>
+                {% if garment.description %}<br>{{ garment.description }}{% endif %}
+              </figcaption>
+            </figure>
+          </a>
         </li>
       {% endfor %}
     </ul>

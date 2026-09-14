@@ -113,6 +113,10 @@ def _seed_outfit_tag(user):
     )
 
 
+def _seed_garment(user):
+    return _seed_wardrobe(user, kwargs_for=lambda garments, outfit: {'pk': garments[0].pk})
+
+
 def _seed_photo(user):
     return _seed_wardrobe(user, kwargs_for=lambda garments, outfit: {'pk': garments[0].photo_id})
 
@@ -139,6 +143,16 @@ def _garment_add_payload(seeded, requester):
         'owner': garment.owner_id,
         'id': garment.pk,
     }
+
+
+def _garment_edit_payload(seeded, requester):
+    """The add payload, aimed by the URL at the seeded garment: upload, owner, id and photo pk."""
+    return _garment_add_payload(seeded, requester)
+
+
+def _garment_delete_payload(seeded, requester):
+    """The seeded user's garment is in the URL; confirming carries nothing."""
+    return {}
 
 
 def _compose_payload(seeded, requester):
@@ -185,6 +199,19 @@ ROUTES = {
         seed=_seed_wardrobe,
         shows_photos=False,
         foreign_payload=_garment_add_payload,
+    ),
+    # Both pages show the garment's photo.
+    'garments:edit': OwnerScopedRoute(
+        kind='write',
+        seed=_seed_garment,
+        shows_photos=True,
+        foreign_payload=_garment_edit_payload,
+    ),
+    'garments:delete': OwnerScopedRoute(
+        kind='write',
+        seed=_seed_garment,
+        shows_photos=True,
+        foreign_payload=_garment_delete_payload,
     ),
     'outfits:compose': OwnerScopedRoute(
         kind='write',

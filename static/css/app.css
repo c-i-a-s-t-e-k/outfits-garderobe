@@ -79,6 +79,12 @@
   margin: 0;
 }
 
+/* A tile is a link to the garment's edit page, but should still read as a tile. */
+.garment-grid a {
+  color: inherit;
+  text-decoration: none;
+}
+
 /* Square before the image loads, so lazy-loaded tiles do not shift the page. */
 .garment-grid img,
 .outfit-picker img {

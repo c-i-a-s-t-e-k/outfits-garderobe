@@ -3,6 +3,7 @@
 import io
 import re
 from datetime import timedelta
+from pathlib import Path
 
 import pytest
 from django.conf import settings
@@ -18,7 +19,7 @@ from privatemedia import uploadhandlers
 from privatemedia.models import PrivateImage
 from privatemedia.processing import MAX_EDGE_PX
 from privatemedia.validators import MAX_UPLOAD_BYTES
-from tests.factories import make_garment
+from tests.factories import make_garment, make_outfit
 
 pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('temp_media_root')]
 
@@ -234,3 +235,242 @@ def test_add_page_wires_up_the_photo_shrink_script(client, owner):
     assert 'data-shrink-photo' in photo_input
     assert f'<script src="{static("js/photo-shrink.js")}" defer>' in page
     assert 'data-shrink-status' in page
+
+
+# --- edit ----------------------------------------------------------------------
+
+
+def _edit_url(garment):
+    return reverse('garments:edit', args=[garment.pk])
+
+
+def _edit(client, garment, **overrides):
+    data = {'type': garment.type, 'type_other': garment.type_other, 'description': ''}
+    return client.post(_edit_url(garment), {**data, **overrides})
+
+
+def _file_of(image):
+    return Path(image.image.path)
+
+
+def test_list_tile_links_to_its_garments_edit_page(client, owner):
+    garment = make_garment(owner, description='blue oxford')
+    client.force_login(owner)
+
+    page = client.get(LIST_URL).content.decode()
+
+    assert f'<a href="{_edit_url(garment)}"' in page
+
+
+def test_editing_the_description_alone_keeps_the_photo(client, owner):
+    garment = make_garment(owner, description='blue oxford')
+    photo_file = _file_of(garment.photo)
+    client.force_login(owner)
+
+    response = _edit(client, garment, description='blue oxford, ironed')
+
+    assert response.status_code == 302
+    assert response.headers['Location'] == LIST_URL
+    garment.refresh_from_db()
+    assert garment.description == 'blue oxford, ironed'
+    assert PrivateImage.objects.get().pk == garment.photo_id
+    assert photo_file.is_file()
+    assert 'Garment updated.' in client.get(LIST_URL).content.decode()
+
+
+def test_replacing_the_photo_links_a_new_one_and_deletes_the_old_after_commit(
+    client, owner, django_capture_on_commit_callbacks
+):
+    garment = make_garment(owner, type=GarmentType.SHOES)
+    other = make_garment(owner)
+    outfit = make_outfit(owner, garments=[garment, other])
+    old = garment.photo
+    old_file = _file_of(old)
+    client.force_login(owner)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        response = _edit(client, garment, photo=_image_upload())
+
+    assert response.status_code == 302
+    garment.refresh_from_db()
+    assert garment.photo_id != old.pk
+    assert garment.photo.owner == owner
+    assert _file_of(garment.photo).is_file()
+    assert not PrivateImage.objects.filter(pk=old.pk).exists()
+    assert not old_file.exists()
+    assert set(outfit.garments.all()) == {garment, other}
+    assert _file_of(other.photo).is_file()
+
+
+def test_a_replace_that_fails_keeps_the_old_photo_and_stores_no_new_file(
+    client, owner, temp_media_root, monkeypatch, django_capture_on_commit_callbacks
+):
+    garment = make_garment(owner)
+    old_file = _file_of(garment.photo)
+    files_before = _stored_files(temp_media_root)
+
+    def fail(*args, **kwargs):
+        raise RuntimeError('database went away')
+
+    monkeypatch.setattr(Garment, 'save', fail)
+    client.force_login(owner)
+    client.raise_request_exception = True
+
+    with django_capture_on_commit_callbacks(execute=True), pytest.raises(RuntimeError):
+        _edit(client, garment, photo=_image_upload())
+
+    assert Garment.objects.get().photo_id == garment.photo_id
+    assert PrivateImage.objects.get().pk == garment.photo_id
+    assert old_file.is_file()
+    assert _stored_files(temp_media_root) == files_before
+
+
+@pytest.mark.parametrize(
+    'make_upload',
+    [
+        lambda: SimpleUploadedFile('broken.jpg', b'not an image' * 100),
+        lambda: _image_upload('huge.bmp', size=(2000, 2000), format='BMP'),
+    ],
+    ids=['corrupt', '11 MB'],
+)
+def test_a_refused_photo_on_edit_is_a_field_error_and_changes_nothing(
+    client, owner, temp_media_root, make_upload
+):
+    garment = make_garment(owner, description='blue oxford')
+    files_before = _stored_files(temp_media_root)
+    client.force_login(owner)
+
+    response = _edit(client, garment, description='changed', photo=make_upload())
+
+    assert response.status_code == 200
+    assert 'photo' in response.context['form'].errors
+    assert Garment.objects.get().description == 'blue oxford'
+    assert PrivateImage.objects.get().pk == garment.photo_id
+    assert _stored_files(temp_media_root) == files_before
+
+
+def test_other_text_matching_a_listed_type_is_folded_on_edit(client, owner):
+    garment = make_garment(owner, type=GarmentType.SHOES)
+    client.force_login(owner)
+
+    _edit(client, garment, type=GarmentType.OTHER, type_other='shirt')
+
+    garment.refresh_from_db()
+    assert (garment.type, garment.type_other) == (GarmentType.SHIRT, '')
+
+
+# --- delete --------------------------------------------------------------------
+
+
+def _delete_url(garment):
+    return reverse('garments:delete', args=[garment.pk])
+
+
+def test_edit_page_links_to_the_delete_confirmation(client, owner):
+    garment = make_garment(owner)
+    client.force_login(owner)
+
+    page = client.get(_edit_url(garment)).content.decode()
+
+    assert f'href="{_delete_url(garment)}"' in page
+
+
+def test_delete_page_names_every_outfit_the_garment_will_leave_incomplete(client, owner):
+    garment = make_garment(owner, type=GarmentType.SHOES)
+    make_outfit(owner, garments=[garment, make_garment(owner)], name='autumn walk')
+    make_outfit(owner, garments=[garment, make_garment(owner)], name='city errand')
+    make_outfit(owner, garments=[make_garment(owner), make_garment(owner)], name='gym day')
+    client.force_login(owner)
+
+    response = client.get(_delete_url(garment))
+
+    page = response.content.decode()
+    assert response.status_code == 200
+    assert 'autumn walk' in page
+    assert 'city errand' in page
+    assert 'gym day' not in page
+    assert 'marked incomplete' in page
+    # The confirmation changes nothing by itself.
+    assert Garment.objects.filter(pk=garment.pk).exists()
+
+
+def test_delete_page_of_a_garment_in_no_outfit_says_so(client, owner):
+    garment = make_garment(owner)
+    client.force_login(owner)
+
+    page = client.get(_delete_url(garment)).content.decode()
+
+    assert 'This garment is not in any outfit.' in page
+
+
+def test_confirmed_delete_removes_the_garment_and_its_photo_and_keeps_its_outfits(
+    client, owner, django_capture_on_commit_callbacks
+):
+    garment = make_garment(owner, type=GarmentType.SHOES, description='brown loafers')
+    shirt, trousers = make_garment(owner), make_garment(owner, type=GarmentType.TROUSERS)
+    walk = make_outfit(owner, garments=[garment, shirt])
+    errand = make_outfit(owner, garments=[garment, trousers])
+    photo_pk, photo_file = garment.photo_id, _file_of(garment.photo)
+    client.force_login(owner)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        response = client.post(_delete_url(garment))
+
+    assert response.status_code == 302
+    assert response.headers['Location'] == LIST_URL
+    assert not Garment.objects.filter(pk=garment.pk).exists()
+    assert not PrivateImage.objects.filter(pk=photo_pk).exists()
+    assert not photo_file.exists()
+    assert set(walk.garments.all()) == {shirt}
+    assert set(errand.garments.all()) == {trousers}
+    for outfit in (walk, errand):
+        missing = outfit.missing_garments.get()
+        assert (missing.type, missing.description) == (GarmentType.SHOES, 'brown loafers')
+    page = client.get(LIST_URL).content.decode()
+    assert 'Garment deleted.' in page
+    assert '2 outfits are now incomplete.' in page
+
+
+def test_deleting_a_garment_in_no_outfit_says_nothing_about_outfits(
+    client, owner, django_capture_on_commit_callbacks
+):
+    garment = make_garment(owner)
+    client.force_login(owner)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        client.post(_delete_url(garment))
+
+    page = client.get(LIST_URL).content.decode()
+    assert 'Garment deleted.' in page
+    assert 'incomplete' not in page
+
+
+# --- strangers -------------------------------------------------------------------
+
+
+@pytest.mark.parametrize('method', ['get', 'post'])
+@pytest.mark.parametrize('url_for', [_edit_url, _delete_url], ids=['edit', 'delete'])
+def test_another_users_garment_is_404_to_edit_or_delete_and_changes_nothing(
+    client, owner, stranger, temp_media_root, django_capture_on_commit_callbacks, method, url_for
+):
+    garment = make_garment(owner, description='blue oxford')
+    make_outfit(owner, garments=[garment, make_garment(owner)])
+    make_garment(stranger)
+    files_before = _stored_files(temp_media_root)
+    client.force_login(stranger)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        if method == 'get':
+            response = client.get(url_for(garment))
+        else:
+            response = client.post(
+                url_for(garment),
+                {'type': GarmentType.SHOES, 'description': 'stolen', 'photo': _image_upload()},
+            )
+
+    assert response.status_code == 404
+    reread = Garment.objects.get(pk=garment.pk)
+    assert (reread.description, reread.photo_id) == ('blue oxford', garment.photo_id)
+    assert PrivateImage.objects.filter(owner=owner).count() == 2
+    assert not garment.outfits.get().missing_garments.exists()
+    assert _stored_files(temp_media_root) == files_before

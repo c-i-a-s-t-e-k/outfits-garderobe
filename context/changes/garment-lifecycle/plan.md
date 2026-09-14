@@ -804,36 +804,36 @@ Bring the branch up to date, open the pull request, run every manual check again
 
 #### Automated
 
-- [x] 1.1 The migration applies cleanly: `uv run python manage.py migrate`
-- [x] 1.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [x] 1.3 Model tests pass: `uv run pytest outfits/tests/test_missing_garment_model.py`
-- [x] 1.4 The full suite passes: `uv run pytest`
-- [x] 1.5 System checks pass: `uv run python manage.py check`
-- [x] 1.6 Linting passes: `uv run ruff check .`
-- [x] 1.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 1.1 The migration applies cleanly: `uv run python manage.py migrate` — 46a7f54
+- [x] 1.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run` — 46a7f54
+- [x] 1.3 Model tests pass: `uv run pytest outfits/tests/test_missing_garment_model.py` — 46a7f54
+- [x] 1.4 The full suite passes: `uv run pytest` — 46a7f54
+- [x] 1.5 System checks pass: `uv run python manage.py check` — 46a7f54
+- [x] 1.6 Linting passes: `uv run ruff check .` — 46a7f54
+- [x] 1.7 Formatting is clean: `uv run ruff format --check .` — 46a7f54
 
 #### Manual
 
-- [x] 1.8 In `/admin/`, deleting a garment used by two outfits leaves both outfits with a read-only *Missing garment* inline row describing it
+- [x] 1.8 In `/admin/`, deleting a garment used by two outfits leaves both outfits with a read-only *Missing garment* inline row describing it — 46a7f54
 
 ### Phase 2: Garment edit and delete
 
 #### Automated
 
-- [ ] 2.1 Garment tests pass: `uv run pytest garments/tests`
-- [ ] 2.2 The privacy contracts cover the new routes: `uv run pytest tests/`
-- [ ] 2.3 The full suite passes: `uv run pytest`
-- [ ] 2.4 System checks pass: `uv run python manage.py check`
-- [ ] 2.5 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [ ] 2.6 Linting passes: `uv run ruff check .`
-- [ ] 2.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 2.1 Garment tests pass: `uv run pytest garments/tests`
+- [x] 2.2 The privacy contracts cover the new routes: `uv run pytest tests/`
+- [x] 2.3 The full suite passes: `uv run pytest`
+- [x] 2.4 System checks pass: `uv run python manage.py check`
+- [x] 2.5 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
+- [x] 2.6 Linting passes: `uv run ruff check .`
+- [x] 2.7 Formatting is clean: `uv run ruff format --check .`
 
 #### Manual
 
-- [ ] 2.8 Tapping a garment in the list opens its edit page; changing the description and saving returns to the list with the new text
-- [ ] 2.9 Replacing the photo with a large phone-sized photo shows the shrink status, then the new photo in the list; the old file is gone from the dev `MEDIA_ROOT`
-- [ ] 2.10 *Delete garment* shows the affected outfit names; confirming returns to the list with the count message, and the garment's photo file is gone
-- [ ] 2.11 At 360 px in headless Chromium the list, edit and delete pages fit without horizontal scrolling
+- [x] 2.8 Tapping a garment in the list opens its edit page; changing the description and saving returns to the list with the new text
+- [x] 2.9 Replacing the photo with a large phone-sized photo shows the shrink status, then the new photo in the list; the old file is gone from the dev `MEDIA_ROOT`
+- [x] 2.10 *Delete garment* shows the affected outfit names; confirming returns to the list with the count message, and the garment's photo file is gone
+- [x] 2.11 At 360 px in headless Chromium the list, edit and delete pages fit without horizontal scrolling
 
 ### Phase 3: Outfit edit and delete
 
