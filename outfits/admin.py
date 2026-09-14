@@ -10,8 +10,8 @@ class OutfitAdmin(admin.ModelAdmin):
     list_display = ('name', 'owner', 'created_at')
     list_filter = ('owner',)
     list_select_related = ('owner',)
-    # Id boxes instead of selects of every user's garments and tags.
-    raw_id_fields = ('garments', 'tags')
+    # Id boxes instead of selects of every user's garments, tags and photos.
+    raw_id_fields = ('garments', 'tags', 'photo')
     readonly_fields = ('created_at',)
 
 

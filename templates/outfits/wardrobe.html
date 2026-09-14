@@ -38,22 +38,29 @@
           {% comment %}
             aria-label keeps the link's accessible name to the outfit's name:
             the preview images are decorative and the "+N" badge is a visual
-            hint. Until S-04 adds the user's own photo, every tile is this
-            collage of up to four garment photos in type order.
+            hint. An outfit with the user's own photo shows that photo; any
+            other shows a collage of up to four garment photos in type order.
+            Both fill the same portrait box.
           {% endcomment %}
           <a href="{{ outfit.get_absolute_url }}" aria-label="{{ outfit.name }}">
-            <div class="outfit-preview outfit-preview-{{ outfit.preview_garments|length }}">
-              {% for garment in outfit.preview_garments %}
-                {% if forloop.last and outfit.hidden_garment_count %}
-                  <span class="outfit-preview-cell">
+            {% if outfit.photo_id %}
+              <div class="outfit-preview outfit-preview-photo">
+                <img src="{{ outfit.photo_url }}" alt="" loading="lazy" decoding="async">
+              </div>
+            {% else %}
+              <div class="outfit-preview outfit-preview-{{ outfit.preview_garments|length }}">
+                {% for garment in outfit.preview_garments %}
+                  {% if forloop.last and outfit.hidden_garment_count %}
+                    <span class="outfit-preview-cell">
+                      <img src="{{ garment.photo_url }}" alt="" loading="lazy" decoding="async">
+                      <span class="outfit-preview-more">+{{ outfit.hidden_garment_count }}</span>
+                    </span>
+                  {% else %}
                     <img src="{{ garment.photo_url }}" alt="" loading="lazy" decoding="async">
-                    <span class="outfit-preview-more">+{{ outfit.hidden_garment_count }}</span>
-                  </span>
-                {% else %}
-                  <img src="{{ garment.photo_url }}" alt="" loading="lazy" decoding="async">
-                {% endif %}
-              {% endfor %}
-            </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            {% endif %}
             <span class="outfit-name">{{ outfit.name }}</span>
             {% comment %}
               Plain text: the tile is already one link, so its tags cannot be

@@ -163,6 +163,17 @@ class Outfit(models.Model):
     name = models.CharField(max_length=60, blank=True)
     garments = models.ManyToManyField('garments.Garment', related_name='outfits')
     tags = models.ManyToManyField(Tag, related_name='outfits', blank=True)
+    # The owner's photo of themselves wearing the outfit. RESTRICT for the same
+    # reason as Garment.photo: deleting a user cascades to both their outfits and
+    # their PrivateImage rows, which PROTECT would refuse, while a photo a
+    # surviving outfit shows still cannot be deleted from under it.
+    photo = models.OneToOneField(
+        'privatemedia.PrivateImage',
+        null=True,
+        blank=True,
+        on_delete=models.RESTRICT,
+        related_name='outfit',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -201,6 +212,15 @@ class Outfit(models.Model):
         # the default has to wait for the next full_clean() — the one in save().
         if not self.name and self.owner_id:
             self.name = self.default_name_for(self.owner_id)
+        if self.owner_id and self.photo_id and self.photo.owner_id != self.owner_id:
+            raise ValidationError('An outfit can only use its owner’s photo.')
+
+    @property
+    def photo_url(self):
+        """The gate URL for this outfit's photo, or None — built from photo_id, so no query."""
+        if self.photo_id is None:
+            return None
+        return reverse('privatemedia:image', args=[self.photo_id])
 
     @classmethod
     def default_name_for(cls, owner):

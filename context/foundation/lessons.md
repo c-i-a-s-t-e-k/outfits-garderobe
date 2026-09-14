@@ -22,3 +22,10 @@
 - **Problem**: If checks only run on production after merge, a failure needs a second fix PR, and the plan/roadmap close-out needs yet another docs PR (compose-outfit went p4 production checks → separate close-out PR #3). Production ends up being the first real deploy the paths run on.
 - **Rule**: Done means every plan check passes on the Railway PR environment. Before merging, run the verification paths against the PR deploy. Put any fixes in the same PR, and once everything passes, put the plan Progress and roadmap close-out there too. Production checks after merge are only a confirmation.
 - **Applies to**: plan, plan-review, implement
+
+## Run manual checks yourself; hand the developer a ready environment, never a to-do list
+
+- **Context**: The `#### Manual` verification items at the end of a phase in /10x-implement and /10x-tdd, and any other step that needs the running app.
+- **Problem**: The phase-end gate listed manual steps and waited for the developer, who then had to work out how to start the app (the dev settings need `DEBUG=True` locally or they demand `MEDIA_ROOT`), create accounts and data, and find the URLs. Most of those checks can be run by the agent (outfit-photo Phase 1: admin ownership refusal and the garment photo shrink both verified in headless Chromium).
+- **Rule**: Run the manual checks yourself first: start the worktree's dev server on the plan's port (`DEBUG=True uv run --env-file <absolute .env path> python manage.py runserver <port>`), seed local accounts with verified emails and the data the check needs, and drive the flow in headless Chromium (the cached Playwright Chromium via `uv run --no-project --with playwright`). Assert on the page and re-read the database, and look at screenshots. Report the results with the evidence. When a check genuinely needs the developer (a real phone, a judgement call, credentials only they hold), prepare everything before asking: server running, accounts and data seeded, and give them the clickable links, logins and the exact steps.
+- **Applies to**: implement, tdd, impl-review

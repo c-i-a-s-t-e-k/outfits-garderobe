@@ -1,10 +1,11 @@
-"""The compose form, and the tag input shared by every place tags are typed."""
+"""The compose form, the outfit photo form, and the tag input shared wherever tags are typed."""
 
 from django import forms
 from django.core.exceptions import ValidationError
 
 from garments.models import Garment
 from outfits.models import Outfit, Tag
+from privatemedia.forms import NormalizedPhotoMixin
 
 MIN_GARMENTS = 2
 MIN_GARMENTS_MESSAGE = f'Choose at least {MIN_GARMENTS} garments.'
@@ -84,6 +85,14 @@ class OutfitForm(forms.ModelForm):
         if len(garments) < MIN_GARMENTS:
             raise ValidationError(MIN_GARMENTS_MESSAGE)
         return garments
+
+
+class OutfitPhotoForm(NormalizedPhotoMixin, forms.Form):
+    """The owner's photo of themselves in the outfit, under the garment photo's rules."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['photo'].label = 'Photo of you in this outfit'
 
 
 class AddTagsForm(forms.Form):

@@ -1,4 +1,4 @@
-"""The wardrobe grid, composing, reading and tagging an outfit — for its owner only."""
+"""The wardrobe grid, and composing, tagging and photographing an outfit — for its owner only."""
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -7,11 +7,12 @@ from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import urlencode
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
 from garments.models import Garment
-from outfits.forms import MIN_GARMENTS, AddTagsForm, OutfitForm
+from outfits.forms import MIN_GARMENTS, AddTagsForm, OutfitForm, OutfitPhotoForm
 from outfits.models import Outfit, Tag
+from privatemedia.models import discard_private_image, stored_private_image
 
 
 class OutfitNameTaken(Exception):
@@ -100,12 +101,13 @@ def outfit_compose(request):
         form = OutfitForm(request.POST, owner=request.user)
         if form.is_valid():
             try:
-                _store_outfit(form)
+                outfit = _store_outfit(form)
             except OutfitNameTaken:
                 form.add_error('name', 'You already have an outfit with this name.')
             else:
                 messages.success(request, 'Outfit saved.')
-                return redirect('wardrobe')
+                # Its page, not the wardrobe: adding the photo is the next step.
+                return redirect(outfit)
     else:
         form = OutfitForm(owner=request.user)
     return render(request, 'outfits/compose.html', {'form': form})
@@ -142,6 +144,36 @@ def outfit_tag_remove(request, pk, tag_pk):
     return redirect(outfit)
 
 
+@login_required
+@require_POST
+def outfit_photo_upload(request, pk):
+    """Add the outfit's photo, or replace the one it has."""
+    # Ownership before the form: a stranger's upload is refused without the
+    # server ever decoding it.
+    outfit = _owned_outfit(request, pk)
+    form = OutfitPhotoForm(request.POST, request.FILES)
+    if not form.is_valid():
+        return _render_detail(request, outfit, AddTagsForm(outfit=outfit), photo_form=form)
+    replaced = _store_outfit_photo(request.user, pk, form)
+    messages.success(request, 'Photo replaced.' if replaced else 'Photo added.')
+    return redirect(outfit)
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def outfit_photo_remove(request, pk):
+    """Confirm, then remove the outfit's photo; the outfit and its garments stay."""
+    outfit = get_object_or_404(Outfit, pk=pk, owner=request.user)
+    # Nothing to remove — a stale tab or a second tap on confirm — is not an error.
+    if outfit.photo_id is None:
+        return redirect(outfit)
+    if request.method == 'POST':
+        if _remove_outfit_photo(request.user, pk):
+            messages.success(request, 'Photo removed.')
+        return redirect(outfit)
+    return render(request, 'outfits/photo_remove.html', {'outfit': outfit})
+
+
 def _owned_outfit(request, pk):
     # One 404 for "no such outfit" and "not your outfit": the URL space must not
     # reveal which ids exist.
@@ -150,7 +182,7 @@ def _owned_outfit(request, pk):
     )
 
 
-def _render_detail(request, outfit, form):
+def _render_detail(request, outfit, form, photo_form=None):
     # Suggestions for the tag input: the owner's tags in use elsewhere. The
     # outfit's own tags come from the prefetch, so this is one query.
     suggested_tags = (
@@ -161,8 +193,54 @@ def _render_detail(request, outfit, form):
     return render(
         request,
         'outfits/detail.html',
-        {'outfit': outfit, 'tag_form': form, 'suggested_tags': suggested_tags},
+        {
+            'outfit': outfit,
+            'tag_form': form,
+            'photo_form': photo_form or OutfitPhotoForm(),
+            'suggested_tags': suggested_tags,
+        },
     )
+
+
+def _locked_outfit(owner, pk):
+    # The row lock (real on PostgreSQL, a no-op on SQLite) makes two concurrent
+    # uploads or removes take turns, so each one retires exactly the photo it
+    # replaced. Re-checks ownership: this is the row that gets written.
+    return get_object_or_404(Outfit.objects.select_for_update(), pk=pk, owner=owner)
+
+
+@transaction.atomic
+def _store_outfit_photo(owner, pk, form):
+    """Link a newly stored photo to the outfit and retire the previous one.
+
+    Returns whether a photo was replaced. If anything fails, the new file is
+    removed and the rollback restores the old row; the old file is only
+    deleted once this commits.
+    """
+    outfit = _locked_outfit(owner, pk)
+    previous = outfit.photo
+    photo = form.cleaned_data['photo']
+    with stored_private_image(owner, photo, form.original_filename) as image:
+        outfit.photo = image
+        outfit.save()
+        if previous is not None:
+            discard_private_image(previous)
+    return previous is not None
+
+
+@transaction.atomic
+def _remove_outfit_photo(owner, pk):
+    """Unlink and retire the outfit's photo; returns whether there was one."""
+    outfit = _locked_outfit(owner, pk)
+    previous = outfit.photo
+    if previous is None:
+        return False
+    # Unlinked first: Outfit.photo is RESTRICT, so the image row cannot go while
+    # the outfit still points at it.
+    outfit.photo = None
+    outfit.save()
+    discard_private_image(previous)
+    return True
 
 
 @transaction.atomic

@@ -65,18 +65,21 @@ class ProjectRoute:
 
 
 def _seed_wardrobe(user, kwargs_for=lambda garments, outfit: {}):
-    """Two garments and an outfit made of them — enough for every page to render data.
+    """Two garments and two outfits made of them — enough for every page to render data.
 
-    Every text marker carries the username, so two users seeded the same way never
-    share a marker by accident.
+    The first outfit is tagged and carries a photo of its owner; the second has
+    neither, so the wardrobe renders both kinds of tile. Every text marker
+    carries the username, so two users seeded the same way never share a marker
+    by accident.
     """
     garments = [
         make_garment(user, type=GarmentType.SHIRT, description=f'{user.username} navy oxford'),
         make_garment(user, type=GarmentType.SHOES, description=f'{user.username} brown loafers'),
     ]
-    outfit = make_outfit(user, garments=garments, name=f'{user.username} autumn walk')
+    outfit = make_outfit(user, garments=garments, photo=True, name=f'{user.username} autumn walk')
     tag = Tag.objects.create(owner=user, name=f'{user.username} letnie')
     outfit.tags.add(tag)
+    bare = make_outfit(user, garments=garments, name=f'{user.username} city errand')
     markers = [
         *(garment.description for garment in garments),
         *(garment.photo_url for garment in garments),
@@ -84,6 +87,10 @@ def _seed_wardrobe(user, kwargs_for=lambda garments, outfit: {}):
         outfit.name,
         str(outfit.pk),
         outfit.get_absolute_url(),
+        outfit.photo_url,
+        str(outfit.photo_id),
+        bare.name,
+        str(bare.pk),
         tag.name,
         str(tag.pk),
     ]
@@ -91,7 +98,7 @@ def _seed_wardrobe(user, kwargs_for=lambda garments, outfit: {}):
         kwargs=kwargs_for(garments, outfit),
         markers=markers,
         garments=garments,
-        outfits=[outfit],
+        outfits=[outfit, bare],
     )
 
 
@@ -157,6 +164,16 @@ def _tag_remove_payload(seeded, requester):
     return {}
 
 
+def _photo_upload_payload(seeded, requester):
+    """A valid photo, aimed by the URL at the seeded user's outfit."""
+    return {'photo': _photo_upload()}
+
+
+def _photo_remove_payload(seeded, requester):
+    """The seeded user's outfit is in the URL; confirming carries nothing."""
+    return {}
+
+
 ROUTES = {
     'wardrobe': OwnerScopedRoute(kind='read', seed=_seed_wardrobe, shows_photos=True),
     'outfits:detail': OwnerScopedRoute(kind='read', seed=_seed_outfit_detail, shows_photos=True),
@@ -188,6 +205,20 @@ ROUTES = {
         shows_photos=False,
         foreign_payload=_tag_remove_payload,
         post_only=True,
+    ),
+    'outfits:photo_upload': OwnerScopedRoute(
+        kind='write',
+        seed=_seed_outfit_detail,
+        shows_photos=False,
+        foreign_payload=_photo_upload_payload,
+        post_only=True,
+    ),
+    # The confirmation page shows the photo that is about to be removed.
+    'outfits:photo_remove': OwnerScopedRoute(
+        kind='write',
+        seed=_seed_outfit_detail,
+        shows_photos=True,
+        foreign_payload=_photo_remove_payload,
     ),
 }
 
