@@ -8,7 +8,7 @@ A signed-in user can edit a garment, including replacing its photo, and delete i
 - *Keep without it* closes that gap and adds nothing;
 - *Delete outfit* removes the whole outfit.
 
-To make those repairs possible, this slice also builds full outfit edit (name and garments) and outfit delete, with a warning when the outfit is tagged. This is roadmap slice **S-06** (Jira OG-7), covering FR-004 and US-01. It also delivers the edit and delete that FR-006 asks for. Roadmap S-07 stays open, and its own planning decides what remains.
+To make those repairs possible, this slice also builds full outfit edit (name and garments) and outfit delete, with a warning when the outfit is tagged. This is roadmap slice **S-06** (Jira OG-7), covering FR-004 and US-01. It also delivers the edit and delete that FR-006 asks for, so its close-out marks roadmap S-07 (`outfit-lifecycle`, Jira OG-8) done as well: research found no scope left for a separate slice (`context/changes/outfit-lifecycle/research.md` in the main checkout, decision 2026-09-14).
 
 ## Current State Analysis
 
@@ -48,7 +48,7 @@ Verification: the automated suite proves the deletion rule at the model level, i
 - Adding garments through *Edit outfit* closes no missing slot. Only *Replace* and *Keep without it* close slots.
 - Editing tags inside *Edit outfit*: tags stay on the outfit page.
 - A confirmation checkbox on *Delete outfit*: the confirmation page with the tag warning is the safeguard.
-- Changing roadmap S-07 or Jira OG-8. S-07 stays open, and `/10x-plan outfit-lifecycle` decides its remaining scope, knowing edit and delete shipped here.
+- A separate plan for S-07. `/10x-plan outfit-lifecycle` is not run: this slice delivers FR-006, and Phase 5 closes S-07 and OG-8 together with S-06 and OG-7.
 - Deleting photo files when a garment is deleted from the admin or the ORM, or when an account is deleted. Only the UI delete path discards the photo. The account-deletion gap already exists for garments and outfit photos.
 - A backfill: no outfit can be marked incomplete for garments deleted before this ships, since nothing recorded them. No delete UI existed, so only the admin could have done it.
 - Incomplete badges on the garment list, sorting incomplete outfits first, or notifications.
@@ -591,7 +591,7 @@ Bring the branch up to date, open the pull request, run every manual check again
   - the phases;
   - the test commands run;
   - the PR-environment checks;
-  - a note that outfit edit and delete (FR-006) shipped here, so S-07 planning must account for them;
+  - a note that outfit edit and delete (FR-006) shipped here and close roadmap S-07 (OG-8);
   - a note that merging deploys migration `outfits.0004_*`;
   - links to `plan.md` and Jira OG-7.
 - Never merge the PR.
@@ -607,10 +607,11 @@ Bring the branch up to date, open the pull request, run every manual check again
 - Run the manual checks against the PR environment URL. Put any fix into this PR, with its own commit.
 - Once everything passes:
   - tick Progress with SHAs;
-  - add a dated "PR deploy" note to `change.md` (PR URL, deployment id, checks run, deviations, and that outfit edit and delete shipped here for S-07's planning);
-  - set S-06 to `done` in `roadmap.md`, in the At-a-glance row and in the item body, and update its Backlog Handoff row. S-07 is not changed;
+  - add a dated "PR deploy" note to `change.md` (PR URL, deployment id, checks run, deviations, and that outfit edit and delete shipped here and close S-07);
+  - set S-06 to `done` in `roadmap.md`, in the At-a-glance row and in the item body, and update its Backlog Handoff row;
+  - set S-07 to `done` the same way, with the note "delivered by `garment-lifecycle` PR #N (FR-006 in Phase 3)" in its item body and Backlog Handoff row. Nothing else in the dependency graph changes;
   - push.
-- Per the Jira lesson, move OG-7 to Done after the developer merges, with a comment naming the PR.
+- Per the Jira lesson, move OG-7 and OG-8 to Done after the developer merges, each with a comment naming the PR; OG-8's comment says S-07 was delivered by S-06.
 
 ### Success Criteria:
 

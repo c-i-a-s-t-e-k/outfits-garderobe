@@ -24,7 +24,7 @@ Kafelek na liście ubrań prowadzi do strony edycji. *Delete garment* pokazuje p
 | Kasowanie braku | Per brak: *Replace* zamyka jeden, *Keep without it* zamyka bez dodawania | Stan zawsze prawdziwy; outfit OK bez paska nie wisi wiecznie. | Plan |
 | Zamiennik | Osobny picker per brak (`outfits:missing_replace`), ten sam typ na górze | Każda akcja ma jedno znaczenie; edycja outfitu nie zamyka braków. | Plan |
 | Odznaczenie w edycji | Nie tworzy tombstone'a | Świadoma decyzja użytkownika to nie „brak”. | Plan |
-| Granica S-06/S-07 | Pełna edycja (nazwa + skład) i usuwanie outfitu w S-06; S-07 zostaje otwarty w roadmapie | Wybór developera; S-07 zdecyduje o reszcie przy własnym planowaniu. | Plan |
+| Granica S-06/S-07 | Pełna edycja (nazwa + skład) i usuwanie outfitu w S-06; close-out zamyka też S-07 i OG-8 | Wybór developera; badanie `outfit-lifecycle` (2026-09-14) nie znalazło zakresu na osobny slice. | Plan / Research |
 | Minimum ubrań | Edycja ≥ 1, kompozycja ≥ 2; *Keep without it* ukryte przy 0 ubrań | Da się przemianować outfit z 1 ubraniem; nie powstaje „kompletny” pusty outfit. | Plan |
 | Usuwanie ubrania | Strona edycji → potwierdzenie z listą outfitów (GET + POST) | FR-004 widoczne przed decyzją; precedens potwierdzenia z S-04. | Plan |
 | Usuwanie outfitu | Potwierdzenie z listą tagów (bez checkboxa) + `discard_private_image` zdjęcia | FR-006 i luka zapisana w planie S-04. | Research / Plan |
@@ -40,13 +40,13 @@ Kafelek na liście ubrań prowadzi do strony edycji. *Delete garment* pokazuje p
 - sekcja braków, picker zamiennika, *Keep without it*, plakietka, baner, `?incomplete=1`
 - 6 nowych tras w `tests/owner_scoped_routes.py`, tombstone w `snapshot_of`/`OWNED_MODELS`/`_row_counts`
 - folder ryzyka `tests/garment_deletion_keeps_outfits/`
-- PR, checki na PR env, close-out S-06 i OG-7
+- PR, checki na PR env, close-out S-06 i S-07 oraz OG-7 i OG-8
 
 **Out of scope:**
 - soft delete, kosz, cofnięcie
 - tombstone przy odznaczeniu w edycji; zamykanie braków przez edycję
 - tagi w formularzu edycji; checkbox przy usuwaniu outfitu
-- zmiany S-07 / OG-8 w roadmapie i Jira
+- osobny plan S-07 (`/10x-plan outfit-lifecycle` nie jest uruchamiany)
 - kasowanie plików przy usuwaniu z admina/ORM i przy usuwaniu konta
 - backfill, plakietki na liście ubrań, sortowanie niekompletnych, tłumaczenie UI
 
@@ -62,7 +62,7 @@ Kafelek na liście ubrań prowadzi do strony edycji. *Delete garment* pokazuje p
 | 2. Garment edit and delete | Edycja z podmianą zdjęcia, potwierdzenie z listą outfitów | Kolejność podmiany/usuwania pliku; `clean_photo` z pustym uploadem |
 | 3. Outfit edit and delete | `OutfitEditForm`, wspólny picker, usuwanie z ostrzeżeniem | `_store_outfit` nie może wyczyścić tagów w edycji |
 | 4. Incomplete outfits in the grid and on the outfit page | Plakietka, baner, filtr, sekcja braków, picker, dismiss, Risk #5 | Stała liczba zapytań; plakietka czytelna na zdjęciu przy 360 px |
-| 5. Pull request and PR-environment verification | PR, checki na PR env, close-out S-06 + OG-7 | Pusta baza PR env; ewentualna kolizja migracji `0004` |
+| 5. Pull request and PR-environment verification | PR, checki na PR env, close-out S-06 + S-07, OG-7 + OG-8 | Pusta baza PR env; ewentualna kolizja migracji `0004` |
 
 **Prerequisites:** S-04 (`feat/outfit-photo`) zmergowany do `origin/master`; utworzony worktree `feat/garment-lifecycle`.
 **Estimated effort:** ~3–4 sesje w 5 fazach.
@@ -72,7 +72,7 @@ Kafelek na liście ubrań prowadzi do strony edycji. *Delete garment* pokazuje p
 - Plan opiera się na kontraktach S-04 z jego planu. Jeśli S-04 zmerguje się z odchyleniami (nazwy, `_seed_wardrobe`, `_render_detail`), trzeba je zweryfikować na starcie Phase 1.
 - Opis usuniętego ubrania zostaje w tombstonie, dopóki brak nie zostanie zamknięty. To dane właściciela, objęte kontraktem prywatności.
 - Usunięcie ubrania z admina/ORM i usunięcie konta zostawia plik zdjęcia na wolumenie (znana luka, jak w S-04).
-- S-07 zostaje otwarty, choć edycja i usuwanie outfitu są już w kodzie. `/10x-plan outfit-lifecycle` musi to uwzględnić.
+- S-07 nie dostaje osobnego planu: close-out tego PR ustawia go na `done` (notka o PR) i przesuwa OG-8. Przed przeklikaniem ostrzeżenia chroni tylko strona potwierdzenia — świadomie bez checkboxa i podglądu outfitu.
 
 ## Success Criteria (Summary)
 
