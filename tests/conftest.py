@@ -1,4 +1,4 @@
-"""The two database checks every foreign-id write scenario ends with.
+"""The two database checks risk scenarios end with, shared by every risk folder.
 
 A status code says what the view answered; these say what it left behind.
 """
@@ -7,7 +7,7 @@ import pytest
 from django.db.models import F, Q
 
 from garments.models import Garment
-from outfits.models import Outfit, Tag
+from outfits.models import MissingGarment, Outfit, Tag
 from privatemedia.models import PrivateImage
 
 OutfitGarment = Outfit.garments.through
@@ -28,6 +28,10 @@ def snapshot_of():
             'garments': list(Garment.objects.filter(owner=user).order_by('pk').values()),
             'outfits': list(Outfit.objects.filter(owner=user).order_by('pk').values()),
             'tags': list(Tag.objects.filter(owner=user).order_by('pk').values()),
+            # Owned through the outfit: a missing garment has no owner field.
+            'missing': list(
+                MissingGarment.objects.filter(outfit__owner=user).order_by('pk').values()
+            ),
             'links': sorted(
                 OutfitGarment.objects.filter(Q(outfit__owner=user) | Q(garment__owner=user))
                 .values_list('outfit_id', 'garment_id')

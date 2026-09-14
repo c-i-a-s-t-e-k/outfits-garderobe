@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Delete garment{% endblock %}
+
+{% block content %}
+  <h1>Delete garment</h1>
+
+  <div class="outfit-photo">
+    <img src="{{ garment.photo_url }}"
+         alt="{{ garment.display_type }}{% if garment.description %}: {{ garment.description }}{% endif %}"
+         decoding="async">
+  </div>
+  <p>
+    <strong>{{ garment.display_type }}</strong>
+    {% if garment.description %}— {{ garment.description }}{% endif %}
+  </p>
+
+  {% if affected_outfits %}
+    <p>These outfits stay, marked incomplete, so you can add a replacement or delete them:</p>
+    <ul>
+      {% for name in affected_outfits %}
+        <li>{{ name }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>This garment is not in any outfit.</p>
+  {% endif %}
+
+  <p>The photo is deleted permanently.</p>
+
+  <form method="post" data-submit-once>
+    {% csrf_token %}
+    <button type="submit">Delete garment</button>
+  </form>
+  <p><a href="{% url 'garments:edit' garment.pk %}">Cancel</a></p>
+{% endblock %}
+
+{% block extra_body %}
+  <script src="{% static 'js/photo-shrink.js' %}" defer></script>
+{% endblock %}

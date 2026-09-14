@@ -13,6 +13,7 @@ from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from django.conf import settings
+from django.contrib.messages import get_messages
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
 from django.templatetags.static import static
@@ -20,9 +21,9 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from PIL import ExifTags, Image
 
-from garments.models import GarmentType
-from outfits.forms import OutfitForm
-from outfits.models import Outfit, Tag
+from garments.models import Garment, GarmentType
+from outfits.forms import OutfitEditForm, OutfitForm
+from outfits.models import MissingGarment, Outfit, Tag
 from privatemedia.models import PrivateImage
 from privatemedia.processing import MAX_EDGE_PX
 from privatemedia.validators import MAX_UPLOAD_BYTES
@@ -1185,18 +1186,24 @@ def test_a_tag_removed_from_its_last_outfit_leaves_the_filter_and_the_bar(client
     assert _available(client.get(WARDROBE_URL).content.decode()) == ['smart casual', 'zimowe']
 
 
-def test_grid_query_count_does_not_grow_with_outfits_tags_selections_or_photos(
+def test_grid_query_count_does_not_grow_with_outfits_tags_selections_photos_or_missing_slots(
     client, owner, wardrobe
 ):
     first = _outfit_with(owner, wardrobe, 'First', tags=['x', 'y'])
     client.force_login(owner)
 
-    def count(*tags):
+    def count(*tags, incomplete=False):
+        params = {'tag': list(tags)} if tags else {}
+        if incomplete:
+            params['incomplete'] = '1'
         with CaptureQueriesContext(connection) as queries:
-            client.get(WARDROBE_URL, {'tag': list(tags)} if tags else None)
+            client.get(WARDROBE_URL, params)
         return len(queries.captured_queries)
 
-    small = (count(), count('x', 'y'))
+    small = [count(), count('x', 'y')]
+    # The incomplete filter needs one match to render a tile at all.
+    _lose_a_garment(first)
+    small += [count(incomplete=True), count('x', 'y', incomplete=True)]
 
     first.tags.add(*Tag.resolve(owner, ['z0']))
     first.photo = make_image(owner)
@@ -1205,9 +1212,601 @@ def test_grid_query_count_does_not_grow_with_outfits_tags_selections_or_photos(
         more = _outfit_with(owner, wardrobe, f'More {n}', tags=['x', 'y', f'z{n}'])
         more.photo = make_image(owner)
         more.save()
-    large = (count(), count('x', 'y'))
+        for _ in range(n):
+            _lose_a_garment(more)
+    large = [count(), count('x', 'y'), count(incomplete=True), count('x', 'y', incomplete=True)]
 
     page = client.get(WARDROBE_URL).content.decode()
     assert _shown(page) == {'First', *(f'More {n}' for n in range(1, 5))}
     assert page.count('outfit-preview-photo') == 5
+    assert page.count('class="outfit-incomplete"') == 5
     assert large == small
+
+
+# --- editing an outfit -----------------------------------------------------------
+
+
+def _edit_url(outfit):
+    return reverse('outfits:edit', args=[outfit.pk])
+
+
+def _missing(outfit):
+    return list(MissingGarment.objects.filter(outfit=outfit).values_list('pk', 'description'))
+
+
+@pytest.fixture
+def lived_in(owner, wardrobe):
+    """A tagged outfit with a photo that lost a garment: all a rename must leave alone."""
+    lost = make_garment(owner, type=GarmentType.ACCESSORY, description='red belt')
+    outfit = make_outfit(owner, garments=[*wardrobe, lost], photo=True, name='Walk')
+    outfit.tags.set(Tag.resolve(owner, ['letnie']))
+    lost.delete()
+    return outfit
+
+
+@pytest.mark.parametrize('tag_names', [None, 'zimowe, smart casual'])
+def test_edit_renames_and_swaps_garments_and_keeps_tags_photo_and_missing_slots(
+    client, owner, wardrobe, lived_in, tag_names
+):
+    added = make_garment(owner, type=GarmentType.SWEATER)
+    slots = _missing(lived_in)
+    client.force_login(owner)
+    data = {'name': 'Long walk', 'garments': [wardrobe[0].pk, added.pk]}
+    if tag_names is not None:
+        data['tag_names'] = tag_names
+
+    response = client.post(_edit_url(lived_in), data)
+
+    assert response.status_code == 302
+    assert response.headers['Location'] == lived_in.get_absolute_url()
+    outfit = _reread(lived_in)
+    assert outfit.name == 'Long walk'
+    assert set(outfit.garments.all()) == {wardrobe[0], added}
+    assert _tag_names(outfit) == ['letnie']
+    assert outfit.photo_id == lived_in.photo_id
+    # Unticking a garment is not losing it: only a deleted garment leaves a slot.
+    assert _missing(outfit) == slots
+    assert 'Outfit updated.' in client.get(response.headers['Location']).content.decode()
+
+
+def test_edit_page_ticks_the_current_garments_and_notes_the_missing_slot(
+    client, owner, wardrobe, lived_in
+):
+    spare = make_garment(owner, type=GarmentType.SWEATER)
+    client.force_login(owner)
+
+    page = client.get(_edit_url(lived_in)).content.decode()
+
+    assert 'checked' in _checkbox(page, wardrobe[0])
+    assert 'checked' in _checkbox(page, wardrobe[1])
+    assert 'checked' not in _checkbox(page, spare)
+    assert 'name="tag_names"' not in page
+    note = re.search(r'<p class="notice">.*?</p>', page, re.DOTALL).group(0)
+    assert 'This outfit has 1 missing garment.' in note
+    assert 'Adding garments here does not close them' in note
+    assert f'href="{lived_in.get_absolute_url()}"' in note
+
+
+def test_adding_a_garment_through_edit_leaves_the_missing_slot_open(
+    client, owner, wardrobe, lived_in
+):
+    added = make_garment(owner, type=GarmentType.ACCESSORY, description='brown belt')
+    slots = _missing(lived_in)
+    client.force_login(owner)
+
+    client.post(
+        _edit_url(lived_in), {'name': 'Walk', 'garments': [g.pk for g in (*wardrobe, added)]}
+    )
+
+    assert set(_reread(lived_in).garments.all()) == {*wardrobe, added}
+    assert _missing(lived_in) == slots
+
+
+def test_edit_page_of_a_complete_outfit_has_no_missing_note(client, owner, wardrobe):
+    outfit = make_outfit(owner, garments=wardrobe, name='Complete')
+    client.force_login(owner)
+
+    page = client.get(_edit_url(outfit)).content.decode()
+
+    assert 'class="notice"' not in page
+    assert 'missing garment' not in page
+
+
+def test_an_invalid_edit_is_shown_again_and_changes_nothing(client, owner, wardrobe, lived_in):
+    client.force_login(owner)
+
+    response = client.post(_edit_url(lived_in), {'name': 'Renamed', 'garments': []})
+
+    assert response.status_code == 200
+    assert 'Choose at least 1 garment.' in response.content.decode()
+    assert _reread(lived_in).name == 'Walk'
+    assert set(_reread(lived_in).garments.all()) == set(wardrobe)
+
+
+@pytest.mark.parametrize('method', ['get', 'post'])
+def test_edit_of_another_users_outfit_is_404_and_changes_nothing(
+    client, owner, stranger, wardrobe, lived_in, method
+):
+    own = make_garment(stranger)
+    client.force_login(stranger)
+
+    response = getattr(client, method)(
+        _edit_url(lived_in), {'name': 'hostile', 'garments': [own.pk, wardrobe[0].pk]}
+    )
+
+    assert response.status_code == 404
+    outfit = _reread(lived_in)
+    assert outfit.name == 'Walk'
+    assert set(outfit.garments.all()) == set(wardrobe)
+    assert _tag_names(outfit) == ['letnie']
+
+
+def _meanwhile(monkeypatch, change):
+    """Run `change` after the edit form validates and before the view stores it: another tab."""
+    is_valid = OutfitEditForm.is_valid
+
+    def validate_then_change(form):
+        valid = is_valid(form)
+        change()
+        return valid
+
+    monkeypatch.setattr(OutfitEditForm, 'is_valid', validate_then_change)
+
+
+def test_an_edit_does_not_bring_back_an_outfit_deleted_meanwhile(
+    client, owner, wardrobe, lived_in, monkeypatch
+):
+    client.force_login(owner)
+    _meanwhile(monkeypatch, lambda: Outfit.objects.filter(pk=lived_in.pk).delete())
+
+    response = client.post(_edit_url(lived_in), {'name': 'Renamed', 'garments': [wardrobe[0].pk]})
+
+    assert response.status_code == 404
+    assert not Outfit.objects.filter(pk=lived_in.pk).exists()
+
+
+def test_an_edit_keeps_a_photo_replaced_meanwhile(client, owner, wardrobe, lived_in, monkeypatch):
+    replacement = make_image(owner)
+
+    def replace_photo():
+        Outfit.objects.filter(pk=lived_in.pk).update(photo=replacement)
+        PrivateImage.objects.filter(pk=lived_in.photo_id).delete()
+
+    client.force_login(owner)
+    _meanwhile(monkeypatch, replace_photo)
+
+    response = client.post(_edit_url(lived_in), {'name': 'Renamed', 'garments': [wardrobe[0].pk]})
+
+    assert response.status_code == 302
+    outfit = _reread(lived_in)
+    assert outfit.name == 'Renamed'
+    assert set(outfit.garments.all()) == {wardrobe[0]}
+    assert outfit.photo_id == replacement.pk
+
+
+# --- deleting an outfit ----------------------------------------------------------
+
+
+def _delete_url(outfit):
+    return reverse('outfits:delete', args=[outfit.pk])
+
+
+def test_delete_page_of_a_tagged_outfit_with_a_photo_warns_about_both(
+    client, owner, wardrobe, lived_in
+):
+    lived_in.tags.add(*Tag.resolve(owner, ['smart-casual']))
+    client.force_login(owner)
+
+    response = client.get(_delete_url(lived_in))
+    page = response.content.decode()
+
+    assert response.status_code == 200
+    assert '<h1>Delete outfit</h1>' in page
+    assert 'Walk' in page
+    assert 'Its garments stay in your wardrobe.' in page
+    assert 'This outfit is tagged: letnie · smart-casual.' in page
+    assert 'Tags no other outfit uses disappear from your wardrobe filter.' in page
+    assert 'Its photo is deleted permanently.' in page
+    assert '<img' not in page
+    assert re.search(r'<form method="post"[^>]*>.*?Delete outfit</button>', page, re.DOTALL)
+    assert f'<a href="{lived_in.get_absolute_url()}">Cancel</a>' in page
+    assert Outfit.objects.filter(pk=lived_in.pk).exists()
+
+
+def test_delete_page_of_a_bare_outfit_mentions_no_tags_and_no_photo(client, owner, wardrobe):
+    outfit = make_outfit(owner, garments=wardrobe, name='Bare')
+    client.force_login(owner)
+
+    page = client.get(_delete_url(outfit)).content.decode()
+
+    assert 'Its garments stay in your wardrobe.' in page
+    assert 'This outfit is tagged' not in page
+    main = page.lower().split('<main', 1)[-1].split('</main>', 1)[0]
+    assert 'photo' not in main
+
+
+def test_delete_confirmation_is_sent_only_once(client, owner, wardrobe):
+    outfit = make_outfit(owner, garments=wardrobe, name='Bare')
+    client.force_login(owner)
+
+    page = client.get(_delete_url(outfit)).content.decode()
+
+    form = re.search(r'<form[^>]*>(?:(?!</form>).)*?Delete outfit</button>', page, re.DOTALL)
+    assert 'data-submit-once' in form.group(0).split('>', 1)[0]
+    assert f'<script src="{static("js/photo-shrink.js")}" defer>' in page
+
+
+def test_confirming_delete_removes_the_outfit_its_slots_unused_tags_and_photo_after_commit(
+    client, owner, wardrobe, lived_in, django_capture_on_commit_callbacks
+):
+    lived_in.tags.add(*Tag.resolve(owner, ['shared']))
+    other = _outfit_with(owner, wardrobe, 'Other', tags=['shared'])
+    photo = lived_in.photo
+    photo_file = _file_of(photo)
+    assert _missing(lived_in)
+    client.force_login(owner)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        response = client.post(_delete_url(lived_in))
+
+    assert response.status_code == 302
+    assert response.headers['Location'] == WARDROBE_URL
+    assert not Outfit.objects.filter(pk=lived_in.pk).exists()
+    assert not MissingGarment.objects.exists()
+    assert sorted(Tag.objects.values_list('name', flat=True)) == ['shared']
+    assert _tag_names(other) == ['shared']
+    assert not PrivateImage.objects.filter(pk=photo.pk).exists()
+    assert not photo_file.exists()
+    assert set(Garment.objects.all()) == set(wardrobe)
+    _assert_garment_photos_intact(wardrobe)
+    followed = client.get(response.headers['Location']).content.decode()
+    assert 'Outfit deleted.' in followed
+
+
+def test_confirming_delete_of_an_outfit_without_a_photo_keeps_every_image(
+    client, owner, wardrobe, django_capture_on_commit_callbacks
+):
+    outfit = make_outfit(owner, garments=wardrobe, name='Bare')
+    images_before = PrivateImage.objects.count()
+    client.force_login(owner)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        response = client.post(_delete_url(outfit))
+
+    assert response.status_code == 302
+    assert not Outfit.objects.filter(pk=outfit.pk).exists()
+    assert PrivateImage.objects.count() == images_before
+    _assert_garment_photos_intact(wardrobe)
+
+
+@pytest.mark.parametrize('method', ['get', 'post'])
+def test_delete_of_another_users_outfit_is_404_and_changes_nothing(
+    client, owner, stranger, wardrobe, lived_in, method, django_capture_on_commit_callbacks
+):
+    photo_file = _file_of(lived_in.photo)
+    slots = _missing(lived_in)
+    client.force_login(stranger)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        response = getattr(client, method)(_delete_url(lived_in))
+
+    assert response.status_code == 404
+    outfit = _reread(lived_in)
+    assert outfit.photo_id == lived_in.photo_id
+    assert photo_file.is_file()
+    assert _tag_names(outfit) == ['letnie']
+    assert _missing(outfit) == slots
+
+
+def test_detail_links_to_edit_and_delete_right_under_the_heading(client, owner, wardrobe):
+    outfit = make_outfit(owner, garments=wardrobe, name='Walk')
+    client.force_login(owner)
+
+    page = client.get(outfit.get_absolute_url()).content.decode()
+
+    actions = re.search(
+        r'</h1>\s*(<[^>]*class="outfit-actions".*?</[a-z]+>)\s*<p>Composed', page, re.DOTALL
+    )
+    assert actions, 'the actions row sits directly under the heading'
+    assert f'<a href="{_edit_url(outfit)}">Edit outfit</a>' in actions.group(1)
+    assert f'<a href="{_delete_url(outfit)}">Delete outfit</a>' in actions.group(1)
+
+
+# --- repairing a missing garment -------------------------------------------------
+
+
+def _replace_url(outfit, missing_pk):
+    return reverse('outfits:missing_replace', args=[outfit.pk, missing_pk])
+
+
+def _dismiss_url(outfit, missing_pk):
+    return reverse('outfits:missing_dismiss', args=[outfit.pk, missing_pk])
+
+
+@pytest.fixture
+def gap(owner, wardrobe):
+    """The shirt's outfit, which lost a pair of brown loafers, and that missing slot."""
+    lost = make_garment(owner, type=GarmentType.SHOES, description='brown loafers')
+    outfit = make_outfit(owner, garments=[wardrobe[0], lost], name='Walk')
+    lost.delete()
+    return outfit, outfit.missing_garments.get()
+
+
+def _radio_values(page):
+    return re.findall(r'<input type="radio" name="garment" value="([^"]+)"', page)
+
+
+def test_replace_page_names_the_missing_garment_and_offers_same_type_garments_first(
+    client, owner, wardrobe, gap
+):
+    outfit, missing = gap
+    boots = make_garment(owner, type=GarmentType.SHOES, description='boots')
+    client.force_login(owner)
+
+    page = client.get(_replace_url(outfit, missing.pk)).content.decode()
+
+    assert 'Replace a missing garment' in page
+    assert 'Missing: Shoes — brown loafers' in page
+    assert _radio_values(page) == [str(boots.pk), str(wardrobe[1].pk)]
+    assert boots.photo_url in page
+    assert 'Add to outfit' in page
+
+
+def test_replacing_adds_the_garment_and_closes_the_slot(client, owner, wardrobe, gap):
+    outfit, missing = gap
+    client.force_login(owner)
+
+    response = client.post(_replace_url(outfit, missing.pk), {'garment': wardrobe[1].pk})
+
+    assert response.status_code == 302
+    assert response.headers['Location'] == outfit.get_absolute_url()
+    assert set(_reread(outfit).garments.all()) == set(wardrobe)
+    assert _missing(outfit) == []
+    assert 'Garment added to the outfit.' in client.get(outfit.get_absolute_url()).content.decode()
+
+
+def test_an_invalid_replace_is_shown_again_and_changes_nothing(
+    client, owner, stranger, wardrobe, gap
+):
+    outfit, missing = gap
+    theirs = make_garment(stranger, type=GarmentType.SHOES)
+    client.force_login(owner)
+
+    response = client.post(_replace_url(outfit, missing.pk), {'garment': theirs.pk})
+
+    assert response.status_code == 200
+    assert response.context['form'].errors['garment']
+    assert list(_reread(outfit).garments.all()) == [wardrobe[0]]
+    assert _missing(outfit) == [(missing.pk, 'brown loafers')]
+
+
+def test_replace_page_without_candidates_links_to_adding_a_garment(client, owner, wardrobe, gap):
+    outfit, missing = gap
+    outfit.garments.add(wardrobe[1])
+    client.force_login(owner)
+
+    page = client.get(_replace_url(outfit, missing.pk)).content.decode()
+
+    assert 'You have no other garments to use.' in page
+    assert reverse('garments:add') in page
+    assert _radio_values(page) == []
+
+
+def test_keeping_without_it_closes_the_slot_and_keeps_the_garments(client, owner, wardrobe, gap):
+    outfit, missing = gap
+    client.force_login(owner)
+
+    response = client.post(_dismiss_url(outfit, missing.pk))
+
+    assert response.status_code == 302
+    assert response.headers['Location'] == outfit.get_absolute_url()
+    assert list(_reread(outfit).garments.all()) == [wardrobe[0]]
+    assert _missing(outfit) == []
+    assert 'Outfit kept without it.' in client.get(outfit.get_absolute_url()).content.decode()
+
+
+def test_keeping_an_outfit_with_no_garments_is_refused(client, owner, wardrobe, gap):
+    outfit, missing = gap
+    outfit.garments.clear()
+    client.force_login(owner)
+
+    response = client.post(_dismiss_url(outfit, missing.pk), follow=True)
+
+    assert 'An outfit with no garments needs a replacement or deletion.' in (
+        response.content.decode()
+    )
+    assert _missing(outfit) == [(missing.pk, 'brown loafers')]
+
+
+@pytest.mark.parametrize(
+    ('action', 'method'), [('replace', 'get'), ('replace', 'post'), ('dismiss', 'post')]
+)
+def test_a_slot_already_closed_goes_back_to_the_outfit_and_changes_nothing(
+    client, owner, wardrobe, gap, action, method
+):
+    outfit, missing = gap
+    url = (_replace_url if action == 'replace' else _dismiss_url)(outfit, missing.pk)
+    missing.delete()
+    client.force_login(owner)
+
+    response = getattr(client, method)(url, {'garment': wardrobe[1].pk})
+
+    assert response.status_code == 302
+    assert response.headers['Location'] == outfit.get_absolute_url()
+    assert list(_reread(outfit).garments.all()) == [wardrobe[0]]
+    assert not list(get_messages(response.wsgi_request))
+
+
+def test_dismiss_refuses_get(client, owner, gap):
+    outfit, missing = gap
+    client.force_login(owner)
+
+    assert client.get(_dismiss_url(outfit, missing.pk)).status_code == 405
+    assert _missing(outfit) == [(missing.pk, 'brown loafers')]
+
+
+def _missing_section(page):
+    match = re.search(r'<section aria-labelledby="missing-heading">.*?</section>', page, re.DOTALL)
+    return match.group(0) if match else None
+
+
+def test_detail_leads_with_the_missing_garments_and_their_repairs(client, owner, wardrobe, gap):
+    outfit, missing = gap
+    client.force_login(owner)
+
+    page = client.get(outfit.get_absolute_url()).content.decode()
+
+    section = _missing_section(page)
+    assert section, 'an incomplete outfit shows its missing garments'
+    # Directly under the actions row, before tags.
+    assert page.index('class="outfit-actions"') < page.index(section) < page.index('tags-heading')
+    assert '<h2 id="missing-heading">Missing garments</h2>' in section
+    assert 'Shoes' in section
+    assert 'brown loafers' in section
+    assert f'href="{_replace_url(outfit, missing.pk)}"' in section
+    assert f'action="{_dismiss_url(outfit, missing.pk)}"' in section
+    assert f'href="{_delete_url(outfit)}"' in section
+
+
+def test_detail_of_an_outfit_with_no_garments_left_offers_no_keep_without_it(client, owner, gap):
+    outfit, missing = gap
+    outfit.garments.clear()
+    client.force_login(owner)
+
+    section = _missing_section(client.get(outfit.get_absolute_url()).content.decode())
+
+    assert f'href="{_replace_url(outfit, missing.pk)}"' in section
+    assert _dismiss_url(outfit, missing.pk) not in section
+    assert f'href="{_delete_url(outfit)}"' in section
+
+
+def test_detail_of_a_complete_outfit_has_no_missing_section(client, owner, wardrobe):
+    outfit = make_outfit(owner, garments=wardrobe, name='Walk')
+    client.force_login(owner)
+
+    assert _missing_section(client.get(outfit.get_absolute_url()).content.decode()) is None
+
+
+def test_detail_query_count_is_the_same_with_and_without_missing_slots(client, owner, wardrobe):
+    complete = make_outfit(owner, garments=wardrobe, name='Complete')
+    lost = [make_garment(owner, type=GarmentType.ACCESSORY) for _ in range(3)]
+    broken = make_outfit(owner, garments=[*wardrobe, *lost], name='Broken')
+    for garment in lost:
+        garment.delete()
+    client.force_login(owner)
+    with CaptureQueriesContext(connection) as none_missing:
+        client.get(complete.get_absolute_url())
+    with CaptureQueriesContext(connection) as three_missing:
+        page = client.get(broken.get_absolute_url()).content.decode()
+
+    assert page.count('Keep without it') == 3
+    assert len(three_missing.captured_queries) == len(none_missing.captured_queries)
+
+
+# --- incomplete outfits in the grid ------------------------------------------------
+
+
+def _lose_a_garment(outfit, description='red belt'):
+    lost = make_garment(outfit.owner, type=GarmentType.ACCESSORY, description=description)
+    outfit.garments.add(lost)
+    lost.delete()
+
+
+@pytest.fixture
+def incomplete(owner, stranger, wardrobe, foreign_wardrobe):
+    """A: tagged, photo, lost one garment; B: collage, lost two; C: tagged, complete; S: theirs."""
+    a = _outfit_with(owner, wardrobe, 'Outfit A', tags=['letnie'])
+    a.photo = make_image(owner)
+    a.save()
+    _lose_a_garment(a)
+    b = _outfit_with(owner, wardrobe, 'Outfit B')
+    _lose_a_garment(b)
+    _lose_a_garment(b, description='grey scarf')
+    c = _outfit_with(owner, wardrobe, 'Outfit C', tags=['letnie'])
+    s = _outfit_with(stranger, foreign_wardrobe, 'Theirs')
+    _lose_a_garment(s)
+    return {'A': a, 'B': b, 'C': c, 'S': s}
+
+
+def _badge_in_preview(tile):
+    preview = re.search(r'<div class="outfit-preview[^"]*">(.*?)</div>', tile, re.DOTALL)
+    badge = re.search(r'<span class="outfit-incomplete">([^<]+)</span>', preview.group(1))
+    return badge.group(1) if badge else None
+
+
+def _notice(page):
+    match = re.search(r'<p class="notice">(.*?)</p>', page, re.DOTALL)
+    return match.group(1) if match else None
+
+
+def _query_of(href):
+    return parse_qs(urlsplit(unescape(href)).query)
+
+
+def test_incomplete_tiles_carry_a_badge_on_photo_and_collage_alike(client, owner, incomplete):
+    client.force_login(owner)
+
+    page = client.get(WARDROBE_URL).content.decode()
+
+    a, b, c = (_tile(page, incomplete[key]) for key in 'ABC')
+    assert 'outfit-preview-photo' in a
+    assert _badge_in_preview(a) == 'Incomplete · 1 missing'
+    assert _badge_in_preview(b) == 'Incomplete · 2 missing'
+    assert _badge_in_preview(c) is None
+    assert 'aria-label="Outfit A, incomplete"' in a
+    assert 'aria-label="Outfit C"' in c
+    assert _badge_in_preview(_tile(_filtered(client, 'letnie'), incomplete['A']))
+
+
+def test_banner_counts_own_incomplete_outfits_and_links_to_them_keeping_the_tags(
+    client, owner, incomplete
+):
+    client.force_login(owner)
+
+    for page, tags in (
+        (client.get(WARDROBE_URL).content.decode(), []),
+        (_filtered(client, 'letnie'), ['letnie']),
+    ):
+        notice = _notice(page)
+        # The count ignores the filters: it is about the whole wardrobe.
+        assert '2 outfits need attention.' in ' '.join(notice.split())
+        href = re.search(r'<a href="([^"]+)">Show them</a>', notice).group(1)
+        assert _query_of(href) == {'incomplete': ['1'], **({'tag': tags} if tags else {})}
+
+
+def test_no_banner_without_incomplete_outfits(client, owner, wardrobe):
+    _outfit_with(owner, wardrobe, 'Complete')
+    client.force_login(owner)
+
+    assert _notice(client.get(WARDROBE_URL).content.decode()) is None
+
+
+def test_incomplete_filter_shows_only_incomplete_outfits_and_combines_with_tags(
+    client, owner, incomplete
+):
+    client.force_login(owner)
+
+    only = client.get(WARDROBE_URL, {'incomplete': '1'}).content.decode()
+    both = client.get(WARDROBE_URL, {'incomplete': '1', 'tag': 'letnie'}).content.decode()
+
+    assert _shown(only) == {'Outfit A', 'Outfit B'}
+    assert _shown(both) == {'Outfit A'}
+    assert _notice(only) is None
+    # Selected chip "Incomplete ×" drops the filter and keeps the tag.
+    assert ('Incomplete', ['letnie'], True) in _bar(both)
+    incomplete_chip = re.search(r'<a href="([^"]+)"[^>]*>Incomplete ', both).group(1)
+    assert _query_of(incomplete_chip) == {'tag': ['letnie']}
+    # A tag chip keeps the incomplete filter.
+    letnie_chip = re.search(r'<a href="([^"]+)"[^>]*>letnie ', both).group(1)
+    assert _query_of(letnie_chip) == {'incomplete': ['1']}
+
+
+def test_incomplete_filter_with_no_match_says_so_and_links_to_all(client, owner, wardrobe):
+    _outfit_with(owner, wardrobe, 'Complete')
+    client.force_login(owner)
+
+    page = client.get(WARDROBE_URL, {'incomplete': '1'}).content.decode()
+
+    assert _shown(page) == set()
+    assert 'No incomplete outfits match.' in page
+    assert f'<a href="{WARDROBE_URL}">Show all outfits</a>' in page

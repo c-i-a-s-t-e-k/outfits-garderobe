@@ -47,7 +47,7 @@ Osoby dbające o styl hobbystycznie zapominają wcześniej dobrane zestawienia, 
 | S-03 | compose-outfit     | wizualnie złożyć outfit z ubrań i zobaczyć go w siatce garderoby                           | S-02          | FR-005, FR-008, US-01             | done |
 | S-04 | outfit-photo       | dodać do outfitu własne zdjęcie w tym stroju i widzieć je jako kafelek w siatce            | S-03, F-01    | FR-007, FR-008, US-01             | done |
 | S-05 | outfit-tags        | tagować outfity i filtrować siatkę garderoby po wybranym tagu                              | S-03          | FR-009, FR-010, US-02             | done |
-| S-06 | garment-lifecycle  | edytować i usunąć ubranie, a dotknięte outfity widzieć jako niekompletne z szybką naprawą  | S-03          | FR-004, US-01                     | proposed |
+| S-06 | garment-lifecycle  | edytować i usunąć ubranie, a dotknięte outfity widzieć jako niekompletne z szybką naprawą  | S-03          | FR-004, US-01                     | in-progress |
 | S-07 | outfit-lifecycle   | edytować i usunąć outfit, z ostrzeżeniem przy usuwaniu otagowanego                         | S-03, S-05    | FR-006, US-01, US-02              | proposed |
 
 ## Streams
@@ -163,7 +163,7 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** leży po kompozycji, bo dopiero wtedy reguła spójności z logiki biznesowej ma co naruszać i da się ją sprawdzić na realnym outficie; ryzykiem jest to, że stan niekompletności musi być widoczny w siatce, a nie tylko zapisany w bazie.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-07: Cykl życia outfitu
 

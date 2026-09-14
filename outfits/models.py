@@ -258,3 +258,59 @@ class Outfit(models.Model):
     @property
     def hidden_garment_count(self):
         return max(len(self.garments.all()) - PREVIEW_SIZE, 0)
+
+    # Like the garment properties above, these read missing_garments.all(), so
+    # a prefetch_related('missing_garments') covers them.
+
+    @property
+    def missing_count(self):
+        return len(self.missing_garments.all())
+
+    @property
+    def is_incomplete(self):
+        return self.missing_count > 0
+
+
+class MissingGarment(models.Model):
+    """A garment an outfit lost because the garment was deleted.
+
+    It copies what the garment was, so the outfit can say what is missing and a
+    replacement of the same kind can be suggested. Written by the `Garment`
+    `pre_delete` receiver in `outfits/signals.py`; incompleteness cannot be
+    worked out afterwards, because Django removes the link rows with the garment.
+
+    Ownership is the outfit's: there is no `owner` field to keep consistent, so
+    every lookup goes through `outfit__owner`.
+
+    Keep this model free of signal receivers and of relations that point at it.
+    Deleting an account fires each garment's `pre_delete`, which inserts rows
+    for outfits the same cascade is about to delete. Without receivers Django
+    removes these rows with a fast delete, a query evaluated after the inserts;
+    a receiver would make it collect the rows before them, and PostgreSQL would
+    then refuse the outfit delete. `test_missing_garment_model.py` pins this.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    outfit = models.ForeignKey(
+        Outfit,
+        on_delete=models.CASCADE,
+        related_name='missing_garments',
+    )
+    type = models.CharField(max_length=20, choices=GarmentType.choices)
+    type_other = models.CharField(max_length=40, blank=True)
+    description = models.CharField(max_length=200, blank=True)
+    removed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['removed_at']
+
+    def __str__(self):
+        if self.description:
+            return f'{self.display_type} — {self.description}'
+        return self.display_type
+
+    @property
+    def display_type(self):
+        if self.type == GarmentType.OTHER:
+            return self.type_other
+        return self.get_type_display()

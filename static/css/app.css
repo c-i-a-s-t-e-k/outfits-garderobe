@@ -79,6 +79,12 @@
   margin: 0;
 }
 
+/* A tile is a link to the garment's edit page, but should still read as a tile. */
+.garment-grid a {
+  color: inherit;
+  text-decoration: none;
+}
+
 /* Square before the image loads, so lazy-loaded tiles do not shift the page. */
 .garment-grid img,
 .outfit-picker img {
@@ -88,7 +94,7 @@
 }
 
 /* Outfit picker: the whole tile is the label, so a thumb anywhere on the photo
-   toggles it; the checkbox stays visible in the corner and keeps keyboard
+   toggles it (the replace page uses radios the same way); the checkbox stays visible in the corner and keeps keyboard
    focus. Without :has() the outline never appears, but the checkbox does. */
 .outfit-picker label {
   position: relative;
@@ -97,7 +103,8 @@
   cursor: pointer;
 }
 
-.outfit-picker [type='checkbox'] {
+.outfit-picker [type='checkbox'],
+.outfit-picker [type='radio'] {
   position: absolute;
   top: 0.5rem;
   left: 0.5rem;
@@ -152,6 +159,7 @@
 }
 
 .outfit-preview {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
@@ -210,9 +218,74 @@
   font-weight: 700;
 }
 
+/* "Incomplete · N missing": top-left over any photo or collage, including an
+   empty one, clear of the "+N" veil in the bottom-right cell. Dark amber under
+   white text stays above 4.5:1 contrast. grid-area spans the whole box, so the
+   collage rules above never give it a cell. */
+.outfit-incomplete {
+  position: absolute;
+  z-index: 1;
+  grid-area: 1 / 1 / -1 / -1;
+  top: 0.375rem;
+  left: 0.375rem;
+  max-width: calc(100% - 0.75rem);
+  height: max-content;
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--pico-border-radius);
+  background: #8a4b00;
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
 .outfit-name {
   display: block;
   margin-top: 0.25rem;
+}
+
+/* A notice above the content that needs attention: the incomplete-outfits
+   banner, the missing-slot note on Edit outfit, the tag warning on delete. */
+.notice {
+  padding: 0.75rem 1rem;
+  border-left: 0.25rem solid #8a4b00;
+  border-radius: var(--pico-border-radius);
+  background: var(--pico-card-sectioning-background-color);
+}
+
+/* Missing garments on the outfit page: one row per slot, its two repairs side
+   by side and wrapping at 360px. Keep without it is a POST form, so Pico's
+   full-width button and form margin are undone here as for the tag chips. */
+.missing-list {
+  padding-left: 0;
+  list-style: none;
+}
+
+.missing-list > li {
+  margin-bottom: var(--pico-spacing);
+  list-style: none;
+}
+
+.missing-list small {
+  display: block;
+  color: var(--pico-muted-color);
+}
+
+.missing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.missing-actions form {
+  margin-bottom: 0;
+}
+
+.missing-actions [role='button'],
+.missing-actions button {
+  width: auto;
+  margin-bottom: 0;
 }
 
 /* The outfit photo on its page and on the remove confirmation: shown whole,

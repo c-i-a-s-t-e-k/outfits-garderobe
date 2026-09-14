@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Edit garment{% endblock %}
+
+{% block content %}
+  <h1>Edit garment</h1>
+
+  <div class="outfit-photo">
+    <img src="{{ garment.photo_url }}"
+         alt="{{ garment.display_type }}{% if garment.description %}: {{ garment.description }}{% endif %}"
+         decoding="async">
+  </div>
+
+  <form method="post" enctype="multipart/form-data" data-submit-once>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    {% for field in form %}
+      {# garment-type-other is what app.css hides unless Other is selected. #}
+      <div{% if field.name == 'type_other' %} class="garment-type-other"{% endif %}>
+        {{ field.label_tag }}
+        {{ field }}
+        {{ field.errors }}
+      </div>
+    {% endfor %}
+
+    {# Filled by photo-shrink.js while it prepares the photo. #}
+    <p data-shrink-status aria-live="polite"></p>
+
+    {# autocomplete="off": see add.html. #}
+    <button type="submit" autocomplete="off">Save changes</button>
+  </form>
+  <p>
+    <a href="{% url 'garments:delete' garment.pk %}">Delete garment</a>
+    · <a href="{% url 'garments:list' %}">Cancel</a>
+  </p>
+{% endblock %}
+
+{% block extra_body %}
+  <script src="{% static 'js/photo-shrink.js' %}" defer></script>
+{% endblock %}

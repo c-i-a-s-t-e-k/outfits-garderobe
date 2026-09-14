@@ -1,4 +1,4 @@
-"""The wardrobe grid, and composing, tagging and photographing an outfit — for its owner only."""
+"""The wardrobe grid; composing, editing, deleting, tagging, photographing and repairing outfits."""
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -10,7 +10,14 @@ from django.utils.http import urlencode
 from django.views.decorators.http import require_http_methods, require_POST
 
 from garments.models import Garment
-from outfits.forms import MIN_GARMENTS, AddTagsForm, OutfitForm, OutfitPhotoForm
+from outfits.forms import (
+    MIN_GARMENTS,
+    AddTagsForm,
+    OutfitEditForm,
+    OutfitForm,
+    OutfitPhotoForm,
+    ReplaceMissingGarmentForm,
+)
 from outfits.models import Outfit, Tag
 from privatemedia.models import discard_private_image, stored_private_image
 
@@ -23,10 +30,14 @@ class OutfitNameTaken(Exception):
 def wardrobe(request):
     """The owner's outfits carrying every tag in `?tag=`, and a bar to change that.
 
-    A constant number of queries however many outfits, garments, tags or
-    selections there are: one to resolve the selected tags (none without a
-    filter), the outfits, and one prefetch each of garments and tags. Preview
-    order and the tag bar are computed in Python from the prefetched rows.
+    `?incomplete=1` narrows them further to outfits with a missing garment. Above
+    the bar, a notice counts every incomplete outfit, whatever the filters.
+
+    A constant number of queries however many outfits, garments, tags, missing
+    slots or selections there are: one to resolve the selected tags (none
+    without a filter), the outfits, one prefetch each of garments, tags and
+    missing slots, and the incomplete count (none while that filter is on).
+    Preview order, badges and the tag bar come from the prefetched rows.
     """
     # Typed values keyed by identity, first spelling kept: `letnie` and
     # ` LETNIE ` in one query string are one selection.
@@ -45,6 +56,8 @@ def wardrobe(request):
             for tag in Tag.objects.filter(owner=request.user, normalized__in=typed)
         }
 
+    only_incomplete = request.GET.get('incomplete') == '1'
+
     outfits = Outfit.objects.filter(owner=request.user)
     if len(resolved) < len(typed):
         # A tag the user does not have matches no outfit; still listed as
@@ -53,13 +66,17 @@ def wardrobe(request):
     for tag in resolved.values():
         # One filter per tag, so each gets its own join: AND, not OR.
         outfits = outfits.filter(tags=tag)
-    outfits = list(outfits.prefetch_related('garments', 'tags'))
+    if only_incomplete:
+        outfits = outfits.filter(missing_garments__isnull=False).distinct()
+    outfits = list(outfits.prefetch_related('garments', 'tags', 'missing_garments'))
 
     selected_values = [resolved[key].name if key in resolved else typed[key] for key in typed]
     selected = [
         {
             'name': value,
-            'url': _wardrobe_url(selected_values[:index] + selected_values[index + 1 :]),
+            'url': _wardrobe_url(
+                selected_values[:index] + selected_values[index + 1 :], only_incomplete
+            ),
         }
         for index, value in enumerate(selected_values)
     ]
@@ -67,10 +84,19 @@ def wardrobe(request):
     # outfit in view, so the bar never offers a dead end.
     on_screen = {tag.pk: tag for outfit in outfits for tag in outfit.tags.all()}
     available = [
-        {'name': tag.name, 'url': _wardrobe_url([*selected_values, tag.name])}
+        {'name': tag.name, 'url': _wardrobe_url([*selected_values, tag.name], only_incomplete)}
         for tag in sorted(on_screen.values(), key=lambda tag: tag.normalized)
         if tag.normalized not in typed
     ]
+
+    incomplete_count = 0
+    if not only_incomplete:
+        # The notice is hidden while the filter is on, so the count is skipped.
+        incomplete_count = (
+            Outfit.objects.filter(owner=request.user, missing_garments__isnull=False)
+            .distinct()
+            .count()
+        )
 
     can_compose = Garment.objects.filter(owner=request.user).count() >= MIN_GARMENTS
     return render(
@@ -81,14 +107,21 @@ def wardrobe(request):
             'can_compose': can_compose,
             'selected': selected,
             'available': available,
-            'filtering': bool(typed),
+            'only_incomplete': only_incomplete,
+            'incomplete_count': incomplete_count,
+            'show_incomplete_url': _wardrobe_url(selected_values, incomplete=True),
+            'drop_incomplete_url': _wardrobe_url(selected_values),
+            'filtering': bool(typed) or only_incomplete,
         },
     )
 
 
-def _wardrobe_url(tag_names):
+def _wardrobe_url(tag_names, incomplete=False):
+    params = {'tag': tag_names} if tag_names else {}
+    if incomplete:
+        params['incomplete'] = 1
     url = reverse('wardrobe')
-    return f'{url}?{urlencode({"tag": tag_names}, doseq=True)}' if tag_names else url
+    return f'{url}?{urlencode(params, doseq=True)}' if params else url
 
 
 @login_required
@@ -111,6 +144,39 @@ def outfit_compose(request):
     else:
         form = OutfitForm(owner=request.user)
     return render(request, 'outfits/compose.html', {'form': form})
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def outfit_edit(request, pk):
+    """Change the outfit's name and garments; its tags, photo and missing slots stay."""
+    # Ownership before the form: a stranger's garment ids are never validated.
+    outfit = _owned_outfit(request, pk)
+    if request.method == 'POST':
+        form = OutfitEditForm(request.POST, owner=request.user, instance=outfit)
+        if form.is_valid():
+            try:
+                _update_outfit(request.user, pk, form)
+            except OutfitNameTaken:
+                form.add_error('name', 'You already have an outfit with this name.')
+            else:
+                messages.success(request, 'Outfit updated.')
+                return redirect(outfit)
+    else:
+        form = OutfitEditForm(owner=request.user, instance=outfit)
+    return render(request, 'outfits/edit.html', {'form': form, 'outfit': outfit})
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def outfit_delete(request, pk):
+    """Confirm, then delete the outfit and its photo; its garments stay."""
+    outfit = _owned_outfit(request, pk)
+    if request.method == 'POST':
+        _delete_outfit(request.user, pk)
+        messages.success(request, 'Outfit deleted.')
+        return redirect('wardrobe')
+    return render(request, 'outfits/delete.html', {'outfit': outfit})
 
 
 @login_required
@@ -174,11 +240,67 @@ def outfit_photo_remove(request, pk):
     return render(request, 'outfits/photo_remove.html', {'outfit': outfit})
 
 
+@login_required
+@require_http_methods(['GET', 'POST'])
+def outfit_missing_replace(request, pk, missing_pk):
+    """Fill one missing slot with another of the owner's garments."""
+    # Ownership first: a stranger gets the same 404 whether or not the slot exists.
+    outfit = _owned_outfit(request, pk)
+    missing = next((slot for slot in outfit.missing_garments.all() if slot.pk == missing_pk), None)
+    # Already closed — a second tab or a double tap — is not an error.
+    if missing is None:
+        return redirect(outfit)
+    if request.method == 'POST':
+        form = ReplaceMissingGarmentForm(request.POST, outfit=outfit, missing=missing)
+        if form.is_valid():
+            with transaction.atomic():
+                slot = _locked_slot(outfit, missing_pk)
+                if slot is None:
+                    return redirect(outfit)
+                outfit.garments.add(form.cleaned_data['garment'])
+                slot.delete()
+            messages.success(request, 'Garment added to the outfit.')
+            return redirect(outfit)
+    else:
+        form = ReplaceMissingGarmentForm(outfit=outfit, missing=missing)
+    return render(
+        request,
+        'outfits/missing_replace.html',
+        {'outfit': outfit, 'missing': missing, 'form': form},
+    )
+
+
+@login_required
+@require_POST
+def outfit_missing_dismiss(request, pk, missing_pk):
+    """Close one missing slot without adding anything, unless nothing would be left."""
+    outfit = _owned_outfit(request, pk)
+    with transaction.atomic():
+        slot = _locked_slot(outfit, missing_pk)
+        if slot is None:
+            return redirect(outfit)
+        if not outfit.garments.exists():
+            messages.error(request, 'An outfit with no garments needs a replacement or deletion.')
+            return redirect(outfit)
+        slot.delete()
+    messages.success(request, 'Outfit kept without it.')
+    return redirect(outfit)
+
+
+def _locked_slot(outfit, missing_pk):
+    # Looked up through the outfit, so only its own slots match; the lock makes
+    # a replace and a dismiss of the same slot take turns, and the loser finds
+    # it gone.
+    return outfit.missing_garments.select_for_update().filter(pk=missing_pk).first()
+
+
 def _owned_outfit(request, pk):
     # One 404 for "no such outfit" and "not your outfit": the URL space must not
     # reveal which ids exist.
     return get_object_or_404(
-        Outfit.objects.prefetch_related('garments', 'tags'), pk=pk, owner=request.user
+        Outfit.objects.prefetch_related('garments', 'tags', 'missing_garments'),
+        pk=pk,
+        owner=request.user,
     )
 
 
@@ -244,6 +366,22 @@ def _remove_outfit_photo(owner, pk):
 
 
 @transaction.atomic
+def _delete_outfit(owner, pk):
+    """Delete the outfit, then retire its photo.
+
+    Its missing slots cascade with it, and the post_delete receiver in
+    outfits.signals deletes the tags no other outfit carries. The photo goes
+    last: Outfit.photo is RESTRICT, so the image row cannot go while the outfit
+    still points at it.
+    """
+    outfit = _locked_outfit(owner, pk)
+    photo = outfit.photo
+    outfit.delete()
+    if photo is not None:
+        discard_private_image(photo)
+
+
+@transaction.atomic
 def _store_outfit(form):
     """Store the outfit with its garments and tags together, or leave nothing behind.
 
@@ -265,4 +403,27 @@ def _store_outfit(form):
         outfit.save()
     form.save_m2m()
     outfit.tags.set(Tag.resolve(outfit.owner, form.cleaned_data['tag_names']))
+    return outfit
+
+
+@transaction.atomic
+def _update_outfit(owner, pk, form):
+    """Write an edit's name and garments onto the outfit as it is now.
+
+    The form's instance was read before validation, and saving it would write
+    back every column as it was then: a photo another tab has since replaced,
+    or, when the outfit was deleted meanwhile, the whole outfit again. So the
+    row is re-read under the lock (404 when it is gone) and only the edited
+    fields are copied onto it.
+    """
+    outfit = _locked_outfit(owner, pk)
+    outfit.name = form.cleaned_data['name']
+    try:
+        with transaction.atomic():
+            outfit.save()
+    except (IntegrityError, ValidationError):
+        # A fresh row keeps its own photo and a non-empty name, so only a name
+        # taken since the form validated can be refused here.
+        raise OutfitNameTaken from None
+    outfit.garments.set(form.cleaned_data['garments'])
     return outfit

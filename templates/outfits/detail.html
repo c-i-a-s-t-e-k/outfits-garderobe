@@ -5,6 +5,44 @@
 
 {% block content %}
   <h1>{{ outfit.name }}</h1>
+  <p class="outfit-actions">
+    <a href="{% url 'outfits:edit' outfit.pk %}">Edit outfit</a> ·
+    <a href="{% url 'outfits:delete' outfit.pk %}">Delete outfit</a>
+  </p>
+
+  {% with slots=outfit.missing_garments.all %}
+    {% if slots %}
+      <section aria-labelledby="missing-heading">
+        <h2 id="missing-heading">Missing garments</h2>
+        <p>A garment in this outfit was deleted. Replace it, keep the outfit without it, or delete the outfit.</p>
+        {% comment %}
+          Keeping an outfit with no garments left would make an empty outfit
+          look complete, so then only Replace and Delete outfit are offered.
+        {% endcomment %}
+        {% with has_garments=outfit.garments.all|length %}
+          <ul class="missing-list">
+            {% for slot in slots %}
+              <li>
+                <strong>{{ slot.display_type }}</strong>{% if slot.description %} — {{ slot.description }}{% endif %}
+                <small>removed {{ slot.removed_at|date:"j F Y" }}</small>
+                <div class="missing-actions">
+                  <a href="{% url 'outfits:missing_replace' outfit.pk slot.pk %}" role="button">Replace</a>
+                  {% if has_garments %}
+                    <form method="post" action="{% url 'outfits:missing_dismiss' outfit.pk slot.pk %}">
+                      {% csrf_token %}
+                      <button type="submit" class="secondary">Keep without it</button>
+                    </form>
+                  {% endif %}
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endwith %}
+        <p><a href="{% url 'outfits:delete' outfit.pk %}">Delete outfit</a></p>
+      </section>
+    {% endif %}
+  {% endwith %}
+
   <p>Composed {{ outfit.created_at|date:"j F Y" }}.</p>
 
   <section aria-labelledby="tags-heading">
