@@ -1,10 +1,10 @@
 ---
 change_id: private-media-gate
 title: Prywatna brama dostępu do zdjęć użytkownika
-status: impl_reviewed
+status: archived
 created: 2026-09-05
-updated: 2026-09-09
-archived_at: null
+updated: 2026-09-14
+archived_at: 2026-09-14T12:11:27Z
 ---
 
 ## Notes

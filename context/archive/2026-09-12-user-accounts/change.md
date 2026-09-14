@@ -1,10 +1,10 @@
 ---
 change_id: user-accounts
 title: Konto użytkownika — rejestracja, logowanie, wylogowanie i zmiana hasła
-status: impl_reviewed
+status: archived
 created: 2026-09-12
-updated: 2026-09-12
-archived_at: null
+updated: 2026-09-14
+archived_at: 2026-09-14T12:11:03Z
 ---
 
 ## Notes

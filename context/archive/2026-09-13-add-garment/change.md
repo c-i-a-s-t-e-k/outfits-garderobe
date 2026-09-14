@@ -1,10 +1,10 @@
 ---
 change_id: add-garment
 title: Dodawanie ubrania ze zdjęciem i prywatna lista ubrań
-status: impl_reviewed
+status: archived
 created: 2026-09-13
-updated: 2026-09-13
-archived_at: null
+updated: 2026-09-14
+archived_at: 2026-09-14T12:12:11Z
 ---
 
 ## Notes
