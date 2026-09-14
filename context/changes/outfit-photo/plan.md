@@ -519,34 +519,34 @@ Never merge the PR.
 
 #### Automated
 
-- [x] 3.1 View tests pass: `uv run pytest outfits/tests/test_views.py`
-- [x] 3.2 The privacy contracts still pass: `uv run pytest tests/`
-- [x] 3.3 The full suite passes: `uv run pytest`
-- [x] 3.4 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [x] 3.5 Linting passes: `uv run ruff check .`
-- [x] 3.6 Formatting is clean: `uv run ruff format --check .`
+- [x] 3.1 View tests pass: `uv run pytest outfits/tests/test_views.py` — 4b9a74d
+- [x] 3.2 The privacy contracts still pass: `uv run pytest tests/` — 4b9a74d
+- [x] 3.3 The full suite passes: `uv run pytest` — 4b9a74d
+- [x] 3.4 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput` — 4b9a74d
+- [x] 3.5 Linting passes: `uv run ruff check .` — 4b9a74d
+- [x] 3.6 Formatting is clean: `uv run ruff format --check .` — 4b9a74d
 
 #### Manual
 
-- [x] 3.7 In the wardrobe, a photo tile and a collage tile in the same row have the same size, and the photo shows the upper body and head
-- [x] 3.8 2-, 3- and 4-garment collages and the `+N` badge still read correctly in the portrait tile
-- [x] 3.9 At 360 px in headless Chromium the grid shows two portrait tiles per row with no horizontal scrolling, with and without a tag filter
+- [x] 3.7 In the wardrobe, a photo tile and a collage tile in the same row have the same size, and the photo shows the upper body and head — 4b9a74d
+- [x] 3.8 2-, 3- and 4-garment collages and the `+N` badge still read correctly in the portrait tile — 4b9a74d
+- [x] 3.9 At 360 px in headless Chromium the grid shows two portrait tiles per row with no horizontal scrolling, with and without a tag filter — 4b9a74d
 
 ### Phase 4: Pull request and PR-environment verification
 
 #### Automated
 
-- [ ] 4.1 The full suite passes on the rebased branch: `uv run pytest`
-- [ ] 4.2 Nothing is left unmigrated after the rebase: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 4.3 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
-- [ ] 4.4 The PR against `master` exists and contains only this slice's commits: `gh pr view feat/outfit-photo --json baseRefName,commits`
-- [ ] 4.5 The PR has no merge conflicts: `gh pr view feat/outfit-photo --json mergeable`
-- [ ] 4.6 The Railway PR environment build is green, and its deploy logs show `migrate` applying `outfits.0003_*`
-- [ ] 4.7 The PR environment's `/health/` returns 200
+- [x] 4.1 The full suite passes on the rebased branch: `uv run pytest`
+- [x] 4.2 Nothing is left unmigrated after the rebase: `uv run python manage.py makemigrations --check --dry-run`
+- [x] 4.3 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
+- [x] 4.4 The PR against `master` exists and contains only this slice's commits: `gh pr view feat/outfit-photo --json baseRefName,commits`
+- [x] 4.5 The PR has no merge conflicts: `gh pr view feat/outfit-photo --json mergeable`
+- [x] 4.6 The Railway PR environment build is green, and its deploy logs show `migrate` applying `outfits.0003_*`
+- [x] 4.7 The PR environment's `/health/` returns 200
 
 #### Manual
 
-- [ ] 4.8 On the PR environment at 360 px: compose, land on the outfit page, upload a real phone photo, see it on the page and as the wardrobe tile
-- [ ] 4.9 On the PR environment, replace the photo, then remove it through the confirmation page; the tile returns to the collage
-- [ ] 4.10 On the PR environment, a second account gets 404 on the first account's outfit page, remove page and photo URL, and sees none of its outfits
+- [x] 4.8 On the PR environment at 360 px: compose, land on the outfit page, upload a real phone photo, see it on the page and as the wardrobe tile
+- [x] 4.9 On the PR environment, replace the photo, then remove it through the confirmation page; the tile returns to the collage
+- [x] 4.10 On the PR environment, a second account gets 404 on the first account's outfit page, remove page and photo URL, and sees none of its outfits
 - [ ] 4.11 The developer reviews and merges the PR; production `/health/` returns 200 afterwards

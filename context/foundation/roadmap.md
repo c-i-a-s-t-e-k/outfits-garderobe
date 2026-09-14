@@ -45,7 +45,7 @@ Osoby dbające o styl hobbystycznie zapominają wcześniej dobrane zestawienia, 
 | S-01 | user-accounts      | zarejestrować się, zalogować, wylogować i zmienić hasło                                    | —             | FR-001, FR-002, Access Control    | done |
 | S-02 | add-garment        | dodać ubranie (zdjęcie, typ, opis) i zobaczyć swoją prywatną listę ubrań                   | S-01, F-01    | FR-003, US-01                     | done |
 | S-03 | compose-outfit     | wizualnie złożyć outfit z ubrań i zobaczyć go w siatce garderoby                           | S-02          | FR-005, FR-008, US-01             | done |
-| S-04 | outfit-photo       | dodać do outfitu własne zdjęcie w tym stroju i widzieć je jako kafelek w siatce            | S-03, F-01    | FR-007, FR-008, US-01             | in-progress |
+| S-04 | outfit-photo       | dodać do outfitu własne zdjęcie w tym stroju i widzieć je jako kafelek w siatce            | S-03, F-01    | FR-007, FR-008, US-01             | done |
 | S-05 | outfit-tags        | tagować outfity i filtrować siatkę garderoby po wybranym tagu                              | S-03          | FR-009, FR-010, US-02             | done |
 | S-06 | garment-lifecycle  | edytować i usunąć ubranie, a dotknięte outfity widzieć jako niekompletne z szybką naprawą  | S-03          | FR-004, US-01                     | proposed |
 | S-07 | outfit-lifecycle   | edytować i usunąć outfit, z ostrzeżeniem przy usuwaniu otagowanego                         | S-03, S-05    | FR-006, US-01, US-02              | proposed |
@@ -139,7 +139,7 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** dopiero to zdjęcie sprawia, że przegląd garderoby przestaje być siatką miniatur ubrań, a staje się tym, co opisuje PRD; ryzykiem jest podmiana kafelka — podgląd złożony i własne zdjęcie muszą wyglądać spójnie w tej samej siatce.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-05: Tagi i filtrowanie
 
@@ -185,7 +185,7 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 | S-01 | `user-accounts` | Rejestracja, logowanie, wylogowanie i zmiana hasła | OG-2 | yes | Uruchom `/10x-plan user-accounts` |
 | S-02 | `add-garment` | Dodawanie ubrania ze zdjęciem i prywatna lista ubrań | OG-3 | yes | Uruchom `/10x-plan add-garment` (S-01 i F-01 done) |
 | S-03 | `compose-outfit` | Wizualne składanie outfitu i siatka garderoby | OG-4 | yes | Zmergowane do `master` 2026-09-13 (PR #2 kod, PR #3 domknięcie); produkcja zweryfikowana |
-| S-04 | `outfit-photo` | Własne zdjęcie w stroju jako kafelek outfitu | OG-5 | yes | S-03 i F-01 done — uruchom `/10x-plan outfit-photo` |
+| S-04 | `outfit-photo` | Własne zdjęcie w stroju jako kafelek outfitu | OG-5 | yes | Zaimplementowane 2026-09-14 w PR #7 (jedno zdjęcie na outfit z podmianą i usunięciem, plik kasowany po commicie, kafelki 3:4, trasy zdjęcia w sieci prywatności). Checki manualne przeszły na PR env (headless 360 px + prawdziwy telefon developera). Przygotowanie PR env do automatyzacji: OG-13 |
 | S-05 | `outfit-tags` | Tagowanie outfitów i filtrowanie siatki po tagu | OG-6 | yes | Zaimplementowane 2026-09-14 w PR #5 (tagi per użytkownik z kluczem `normalized`, filtr AND, pasek zawężający, trasy tagów w sieci prywatności). Manualne checki na PR i produkcji pominięte decyzją developera |
 | S-06 | `garment-lifecycle` | Edycja i usuwanie ubrania z oznaczeniem niekompletnych outfitów | OG-7 | yes | S-03 done — uruchom `/10x-plan garment-lifecycle` |
 | S-07 | `outfit-lifecycle` | Edycja i usuwanie outfitu z ostrzeżeniem o tagach | OG-8 | yes | S-03 i S-05 done — uruchom `/10x-plan outfit-lifecycle` |
