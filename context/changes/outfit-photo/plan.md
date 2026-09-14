@@ -536,17 +536,17 @@ Never merge the PR.
 
 #### Automated
 
-- [x] 4.1 The full suite passes on the rebased branch: `uv run pytest`
-- [x] 4.2 Nothing is left unmigrated after the rebase: `uv run python manage.py makemigrations --check --dry-run`
-- [x] 4.3 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
-- [x] 4.4 The PR against `master` exists and contains only this slice's commits: `gh pr view feat/outfit-photo --json baseRefName,commits`
-- [x] 4.5 The PR has no merge conflicts: `gh pr view feat/outfit-photo --json mergeable`
-- [x] 4.6 The Railway PR environment build is green, and its deploy logs show `migrate` applying `outfits.0003_*`
-- [x] 4.7 The PR environment's `/health/` returns 200
+- [x] 4.1 The full suite passes on the rebased branch: `uv run pytest` — 8270c7a
+- [x] 4.2 Nothing is left unmigrated after the rebase: `uv run python manage.py makemigrations --check --dry-run` — 8270c7a
+- [x] 4.3 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py` — 8270c7a
+- [x] 4.4 The PR against `master` exists and contains only this slice's commits: `gh pr view feat/outfit-photo --json baseRefName,commits` — 8270c7a
+- [x] 4.5 The PR has no merge conflicts: `gh pr view feat/outfit-photo --json mergeable` — 8270c7a
+- [x] 4.6 The Railway PR environment build is green, and its deploy logs show `migrate` applying `outfits.0003_*` — 8270c7a
+- [x] 4.7 The PR environment's `/health/` returns 200 — 8270c7a
 
 #### Manual
 
-- [x] 4.8 On the PR environment at 360 px: compose, land on the outfit page, upload a real phone photo, see it on the page and as the wardrobe tile
-- [x] 4.9 On the PR environment, replace the photo, then remove it through the confirmation page; the tile returns to the collage
-- [x] 4.10 On the PR environment, a second account gets 404 on the first account's outfit page, remove page and photo URL, and sees none of its outfits
+- [x] 4.8 On the PR environment at 360 px: compose, land on the outfit page, upload a real phone photo, see it on the page and as the wardrobe tile — 8270c7a
+- [x] 4.9 On the PR environment, replace the photo, then remove it through the confirmation page; the tile returns to the collage — 8270c7a
+- [x] 4.10 On the PR environment, a second account gets 404 on the first account's outfit page, remove page and photo URL, and sees none of its outfits — 8270c7a
 - [ ] 4.11 The developer reviews and merges the PR; production `/health/` returns 200 afterwards
