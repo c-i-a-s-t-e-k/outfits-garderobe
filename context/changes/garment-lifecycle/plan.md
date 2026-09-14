@@ -857,33 +857,33 @@ Bring the branch up to date, open the pull request, run every manual check again
 
 #### Automated
 
-- [x] 4.1 Outfit tests pass: `uv run pytest outfits/tests`
-- [x] 4.2 Risk #5 scenarios pass: `uv run pytest tests/garment_deletion_keeps_outfits`
-- [x] 4.3 The privacy contracts cover the new routes and markers: `uv run pytest tests/`
-- [x] 4.4 The full suite passes: `uv run pytest`
-- [x] 4.5 System checks pass: `uv run python manage.py check`
-- [x] 4.6 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [x] 4.7 Linting passes: `uv run ruff check .`
-- [x] 4.8 Formatting is clean: `uv run ruff format --check .`
+- [x] 4.1 Outfit tests pass: `uv run pytest outfits/tests` — fcbc482
+- [x] 4.2 Risk #5 scenarios pass: `uv run pytest tests/garment_deletion_keeps_outfits` — fcbc482
+- [x] 4.3 The privacy contracts cover the new routes and markers: `uv run pytest tests/` — fcbc482
+- [x] 4.4 The full suite passes: `uv run pytest` — fcbc482
+- [x] 4.5 System checks pass: `uv run python manage.py check` — fcbc482
+- [x] 4.6 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput` — fcbc482
+- [x] 4.7 Linting passes: `uv run ruff check .` — fcbc482
+- [x] 4.8 Formatting is clean: `uv run ruff format --check .` — fcbc482
 
 #### Manual
 
-- [x] 4.9 After deleting a garment used by a collage outfit and a photo outfit, both tiles show the *Incomplete* badge legibly and the banner links to a grid of just those two
-- [x] 4.10 On the outfit page, *Replace* lists same-type garments first; picking one adds it and the section disappears
-- [x] 4.11 *Keep without it* closes the slot; on an outfit with no garments left only *Replace* and *Delete outfit* are offered
-- [x] 4.12 At 360 px in headless Chromium the badge, banner, missing section and replace picker fit without horizontal scrolling, with and without a tag filter
+- [x] 4.9 After deleting a garment used by a collage outfit and a photo outfit, both tiles show the *Incomplete* badge legibly and the banner links to a grid of just those two — fcbc482
+- [x] 4.10 On the outfit page, *Replace* lists same-type garments first; picking one adds it and the section disappears — fcbc482
+- [x] 4.11 *Keep without it* closes the slot; on an outfit with no garments left only *Replace* and *Delete outfit* are offered — fcbc482
+- [x] 4.12 At 360 px in headless Chromium the badge, banner, missing section and replace picker fit without horizontal scrolling, with and without a tag filter — fcbc482
 
 ### Phase 5: Pull request and PR-environment verification
 
 #### Automated
 
-- [ ] 5.1 The full suite passes on the branch merged with current `master`: `uv run pytest`
-- [ ] 5.2 Nothing is left unmigrated after the merge: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 5.3 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
-- [ ] 5.4 The PR against `master` exists and contains only this slice's commits, apart from merges of `master`: `gh pr view feat/garment-lifecycle --json baseRefName,commits`
-- [ ] 5.5 The PR has no merge conflicts: `gh pr view feat/garment-lifecycle --json mergeable`
-- [ ] 5.6 The Railway PR environment build is green, and its deploy logs show `migrate` applying `outfits.0004_*`
-- [ ] 5.7 The PR environment's `/health/` returns 200
+- [x] 5.1 The full suite passes on the branch merged with current `master`: `uv run pytest`
+- [x] 5.2 Nothing is left unmigrated after the merge: `uv run python manage.py makemigrations --check --dry-run`
+- [x] 5.3 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
+- [x] 5.4 The PR against `master` exists and contains only this slice's commits, apart from merges of `master`: `gh pr view feat/garment-lifecycle --json baseRefName,commits`
+- [x] 5.5 The PR has no merge conflicts: `gh pr view feat/garment-lifecycle --json mergeable`
+- [x] 5.6 The Railway PR environment build is green, and its deploy logs show `migrate` applying `outfits.0004_*`
+- [x] 5.7 The PR environment's `/health/` returns 200
 
 #### Manual
 
