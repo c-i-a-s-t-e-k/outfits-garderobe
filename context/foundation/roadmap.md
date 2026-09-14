@@ -219,3 +219,4 @@ PRD nie ma nierozstrzygniętych pytań. Poniższe wyszły w trakcie układania r
 (Pusta przy pierwszym wygenerowaniu. Wpisy dopisuje `/10x-archive` przy archiwizowaniu zmiany.)
 
 - **S-01: użytkownik może się zarejestrować, zalogować, wylogować i zmienić hasło; niezalogowany trafia na stronę logowania zamiast na treść.** — Archived 2026-09-14 → `context/archive/2026-09-12-user-accounts/`. Lesson: —.
+- **F-01: (fundament) pliki wgrywane przez użytkownika lądują poza publicznie serwowanym katalogiem, a każde ich pobranie przechodzi przez widok, który wymaga zalogowania i sprawdza własność pliku; próba pobrania cudzego pliku kończy się odmową.** — Archived 2026-09-14 → `context/archive/2026-09-05-private-media-gate/`. Lesson: —.
