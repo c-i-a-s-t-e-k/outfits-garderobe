@@ -12,7 +12,7 @@ To make those repairs possible, this slice also builds full outfit edit (name an
 
 ## Current State Analysis
 
-The research is `context/changes/garment-lifecycle/research.md` at `787aa1f`. This plan builds on master **after S-04 (`outfit-photo`) merges**.
+The research is `context/changes/garment-lifecycle/research.md` at `787aa1f`. This plan builds on master **after S-04 (`outfit-photo`) merges**. The branch `feat/garment-lifecycle` already exists, cut from `787aa1f` (before S-04) and carrying only the planning commit, so Phase 0 merges `origin/master` into it once S-04 has landed. Every S-04 fact below comes from S-04's plan and its in-progress worktree, and Phase 0 checks it against the merged code. Line references are at `787aa1f` and shift after that merge.
 
 - **Nothing edits or deletes a garment.** `garments/urls.py` has only `list` and `add`. List tiles are `<figure>`s, not links (`templates/garments/list.html`). `GarmentForm` requires a photo (`garments/forms.py`). After S-04 the photo field and `clean_photo()` come from `NormalizedPhotoMixin` (`privatemedia/forms.py`), and that `clean_photo()` does not handle an empty upload.
 - **Deleting a garment leaves no trace.** Django deletes its `outfits_outfit_garments` rows without `m2m_changed`. Only `pre_delete`/`post_delete` on `Garment` fire, and they fire for `QuerySet.delete()` and for the cascade from account deletion too. Inside `pre_delete`, `instance.outfits` is still readable. The garment's `PrivateImage` row and file stay behind (research §3).
@@ -47,7 +47,7 @@ Verification: the automated suite proves the deletion rule at the model level, i
 - Recording a missing slot when a garment is removed on purpose through *Edit outfit*. Only deleting a garment creates one.
 - Adding garments through *Edit outfit* closes no missing slot. Only *Replace* and *Keep without it* close slots.
 - Editing tags inside *Edit outfit*: tags stay on the outfit page.
-- A confirmation checkbox on *Delete outfit*: the confirmation page with the tag warning is the safeguard.
+- A confirmation checkbox or an outfit preview (photo or collage) on *Delete outfit*: the confirmation page with the outfit's name and the tag warning is the safeguard (developer's decision, `context/changes/outfit-lifecycle/research.md`, 2026-09-14).
 - A separate plan for S-07. `/10x-plan outfit-lifecycle` is not run: this slice delivers FR-006, and Phase 5 closes S-07 and OG-8 together with S-06 and OG-7.
 - Deleting photo files when a garment is deleted from the admin or the ORM, or when an account is deleted. Only the UI delete path discards the photo. The account-deletion gap already exists for garments and outfit photos.
 - A backfill: no outfit can be marked incomplete for garments deleted before this ships, since nothing recorded them. No delete UI existed, so only the admin could have done it.
@@ -56,6 +56,7 @@ Verification: the automated suite proves the deletion rule at the model level, i
 
 ## Implementation Approach
 
+0. **Start from S-04.** Wait until S-04 is merged into `master`, merge `origin/master` into this branch, and confirm that the S-04 primitives this plan relies on exist as described before writing any code.
 1. **A tombstone per lost garment.** `MissingGarment` records the deleted garment's type, custom type name and description on each outfit that used it. It is written by a `Garment` `pre_delete` receiver, next to the other outfit rules in `outfits/signals.py`, so the view, the admin and the ORM all obey the rule. Ownership is read through the outfit: the model has no `owner` of its own to keep consistent.
 2. **Garment edit and delete** follow S-04's order of operations. Resolve the owned garment, store the new image, point the garment at it, then discard the old image. To delete, capture the photo, delete the garment (the receiver writes the tombstones), then discard the photo.
 3. **Outfit edit reuses `OutfitForm`** through an edit subclass: bound to an instance, ≥ 1 garment, no tags. The garment picker markup is extracted from `compose.html` and shared. **Outfit delete** is a confirmation page that also discards the S-04 photo.
@@ -71,13 +72,95 @@ Verification: the automated suite proves the deletion rule at the model level, i
 
 ## Parallel Work & Delivery
 
-- **Prerequisite.** S-04 (`feat/outfit-photo`) is merged into `origin/master`. Check with `git fetch origin && git ls-tree origin/master outfits/migrations/ | grep 0003_outfit_photo`. If it is not merged, stop and tell the developer.
-- **Where the work happens.** Create the worktree `/home/ciastek/Projects/.worktrees/garment-lifecycle` on the new branch `feat/garment-lifecycle` from `origin/master`. Copy `context/changes/garment-lifecycle/` from the main checkout into it, and commit it as the first commit (`docs(garment-lifecycle): plan S-06`). Every command in this plan runs from the worktree. Never `cd` to the main checkout `/home/ciastek/Projects/outfits-garderobe`: it is on another branch with the developer's uncommitted work. The roadmap `planning` flip left in the main checkout is not carried over; `/10x-implement` sets S-06 to `in-progress` in the worktree.
+- **Prerequisite.** S-04 (`feat/outfit-photo`) is merged into `origin/master`. Phase 0 checks this and stops if it is not. S-04 is being implemented in parallel in `/home/ciastek/Projects/.worktrees/outfit-photo`. Never touch that worktree or its branch.
+- **Where the work happens.** The worktree `/home/ciastek/Projects/.worktrees/garment-lifecycle` exists, on branch `feat/garment-lifecycle` cut from `787aa1f`. Its commits so far are docs only: the plan (`979ba62`, which includes the roadmap `planning` flip for S-06) and the plan-review commit Phase 0 makes. Phase 0 brings it up to date with a merge, never a rebase. Every command in this plan runs from the worktree. Never `cd` to the main checkout `/home/ciastek/Projects/outfits-garderobe`: it is on another branch with the developer's uncommitted work. `/10x-implement` sets S-06 to `in-progress` in the worktree.
 - **Local state is per worktree.** Run `uv sync` first. Before the first `uv run pytest`, run `DJANGO_SETTINGS_MODULE=outfits_garderobe.settings_test uv run python manage.py collectstatic --noinput`. Re-run it after any change under `static/`. Tests need no secrets.
 - **Secrets path.** The file is `/home/ciastek/Projects/.secrets/outfits-garderobe/.env` (absolute path, for `uv run --env-file …`). Never read it.
 - **Dev server.** `uv run python manage.py runserver 8004`. Ports 8000–8003 belong to the main checkout and earlier worktrees.
-- **Git hygiene.** Never use bare `git stash`, because the stash stack is shared across worktrees; use WIP commits instead. Commit per phase on `feat/garment-lifecycle`. Push with `git push -u origin feat/garment-lifecycle`.
+- **Git hygiene.** Never use bare `git stash`, because the stash stack is shared across worktrees; use WIP commits instead. Commit per phase on `feat/garment-lifecycle`. Sync with `master` by merging `origin/master` (Phases 0 and 5), never by rebasing, so pushed history is never rewritten and no force-push is needed. Push with `git push -u origin feat/garment-lifecycle`.
 - **Delivery.** No direct push to `master`. Phase 5 opens the PR, and every manual check runs against the Railway PR environment before the developer merges.
+
+## Phase 0: Merge master after S-04
+
+### Overview
+
+Wait for S-04 to land on `master`, merge `origin/master` into `feat/garment-lifecycle`, and confirm that the merged S-04 code matches what this plan builds on. No application code changes.
+
+### Changes Required:
+
+#### 1. S-04 merge check
+
+**File**: none — an operation
+
+**Intent**: Nothing in this plan starts before S-04 is merged. Its migration, file helpers and templates are the base of Phases 1–4.
+
+**Contract**:
+- `git fetch origin`, then `git ls-tree origin/master outfits/migrations/ | grep 0003_outfit_photo`, and `gh pr list --state merged --head feat/outfit-photo`.
+- If either shows S-04 is not merged, stop and tell the developer: "S-04 (`feat/outfit-photo`) is not merged into `master` yet; S-06 waits for it." Change nothing.
+
+#### 2. Merge `origin/master`
+
+**File**: none — an operation (a merge commit on `feat/garment-lifecycle`)
+
+**Intent**: Bring S-04, and anything else merged since `787aa1f`, into this branch without rewriting the planning commit.
+
+**Contract**:
+- Pending edits under `context/changes/garment-lifecycle/` (the plan review of 2026-09-14, this Phase 0, the S-07 decision) are committed first as `docs(garment-lifecycle): plan review and Phase 0`. Any other uncommitted change: stop and ask. Never stash.
+- The working tree is then clean (`git status --porcelain` is empty).
+- Run `git merge origin/master` with the message `chore(garment-lifecycle): merge master after S-04 (p0)`.
+- Conflicts:
+  - The only expected one is in `context/foundation/roadmap.md`. Keep `master`'s version of every item, S-04 included, except S-06. S-06's At-a-glance row and item body keep this branch's status.
+  - A conflict in `context/changes/garment-lifecycle/` or in any code file is not expected. Abort with `git merge --abort` and ask the developer.
+- Do not push yet. Phase 5 pushes the branch.
+
+#### 3. Local state on the merged branch
+
+**File**: none — an operation
+
+**Intent**: The worktree's venv, database and static files match the merged code before Phase 1 measures anything against them.
+
+**Contract**: `uv sync`, `uv run python manage.py migrate`, then `DJANGO_SETTINGS_MODULE=outfits_garderobe.settings_test uv run python manage.py collectstatic --noinput`.
+
+#### 4. S-04 contract check
+
+**File**: `context/changes/garment-lifecycle/change.md` (a dated note), and this plan only if something deviates
+
+**Intent**: Phases 1–4 name S-04 contracts taken from S-04's plan and its unmerged worktree. Confirm them in the merged code, so a deviation surfaces now and not halfway through a phase.
+
+**Contract**: Confirm each of the following against the merged tree:
+- `discard_private_image(image)` in `privatemedia/models.py` deletes the row now and the file on commit.
+- `NormalizedPhotoMixin` in `privatemedia/forms.py` declares `photo`, and its `clean_photo()` calls `validate_max_size` unconditionally.
+- `stored_private_image(owner, file, original_filename)` is a context manager.
+- `Outfit.photo` is `OneToOneField(PrivateImage, RESTRICT, null=True)` with `photo_url`, in migration `outfits.0003_outfit_photo`, and it is the latest `outfits` migration.
+- `make_outfit(..., photo=True)` exists in `tests/factories.py`.
+- In `_seed_wardrobe`, `outfits[0]` is tagged and has a photo, and `outfits[1]` has no photo.
+- `photo-shrink.js` honours `data-submit-once`, and compose redirects to the new outfit's page.
+- The CSS rule `.outfit-photo img` exists.
+- The outfit page has a *Photo* section. `_render_detail` takes `photo_form`.
+- Wardrobe tiles render `.outfit-preview` for collages and `.outfit-preview outfit-preview-photo` for photo tiles, inside one `<a>`.
+- The pinned query-count tests referenced by line in Phases 2–4 are found by name: the garment list, the grid (`test_grid_query_count_does_not_grow_with_outfits_tags_or_selections`), the detail page, the picker.
+
+Record the result in `change.md` under a dated "Merged master after S-04" note, with the merge commit SHA. If a contract deviates, stop and ask the developer. Once agreed, update the affected phase's Contract in this plan.
+
+### Success Criteria:
+
+#### Automated Verification:
+
+- S-04 is on `master`: `git ls-tree origin/master outfits/migrations/ | grep 0003_outfit_photo`
+- The branch contains current `master`: `git merge-base --is-ancestor origin/master HEAD`
+- The only non-merge commits ahead of `master` are docs commits touching `context/`: `git log --oneline --no-merges --stat origin/master..HEAD`
+- Migrations apply cleanly: `uv run python manage.py migrate`
+- Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
+- The full suite passes on the merged branch: `uv run pytest`
+- Linting passes: `uv run ruff check .`
+
+#### Manual Verification:
+
+- Every S-04 contract listed in change 4 is confirmed in the merged code, or its deviation is recorded in `change.md` and the plan was adjusted with the developer's agreement
+
+**Implementation Note**: After completing this phase and all automated verification passes, pause here for manual confirmation from the human that the manual testing was successful before proceeding to the next phase.
+
+---
 
 ## Phase 1: Missing-garment record and deletion rule
 
@@ -305,13 +388,14 @@ The owner renames an outfit and changes its garments, and deletes an outfit afte
 
 **File**: `outfits/forms.py`
 
-**Intent**: Edit reuses the compose form's picker and name rules, with a one-garment minimum and no tag input.
+**Intent**: Edit reuses the compose form's picker and name rules, with a one-garment minimum and no tag input. The minimum differs from compose on purpose: a new outfit is a combination, so compose keeps two, while *Keep without it* can already leave an outfit with one garment, and that outfit must stay editable; zero garments is refused so that a saved outfit never looks complete while empty (plan review F6, 2026-09-14).
 
 **Contract**:
 - `OutfitForm.__init__(self, data=None, *, owner, instance=None)` passes `instance` to `ModelForm`. `self.instance.owner` and the owner-scoped queryset stay as they are.
 - `clean_name()` excludes `self.instance.pk` from the uniqueness check.
 - `clean_garments()` reads a `min_garments` class attribute, 2 on `OutfitForm`, and its message is built from that value.
 - `OutfitEditForm(OutfitForm)`: `tag_names = None`, `min_garments = 1`. Its `garments` required-message is "Choose at least 1 garment."
+- On `OutfitEditForm`, an empty `name` means "keep the name": its `clean_name()` returns `self.instance.name` when the cleaned value is empty, and otherwise applies the parent rule. The label is "Name" and the `outfit-N` help text is removed. Without this, `_store_outfit` would treat the empty value as auto-named and `Outfit.clean()` would rename the outfit to the lowest free `outfit-N` (plan review F2, 2026-09-14).
 - Compose behaviour and messages are unchanged.
 
 #### 2. Views
@@ -347,6 +431,7 @@ The owner renames an outfit and changes its garments, and deletes an outfit afte
 - `edit.html`:
   - title and `<h1>` "Edit outfit";
   - name field, errors and the picker include, with the current garments ticked;
+  - when the outfit has missing slots (`outfit.is_incomplete`, Phase 1), a `<p class="notice">` above the picker: "This outfit has N missing garment(s). Adding garments here does not close them — use *Replace* or *Keep without it* on the outfit page." with a link to the outfit. It reuses the `.notice` style Phase 4 adds (plan review F3, 2026-09-14);
   - a *Save changes* button and a *Cancel* link to the outfit.
 - `delete.html`:
   - title and `<h1>` "Delete outfit", with the outfit name;
@@ -373,8 +458,9 @@ The owner renames an outfit and changes its garments, and deletes an outfit afte
 **Intent**: Edit changes exactly the name and garments. Delete removes the outfit, its tombstones, its unused tags and its photo file, and nothing else.
 
 **Contract**:
-- `OutfitEditForm` accepts one garment, refuses zero with "Choose at least 1 garment.", accepts the outfit's own current name, and refuses another outfit's name in any letter case.
+- `OutfitEditForm` accepts one garment, refuses zero with "Choose at least 1 garment.", accepts the outfit's own current name, refuses another outfit's name in any letter case, and keeps the current name when `name` is posted empty (an `outfit-2` stays `outfit-2`).
 - Editing through HTTP to rename and swap garments keeps the tags and the photo. Garments unticked in edit create no tombstone, and existing tombstones are unchanged.
+- The edit page of an outfit with one tombstone shows the missing-garments note with a link to the outfit page; adding a garment through edit leaves the tombstone in place. The note is absent for a complete outfit.
 - An edit POST that also carries `tag_names` leaves the tags unchanged.
 - The GET delete page of a tagged outfit shows the tag names and the photo sentence. An untagged outfit without a photo shows neither.
 - POST delete inside `django_capture_on_commit_callbacks(execute=True)` removes the outfit, its tombstones and the tag only it used, keeps a tag another outfit uses, keeps every garment and its photo, and deletes the outfit photo's row and file.
@@ -573,8 +659,9 @@ Bring the branch up to date, open the pull request, run every manual check again
 **Intent**: The PR carries only this slice's commits and passes against whatever `master` holds now.
 
 **Contract**:
-- Run `git fetch origin` and `git log --oneline origin/master..HEAD`. If commits that are not this slice's appear, stop and ask the developer. Otherwise run `git rebase origin/master`.
-- If another `outfits` migration numbered `0004_*` landed first, delete this slice's migration and regenerate it.
+- Run `git fetch origin` and `git log --oneline --no-merges origin/master..HEAD`. If commits that are not this slice's appear, stop and ask the developer.
+- Otherwise, unless `git merge-base --is-ancestor origin/master HEAD` already holds, run `git merge origin/master` with the message `chore(garment-lifecycle): merge master (p5)`. Never rebase: Phases 0–4 are already on the branch and may have been pushed.
+- If another `outfits` migration numbered `0004_*` landed first, delete this slice's migration and regenerate it in its own commit.
 - Re-run the full suite and `makemigrations --check`.
 
 #### 2. Pull request
@@ -584,7 +671,7 @@ Bring the branch up to date, open the pull request, run every manual check again
 **Intent**: Deliver for review. Nothing reaches `master` without the developer's merge.
 
 **Contract**:
-- Run `git push -u origin feat/garment-lifecycle`, adding `--force-with-lease` only if a rebase rewrote pushed commits.
+- Run `git push -u origin feat/garment-lifecycle`, never with `--force`.
 - Then `gh pr create --base master --head feat/garment-lifecycle`, titled `feat(garment-lifecycle): garment edit/delete and incomplete outfits with repair (S-06, OG-7)`.
 - The body contains:
   - a summary lifted from `plan-brief.md`;
@@ -598,7 +685,7 @@ Bring the branch up to date, open the pull request, run every manual check again
 
 #### 3. PR-environment checks and close-out
 
-**File**: `context/changes/garment-lifecycle/plan.md`, `context/changes/garment-lifecycle/change.md`, `context/foundation/roadmap.md`
+**File**: `context/changes/garment-lifecycle/plan.md`, `context/changes/garment-lifecycle/change.md`, `context/changes/outfit-lifecycle/change.md`, `context/foundation/roadmap.md`
 
 **Intent**: Done means the checks passed on the PR deploy, and the record of it rides in the same PR (lessons).
 
@@ -609,18 +696,22 @@ Bring the branch up to date, open the pull request, run every manual check again
   - tick Progress with SHAs;
   - add a dated "PR deploy" note to `change.md` (PR URL, deployment id, checks run, deviations, and that outfit edit and delete shipped here and close S-07);
   - set S-06 to `done` in `roadmap.md`, in the At-a-glance row and in the item body, and update its Backlog Handoff row;
-  - set S-07 to `done` the same way, with the note "delivered by `garment-lifecycle` PR #N (FR-006 in Phase 3)" in its item body and Backlog Handoff row. Nothing else in the dependency graph changes;
+  - set S-07 to `done` the same way, with the note "delivered by `garment-lifecycle` PR #N (FR-006 in Phase 3)" in its item body and Backlog Handoff row;
+  - bring S-06's own rows up to date with what was built (plan review F5, 2026-09-14): *Prerequisites* becomes `S-03, S-04, S-05` in the At-a-glance table and the item body, and *PRD refs* becomes `FR-004, FR-006, US-01`, so the milestone's FR trace survives S-07 being done by reference. No other edge of the graph changes;
+  - add a *Parked* entry to `roadmap.md`: "Pliki zdjęć po usunięciu z admina, ORM lub konta" — every non-UI deletion path leaves the file on the volume (known gap since `user-accounts`, narrowed to UI paths here); revisit when volume usage nears the F-01 threshold or when account deletion gets a UI;
+  - stamp `context/changes/outfit-lifecycle/change.md`: `status: implemented`, `updated: <today>`, and a dated note "delivered by `garment-lifecycle` PR #N";
   - push.
 - Per the Jira lesson, move OG-7 and OG-8 to Done after the developer merges, each with a comment naming the PR; OG-8's comment says S-07 was delivered by S-06.
+- After the merge, `/10x-archive outfit-lifecycle` follows `/10x-archive garment-lifecycle`, so the S-07 folder does not stay open in `context/changes/`.
 
 ### Success Criteria:
 
 #### Automated Verification:
 
-- The full suite passes on the rebased branch: `uv run pytest`
-- Nothing is left unmigrated after the rebase: `uv run python manage.py makemigrations --check --dry-run`
+- The full suite passes on the branch merged with current `master`: `uv run pytest`
+- Nothing is left unmigrated after the merge: `uv run python manage.py makemigrations --check --dry-run`
 - The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
-- The PR against `master` exists and contains only this slice's commits: `gh pr view feat/garment-lifecycle --json baseRefName,commits`
+- The PR against `master` exists and contains only this slice's commits, apart from merges of `master`: `gh pr view feat/garment-lifecycle --json baseRefName,commits`
 - The PR has no merge conflicts: `gh pr view feat/garment-lifecycle --json mergeable`
 - The Railway PR environment build is green, and its deploy logs show `migrate` applying `outfits.0004_*`
 - The PR environment's `/health/` returns 200
@@ -629,7 +720,7 @@ Bring the branch up to date, open the pull request, run every manual check again
 
 - On the PR environment at 360 px: add three garments, compose two outfits sharing one garment, add a photo to one, delete the shared garment through its confirmation page (both outfit names listed), and see both tiles marked incomplete with the banner
 - On the PR environment, repair one outfit with *Replace* and the other with *Keep without it*; the badges and banner disappear
-- On the PR environment, edit a garment's photo and an outfit's name and garments, then delete a tagged outfit through its warning page
+- On the PR environment at 360 px, edit a garment's photo and an outfit's name and garments, then delete a tagged outfit through its warning page
 - On the PR environment, a second account gets 404 on the first account's garment edit/delete pages, outfit edit/delete pages and replace page, and sees none of its garments or outfits
 - The developer reviews and merges the PR; production `/health/` returns 200 afterwards
 
@@ -692,6 +783,22 @@ Bring the branch up to date, open the pull request, run every manual check again
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.
+
+### Phase 0: Merge master after S-04
+
+#### Automated
+
+- [ ] 0.1 S-04 is on `master`: `git ls-tree origin/master outfits/migrations/ | grep 0003_outfit_photo`
+- [ ] 0.2 The branch contains current `master`: `git merge-base --is-ancestor origin/master HEAD`
+- [ ] 0.3 The only non-merge commits ahead of `master` are docs commits touching `context/`: `git log --oneline --no-merges --stat origin/master..HEAD`
+- [ ] 0.4 Migrations apply cleanly: `uv run python manage.py migrate`
+- [ ] 0.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
+- [ ] 0.6 The full suite passes on the merged branch: `uv run pytest`
+- [ ] 0.7 Linting passes: `uv run ruff check .`
+
+#### Manual
+
+- [ ] 0.8 Every S-04 contract listed in change 4 is confirmed in the merged code, or its deviation is recorded in `change.md` and the plan was adjusted with the developer's agreement
 
 ### Phase 1: Missing-garment record and deletion rule
 
@@ -770,18 +877,18 @@ Bring the branch up to date, open the pull request, run every manual check again
 
 #### Automated
 
-- [ ] 5.1 The full suite passes on the rebased branch: `uv run pytest`
-- [ ] 5.2 Nothing is left unmigrated after the rebase: `uv run python manage.py makemigrations --check --dry-run`
+- [ ] 5.1 The full suite passes on the branch merged with current `master`: `uv run pytest`
+- [ ] 5.2 Nothing is left unmigrated after the merge: `uv run python manage.py makemigrations --check --dry-run`
 - [ ] 5.3 The deploy-configuration guard still passes: `uv run pytest accounts/tests/test_deploy_config.py`
-- [ ] 5.4 The PR against `master` exists and contains only this slice's commits: `gh pr view feat/garment-lifecycle --json baseRefName,commits`
+- [ ] 5.4 The PR against `master` exists and contains only this slice's commits, apart from merges of `master`: `gh pr view feat/garment-lifecycle --json baseRefName,commits`
 - [ ] 5.5 The PR has no merge conflicts: `gh pr view feat/garment-lifecycle --json mergeable`
 - [ ] 5.6 The Railway PR environment build is green, and its deploy logs show `migrate` applying `outfits.0004_*`
 - [ ] 5.7 The PR environment's `/health/` returns 200
 
 #### Manual
 
-- [ ] 5.8 On the PR environment at 360 px: add three garments, compose two outfits sharing one garment, add a photo to one, delete the shared garment through its confirmation page, and see both tiles marked incomplete with the banner
+- [ ] 5.8 On the PR environment at 360 px: add three garments, compose two outfits sharing one garment, add a photo to one, delete the shared garment through its confirmation page (both outfit names listed), and see both tiles marked incomplete with the banner
 - [ ] 5.9 On the PR environment, repair one outfit with *Replace* and the other with *Keep without it*; the badges and banner disappear
-- [ ] 5.10 On the PR environment, edit a garment's photo and an outfit's name and garments, then delete a tagged outfit through its warning page
-- [ ] 5.11 On the PR environment, a second account gets 404 on the first account's garment edit/delete, outfit edit/delete and replace pages, and sees none of its garments or outfits
+- [ ] 5.10 On the PR environment at 360 px, edit a garment's photo and an outfit's name and garments, then delete a tagged outfit through its warning page
+- [ ] 5.11 On the PR environment, a second account gets 404 on the first account's garment edit/delete pages, outfit edit/delete pages and replace page, and sees none of its garments or outfits
 - [ ] 5.12 The developer reviews and merges the PR; production `/health/` returns 200 afterwards
