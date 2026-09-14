@@ -343,7 +343,7 @@ The owner edits a garment, optionally replacing its photo, and deletes it after 
 **Intent**: Prove through HTTP that edits and deletes change the right rows and files, and that refused requests change nothing. Every assertion re-reads the database, and file assertions check `MEDIA_ROOT` on disk.
 
 **Contract**:
-- A list tile links to its garment's edit page, and the list query count is unchanged (extend the `:204` pin).
+- A list tile links to its garment's edit page, and the list query count is unchanged (extend `garments/tests/test_views.py:204` `test_list_query_count_does_not_grow_with_garments`).
 - Editing the description without a photo keeps `photo_id` and its file, and shows "Garment updated."
 - Editing with an in-memory JPEG inside `django_capture_on_commit_callbacks(execute=True)` links a new `PrivateImage` owned by the owner, deletes the old row and file, and leaves the garment's outfits unchanged.
 - An edit whose save fails (monkeypatch `Garment.save` to raise) keeps the old photo row and file, and leaves no new file.
@@ -464,7 +464,7 @@ The owner renames an outfit and changes its garments, and deletes an outfit afte
 - An edit POST that also carries `tag_names` leaves the tags unchanged.
 - The GET delete page of a tagged outfit shows the tag names and the photo sentence. An untagged outfit without a photo shows neither.
 - POST delete inside `django_capture_on_commit_callbacks(execute=True)` removes the outfit, its tombstones and the tag only it used, keeps a tag another outfit uses, keeps every garment and its photo, and deletes the outfit photo's row and file.
-- The detail page links to edit and delete, and its query count pin still holds.
+- The detail page links to edit and delete, and its query count pins still hold (`outfits/tests/test_views.py:632`, `:933`).
 - A stranger's GET and POST on edit and delete return 404 and change nothing.
 
 ### Success Criteria:
@@ -617,8 +617,8 @@ Make incompleteness visible where the user browses, and give each missing garmen
 - `ReplaceMissingGarmentForm` lists same-type garments first, excludes garments already in the outfit and the stranger's garments, and refuses a posted id outside the queryset.
 - GET and POST replace/dismiss for a tombstone that no longer exists redirect to the outfit and change nothing.
 - The replace page with no candidates shows the add-garment link.
-- The grid query count is the same for one complete outfit as for five outfits with tags, photos and missing slots. It is pinned separately with and without `?incomplete=1` and a tag (extend `:817`).
-- The detail query count is the same with zero and with three missing slots (extend `:623`).
+- The grid query count is the same for one complete outfit as for five outfits with tags, photos and missing slots. It is pinned separately with and without `?incomplete=1` and a tag (extend `outfits/tests/test_views.py:1188` `test_grid_query_count_does_not_grow_with_outfits_tags_selections_or_photos`).
+- The detail query count is the same with zero and with three missing slots (extend `outfits/tests/test_views.py:632` `test_detail_query_count_does_not_grow_with_tags`; `:933` `test_detail_query_count_is_the_same_with_and_without_a_photo` must still hold).
 
 ### Success Criteria:
 
@@ -788,17 +788,17 @@ Bring the branch up to date, open the pull request, run every manual check again
 
 #### Automated
 
-- [ ] 0.1 S-04 is on `master`: `git ls-tree origin/master outfits/migrations/ | grep 0003_outfit_photo`
-- [ ] 0.2 The branch contains current `master`: `git merge-base --is-ancestor origin/master HEAD`
-- [ ] 0.3 The only non-merge commits ahead of `master` are docs commits touching `context/`: `git log --oneline --no-merges --stat origin/master..HEAD`
-- [ ] 0.4 Migrations apply cleanly: `uv run python manage.py migrate`
-- [ ] 0.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 0.6 The full suite passes on the merged branch: `uv run pytest`
-- [ ] 0.7 Linting passes: `uv run ruff check .`
+- [x] 0.1 S-04 is on `master`: `git ls-tree origin/master outfits/migrations/ | grep 0003_outfit_photo`
+- [x] 0.2 The branch contains current `master`: `git merge-base --is-ancestor origin/master HEAD`
+- [x] 0.3 The only non-merge commits ahead of `master` are docs commits touching `context/`: `git log --oneline --no-merges --stat origin/master..HEAD`
+- [x] 0.4 Migrations apply cleanly: `uv run python manage.py migrate`
+- [x] 0.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
+- [x] 0.6 The full suite passes on the merged branch: `uv run pytest`
+- [x] 0.7 Linting passes: `uv run ruff check .`
 
 #### Manual
 
-- [ ] 0.8 Every S-04 contract listed in change 4 is confirmed in the merged code, or its deviation is recorded in `change.md` and the plan was adjusted with the developer's agreement
+- [x] 0.8 Every S-04 contract listed in change 4 is confirmed in the merged code, or its deviation is recorded in `change.md` and the plan was adjusted with the developer's agreement
 
 ### Phase 1: Missing-garment record and deletion rule
 
