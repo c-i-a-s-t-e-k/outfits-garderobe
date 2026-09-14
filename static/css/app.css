@@ -209,6 +209,18 @@
   margin-top: 0.25rem;
 }
 
+/* The outfit photo on its page and on the remove confirmation: shown whole,
+   never cropped, and never taller than the screen, so the buttons under it
+   stay within reach of a thumb. */
+.outfit-photo img {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  margin-bottom: var(--pico-spacing);
+  object-fit: contain;
+  border-radius: var(--pico-border-radius);
+}
+
 /* Tag chips: small rounded labels that wrap onto new lines at 360px. The
    remove control is a POST form inside the chip, so Pico's full-width button
    and form bottom margin are undone here only — as for the log-out form. */

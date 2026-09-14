@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Remove photo{% endblock %}
+
+{% block content %}
+  <h1>Remove photo</h1>
+
+  <div class="outfit-photo">
+    <img src="{{ outfit.photo_url }}" alt="{{ outfit.name }} — worn" decoding="async">
+  </div>
+
+  <p>The photo is deleted permanently. The outfit and its garments stay.</p>
+
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit">Remove photo</button>
+  </form>
+  <p><a href="{{ outfit.get_absolute_url }}">Cancel</a></p>
+{% endblock %}

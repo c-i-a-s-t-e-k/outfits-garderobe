@@ -480,40 +480,40 @@ Never merge the PR.
 
 #### Automated
 
-- [x] 1.1 The migration applies cleanly: `uv run python manage.py migrate`
-- [x] 1.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [x] 1.3 Model tests pass: `uv run pytest outfits/tests/test_model.py privatemedia/tests/test_model.py`
-- [x] 1.4 Garment tests pass unchanged after the mixin refactor: `uv run pytest garments/tests`
-- [x] 1.5 The full suite passes: `uv run pytest`
-- [x] 1.6 System checks pass: `uv run python manage.py check`
-- [x] 1.7 Linting passes: `uv run ruff check .`
-- [x] 1.8 Formatting is clean: `uv run ruff format --check .`
+- [x] 1.1 The migration applies cleanly: `uv run python manage.py migrate` — 4fba006
+- [x] 1.2 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run` — 4fba006
+- [x] 1.3 Model tests pass: `uv run pytest outfits/tests/test_model.py privatemedia/tests/test_model.py` — 4fba006
+- [x] 1.4 Garment tests pass unchanged after the mixin refactor: `uv run pytest garments/tests` — 4fba006
+- [x] 1.5 The full suite passes: `uv run pytest` — 4fba006
+- [x] 1.6 System checks pass: `uv run python manage.py check` — 4fba006
+- [x] 1.7 Linting passes: `uv run ruff check .` — 4fba006
+- [x] 1.8 Formatting is clean: `uv run ruff format --check .` — 4fba006
 
 #### Manual
 
-- [x] 1.9 In `/admin/`, setting an outfit's photo to another user's image id is refused with the ownership message
-- [x] 1.10 Adding a garment through the UI still works exactly as before (photo shrinks, garment appears in the list)
+- [x] 1.9 In `/admin/`, setting an outfit's photo to another user's image id is refused with the ownership message — 4fba006
+- [x] 1.10 Adding a garment through the UI still works exactly as before (photo shrinks, garment appears in the list) — 4fba006
 
 ### Phase 2: Add, replace and remove on the outfit page
 
 #### Automated
 
-- [ ] 2.1 View tests pass: `uv run pytest outfits/tests/test_views.py`
-- [ ] 2.2 The privacy contracts cover the new routes: `uv run pytest tests/`
-- [ ] 2.3 The full suite passes: `uv run pytest`
-- [ ] 2.4 System checks pass: `uv run python manage.py check`
-- [ ] 2.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
-- [ ] 2.6 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [ ] 2.7 Linting passes: `uv run ruff check .`
-- [ ] 2.8 Formatting is clean: `uv run ruff format --check .`
+- [x] 2.1 View tests pass: `uv run pytest outfits/tests/test_views.py`
+- [x] 2.2 The privacy contracts cover the new routes: `uv run pytest tests/`
+- [x] 2.3 The full suite passes: `uv run pytest`
+- [x] 2.4 System checks pass: `uv run python manage.py check`
+- [x] 2.5 Nothing is left unmigrated: `uv run python manage.py makemigrations --check --dry-run`
+- [x] 2.6 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
+- [x] 2.7 Linting passes: `uv run ruff check .`
+- [x] 2.8 Formatting is clean: `uv run ruff format --check .`
 
 #### Manual
 
-- [ ] 2.9 Composing an outfit lands on its page with "Outfit saved." and the *Photo* section under *Tags*
-- [ ] 2.10 Uploading a large phone-sized photo shows "Preparing photo…", then "Uploading…" with the button disabled, then the page with the photo shown whole
-- [ ] 2.11 Replacing shows the new photo; the old file is gone from the dev `MEDIA_ROOT`
-- [ ] 2.12 *Remove photo* → confirmation page with the photo → confirm → "Photo removed." and "No photo yet."
-- [ ] 2.13 At 360 px in headless Chromium the Photo section, the upload form and the confirmation page fit without horizontal scrolling
+- [x] 2.9 Composing an outfit lands on its page with "Outfit saved." and the *Photo* section under *Tags*
+- [x] 2.10 Uploading a large phone-sized photo shows "Preparing photo…", then "Uploading…" with the button disabled, then the page with the photo shown whole
+- [x] 2.11 Replacing shows the new photo; the old file is gone from the dev `MEDIA_ROOT`
+- [x] 2.12 *Remove photo* → confirmation page with the photo → confirm → "Photo removed." and "No photo yet."
+- [x] 2.13 At 360 px in headless Chromium the Photo section, the upload form and the confirmation page fit without horizontal scrolling
 
 ### Phase 3: Portrait tiles in the wardrobe
 
