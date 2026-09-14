@@ -11,4 +11,6 @@ urlpatterns = [
     path('<uuid:pk>/', views.outfit_detail, name='detail'),
     path('<uuid:pk>/tags/add/', views.outfit_tags_add, name='tags_add'),
     path('<uuid:pk>/tags/<uuid:tag_pk>/remove/', views.outfit_tag_remove, name='tag_remove'),
+    path('<uuid:pk>/photo/upload/', views.outfit_photo_upload, name='photo_upload'),
+    path('<uuid:pk>/photo/remove/', views.outfit_photo_remove, name='photo_remove'),
 ]

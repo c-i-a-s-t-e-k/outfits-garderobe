@@ -5,10 +5,13 @@ from datetime import timedelta
 import pytest
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+from django.db.models import RestrictedError
+from django.urls import reverse
 
 from garments.models import Garment, GarmentType
 from outfits.models import Outfit
-from tests.factories import make_garment
+from privatemedia.models import PrivateImage
+from tests.factories import make_garment, make_image, make_outfit
 
 pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('temp_media_root')]
 
@@ -211,7 +214,49 @@ def test_preview_makes_no_query_after_a_prefetch(owner, django_assert_num_querie
         assert len(outfit.ordered_garments) == 2
 
 
+# --- photo -------------------------------------------------------------------
+
+
+def test_an_outfit_with_its_owners_photo_links_to_it_through_the_gate(owner):
+    outfit = make_outfit(owner, photo=True)
+
+    outfit = Outfit.objects.get(pk=outfit.pk)
+    assert outfit.photo.owner == owner
+    assert outfit.photo_url == reverse('privatemedia:image', args=[outfit.photo_id])
+
+
+def test_an_outfit_without_a_photo_has_no_photo_url(owner):
+    assert make_outfit(owner).photo_url is None
+
+
+def test_another_users_photo_cannot_be_set_on_an_outfit(owner, stranger):
+    foreign = make_image(stranger)
+
+    with pytest.raises(ValidationError):
+        Outfit.objects.create(owner=owner, photo=foreign)
+
+    assert not Outfit.objects.exists()
+
+
+def test_a_photo_an_outfit_shows_cannot_be_deleted(owner):
+    outfit = make_outfit(owner, photo=True)
+
+    with pytest.raises(RestrictedError), transaction.atomic():
+        outfit.photo.delete()
+
+    assert Outfit.objects.get(pk=outfit.pk).photo_id is not None
+
+
 # --- lifecycle ---------------------------------------------------------------
+
+
+def test_deleting_the_owner_removes_their_outfits_and_outfit_photos(owner):
+    make_outfit(owner, photo=True)
+
+    owner.delete()
+
+    assert not Outfit.objects.exists()
+    assert not PrivateImage.objects.exists()
 
 
 def test_deleting_the_owner_removes_their_outfits(owner):

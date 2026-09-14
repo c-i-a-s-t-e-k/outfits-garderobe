@@ -1,5 +1,5 @@
 /*
- * Shrinks a large photo in the browser before the add-garment form is sent.
+ * Shrinks a large photo in the browser before a photo form is sent.
  *
  * A camera photo is 3–5 MB; over mobile data that upload alone eats the
  * five-second budget. The server normalizes every photo anyway, so this only
@@ -12,9 +12,63 @@
  *
  * Acts on file inputs marked with data-shrink-photo, and writes progress into
  * the [data-shrink-status] element of the same form.
+ *
+ * A form marked with data-submit-once is also sent only once: after a submit
+ * that goes ahead, its submit buttons stay disabled and the status reads
+ * "Uploading…" until the next page loads. A page restored from the
+ * back/forward cache gets them back. Forms without the attribute can be
+ * submitted again, as before.
  */
 (function () {
   'use strict';
+
+  function setSubmitsDisabled(form, value) {
+    var submits = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+    for (var i = 0; i < submits.length; i++) {
+      submits[i].disabled = value;
+    }
+  }
+
+  // Wired before the capability check below: a double tap on a slow
+  // connection sends the photo twice whether or not it could be shrunk.
+  function submitOnce(form) {
+    var status = form.querySelector('[data-shrink-status]');
+    var sent = false;
+
+    function setSent(value) {
+      sent = value;
+      setSubmitsDisabled(form, value);
+      if (status) {
+        status.textContent = value ? 'Uploading…' : '';
+      }
+    }
+
+    form.addEventListener('submit', function (event) {
+      if (sent) {
+        event.preventDefault();
+        return;
+      }
+      // Deferred until every submit listener has run, so a submit the shrink
+      // step cancels does not leave the form disabled. The submission itself
+      // is already under way and is not affected by disabling the button.
+      setTimeout(function () {
+        if (!event.defaultPrevented) {
+          setSent(true);
+        }
+      }, 0);
+    });
+
+    window.addEventListener('pageshow', function (event) {
+      if (event.persisted) {
+        setSent(false);
+      }
+    });
+  }
+
+  var onceForms = document.querySelectorAll('form[data-submit-once]');
+  for (var f = 0; f < onceForms.length; f++) {
+    submitOnce(onceForms[f]);
+  }
 
   // Keep in step with privatemedia/processing.py (MAX_EDGE_PX, JPEG_QUALITY).
   var MAX_EDGE_PX = 1600;
@@ -103,7 +157,6 @@
       return;
     }
     var status = form.querySelector('[data-shrink-status]');
-    var submits = form.querySelectorAll('button[type="submit"], input[type="submit"]');
     // Each selection gets a number; a result is applied only if no newer
     // selection has been made since, so a slow earlier photo cannot win.
     var latest = 0;
@@ -111,9 +164,7 @@
 
     function setBusy(value) {
       busy = value;
-      for (var i = 0; i < submits.length; i++) {
-        submits[i].disabled = value;
-      }
+      setSubmitsDisabled(form, value);
       if (status) {
         status.textContent = value ? 'Preparing photo…' : '';
       }

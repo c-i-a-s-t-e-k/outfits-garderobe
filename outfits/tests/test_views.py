@@ -3,22 +3,30 @@
 Every assertion re-reads the database rather than trusting a status code.
 """
 
+import io
 import re
 import uuid
 from datetime import timedelta
 from html import unescape
+from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from django.conf import settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
+from django.templatetags.static import static
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
+from PIL import ExifTags, Image
 
 from garments.models import GarmentType
 from outfits.forms import OutfitForm
 from outfits.models import Outfit, Tag
-from tests.factories import make_garment
+from privatemedia.models import PrivateImage
+from privatemedia.processing import MAX_EDGE_PX
+from privatemedia.validators import MAX_UPLOAD_BYTES
+from tests.factories import make_garment, make_image, make_outfit
 
 pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('temp_media_root')]
 
@@ -111,19 +119,20 @@ def test_picker_query_count_does_not_grow_with_garments(client, owner, wardrobe)
 # --- composing ---------------------------------------------------------------
 
 
-def test_valid_compose_stores_the_outfit_and_lands_on_the_wardrobe(client, owner, wardrobe):
+def test_valid_compose_stores_the_outfit_and_lands_on_its_page(client, owner, wardrobe):
     client.force_login(owner)
 
     response = _compose(client, wardrobe, name='Office')
 
     assert response.status_code == 302
-    assert response.headers['Location'] == WARDROBE_URL
     outfit = Outfit.objects.get()
+    assert response.headers['Location'] == outfit.get_absolute_url()
     assert outfit.owner == owner
     assert outfit.name == 'Office'
     assert set(outfit.garments.all()) == set(wardrobe)
-    followed = client.get(response.headers['Location'])
-    assert 'Outfit saved.' in followed.content.decode()
+    followed = client.get(response.headers['Location']).content.decode()
+    assert 'Outfit saved.' in followed
+    assert 'No photo yet.' in followed
 
 
 def test_blank_names_become_outfit_1_then_outfit_2(client, owner, wardrobe):
@@ -632,7 +641,369 @@ def test_detail_query_count_does_not_grow_with_tags(client, owner, wardrobe):
     assert len(many.captured_queries) == len(few.captured_queries)
 
 
-# --- filtering the wardrobe by tag -------------------------------------------
+# --- the outfit photo ----------------------------------------------------------
+
+
+def _photo_upload_url(outfit):
+    return reverse('outfits:photo_upload', args=[outfit.pk])
+
+
+def _photo_remove_url(outfit):
+    return reverse('outfits:photo_remove', args=[outfit.pk])
+
+
+def _jpeg_upload(size=(1200, 1800), name='me-in-it.jpg', exif=None):
+    buffer = io.BytesIO()
+    extra = {'exif': exif} if exif is not None else {}
+    Image.new('RGB', size, 'navy').save(buffer, format='JPEG', **extra)
+    return SimpleUploadedFile(name, buffer.getvalue())
+
+
+def _stored_files(media_root):
+    return {path for path in Path(media_root).rglob('*') if path.is_file()}
+
+
+def _file_of(image):
+    return Path(image.image.path)
+
+
+def _reread(outfit):
+    return Outfit.objects.get(pk=outfit.pk)
+
+
+@pytest.fixture
+def photographed(owner, wardrobe):
+    """The owner's outfit of both wardrobe garments, with a photo of the owner in it."""
+    return make_outfit(owner, garments=wardrobe, photo=True, name='Photographed')
+
+
+def _assert_garment_photos_intact(garments):
+    for garment in garments:
+        assert PrivateImage.objects.filter(pk=garment.photo_id).exists()
+        assert _file_of(garment.photo).is_file()
+
+
+def test_detail_without_a_photo_offers_an_upload_form(client, owner, wardrobe):
+    outfit = make_outfit(owner, garments=wardrobe, name='Bare')
+    client.force_login(owner)
+
+    page = client.get(outfit.get_absolute_url()).content.decode()
+
+    assert 'No photo yet.' in page
+    form = re.search(
+        rf'<form[^>]*action="{_photo_upload_url(outfit)}"[^>]*>.*?</form>', page, re.DOTALL
+    ).group(0)
+    assert 'enctype="multipart/form-data"' in form
+    assert 'data-submit-once' in form
+    assert 'Upload photo' in form
+    assert 'data-shrink-status' in form
+    photo_input = re.search(r'<input[^>]*name="photo"[^>]*>', form).group(0)
+    assert 'data-shrink-photo' in photo_input
+    assert 'accept="image/*"' in photo_input
+    assert f'<script src="{static("js/photo-shrink.js")}" defer>' in page
+    assert _photo_remove_url(outfit) not in page
+
+
+def test_detail_with_a_photo_shows_it_with_replace_and_remove(client, owner, photographed):
+    client.force_login(owner)
+
+    page = client.get(photographed.get_absolute_url()).content.decode()
+
+    assert f'<img src="{photographed.photo_url}"' in page
+    assert 'Replace photo' in page
+    assert f'href="{_photo_remove_url(photographed)}"' in page
+    assert 'No photo yet.' not in page
+    assert 'Upload photo' not in page
+
+
+def test_upload_stores_a_normalized_photo_for_the_outfit_and_its_owner(
+    client, owner, wardrobe, temp_media_root
+):
+    outfit = make_outfit(owner, garments=wardrobe, name='Bare')
+    client.force_login(owner)
+
+    response = client.post(_photo_upload_url(outfit), {'photo': _jpeg_upload()})
+
+    assert response.status_code == 302
+    assert response.headers['Location'] == outfit.get_absolute_url()
+    photo = _reread(outfit).photo
+    assert photo is not None
+    assert photo.owner == owner
+    assert photo.original_filename == 'me-in-it.jpg'
+    with Image.open(_file_of(photo)) as stored:
+        assert stored.format == 'JPEG'
+        assert max(stored.size) <= MAX_EDGE_PX
+        assert stored.height > stored.width
+    assert _stored_files(temp_media_root) - {_file_of(g.photo) for g in wardrobe} == {
+        _file_of(photo)
+    }
+    assert 'Photo added.' in client.get(response.headers['Location']).content.decode()
+
+
+def test_upload_stores_an_exif_rotated_photo_upright(client, owner, wardrobe):
+    outfit = make_outfit(owner, garments=wardrobe, name='Bare')
+    exif = Image.Exif()
+    exif[ExifTags.Base.Orientation] = 6  # "rotate 90° clockwise to display"
+    client.force_login(owner)
+
+    client.post(_photo_upload_url(outfit), {'photo': _jpeg_upload(size=(400, 200), exif=exif)})
+
+    with Image.open(_file_of(_reread(outfit).photo)) as stored:
+        assert stored.size == (200, 400)
+        assert ExifTags.Base.Orientation not in stored.getexif()
+
+
+def test_replace_links_the_new_photo_and_deletes_the_old_one_after_commit(
+    client, owner, wardrobe, photographed, django_capture_on_commit_callbacks
+):
+    old = photographed.photo
+    old_file = _file_of(old)
+    assert old_file.is_file()
+    client.force_login(owner)
+
+    with django_capture_on_commit_callbacks() as callbacks:
+        response = client.post(_photo_upload_url(photographed), {'photo': _jpeg_upload()})
+        # Until the change commits, the old bytes are still needed.
+        assert old_file.is_file()
+    for callback in callbacks:
+        callback()
+
+    assert response.status_code == 302
+    new = _reread(photographed).photo
+    assert new.pk != old.pk
+    assert new.owner == owner
+    assert _file_of(new).is_file()
+    assert not PrivateImage.objects.filter(pk=old.pk).exists()
+    assert not old_file.exists()
+    assert PrivateImage.objects.filter(outfit__pk=photographed.pk).count() == 1
+    assert PrivateImage.objects.count() == len(wardrobe) + 1
+    _assert_garment_photos_intact(wardrobe)
+    assert 'Photo replaced.' in client.get(response.headers['Location']).content.decode()
+
+
+def _corrupt_upload():
+    return SimpleUploadedFile('broken.jpg', b'not an image' * 100)
+
+
+def _oversized_upload():
+    # An uncompressed BMP of ~11 MB: a real image, over the upload ceiling but
+    # under the request limit, so it is the field's size check that refuses it.
+    buffer = io.BytesIO()
+    Image.new('RGB', (2000, 2000), 'navy').save(buffer, format='BMP')
+    upload = SimpleUploadedFile('huge.bmp', buffer.getvalue())
+    assert upload.size > MAX_UPLOAD_BYTES
+    return upload
+
+
+@pytest.mark.parametrize(
+    ('make_upload', 'message'),
+    [(_corrupt_upload, 'Upload a valid image'), (_oversized_upload, 'too large')],
+    ids=['corrupt', '11 MB'],
+)
+def test_a_refused_upload_is_a_field_error_and_stores_nothing(
+    client, owner, photographed, temp_media_root, make_upload, message
+):
+    upload = make_upload()
+    files_before = _stored_files(temp_media_root)
+    images_before = PrivateImage.objects.count()
+    client.force_login(owner)
+
+    response = client.post(_photo_upload_url(photographed), {'photo': upload})
+
+    assert response.status_code == 200
+    assert message in ' '.join(response.context['photo_form'].errors['photo'])
+    assert message in response.content.decode()
+    assert _reread(photographed).photo_id == photographed.photo_id
+    assert PrivateImage.objects.count() == images_before
+    assert _stored_files(temp_media_root) == files_before
+
+
+def test_a_replace_that_fails_keeps_the_old_photo_and_stores_no_new_file(
+    client, owner, photographed, temp_media_root, monkeypatch, django_capture_on_commit_callbacks
+):
+    old_file = _file_of(photographed.photo)
+    files_before = _stored_files(temp_media_root)
+    images_before = PrivateImage.objects.count()
+
+    def fail(*args, **kwargs):
+        raise RuntimeError('database went away')
+
+    monkeypatch.setattr(Outfit, 'save', fail)
+    client.force_login(owner)
+    client.raise_request_exception = True
+
+    with django_capture_on_commit_callbacks(execute=True), pytest.raises(RuntimeError):
+        client.post(_photo_upload_url(photographed), {'photo': _jpeg_upload()})
+
+    assert _reread(photographed).photo_id == photographed.photo_id
+    assert old_file.is_file()
+    assert PrivateImage.objects.count() == images_before
+    assert _stored_files(temp_media_root) == files_before
+
+
+def test_upload_to_another_users_outfit_is_404_and_stores_nothing(
+    client, owner, stranger, photographed, temp_media_root
+):
+    make_garment(stranger)
+    files_before = _stored_files(temp_media_root)
+    images_before = PrivateImage.objects.count()
+    client.force_login(stranger)
+
+    response = client.post(_photo_upload_url(photographed), {'photo': _jpeg_upload()})
+
+    assert response.status_code == 404
+    assert _reread(photographed).photo_id == photographed.photo_id
+    assert PrivateImage.objects.count() == images_before
+    assert _stored_files(temp_media_root) == files_before
+
+
+def test_upload_refuses_get(client, owner, photographed):
+    client.force_login(owner)
+
+    assert client.get(_photo_upload_url(photographed)).status_code == 405
+
+
+def test_remove_page_shows_the_photo_and_a_confirm_form(client, owner, photographed):
+    client.force_login(owner)
+
+    response = client.get(_photo_remove_url(photographed))
+    page = response.content.decode()
+
+    assert response.status_code == 200
+    assert f'<img src="{photographed.photo_url}"' in page
+    assert 'The photo is deleted permanently. The outfit and its garments stay.' in page
+    assert re.search(r'<form method="post">.*?Remove photo</button>', page, re.DOTALL)
+    assert f'<a href="{photographed.get_absolute_url()}">Cancel</a>' in page
+    assert _reread(photographed).photo_id == photographed.photo_id
+
+
+def test_confirming_remove_unlinks_the_photo_and_deletes_it_after_commit(
+    client, owner, wardrobe, photographed, django_capture_on_commit_callbacks
+):
+    photo = photographed.photo
+    photo_file = _file_of(photo)
+    client.force_login(owner)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        response = client.post(_photo_remove_url(photographed))
+
+    assert response.status_code == 302
+    assert response.headers['Location'] == photographed.get_absolute_url()
+    assert _reread(photographed).photo_id is None
+    assert set(_reread(photographed).garments.all()) == set(wardrobe)
+    assert not PrivateImage.objects.filter(pk=photo.pk).exists()
+    assert not photo_file.exists()
+    _assert_garment_photos_intact(wardrobe)
+    followed = client.get(response.headers['Location']).content.decode()
+    assert 'Photo removed.' in followed
+    assert 'No photo yet.' in followed
+
+
+@pytest.mark.parametrize('method', ['get', 'post'])
+def test_remove_on_an_outfit_without_a_photo_goes_back_to_it(client, owner, wardrobe, method):
+    outfit = make_outfit(owner, garments=wardrobe, name='Bare')
+    images_before = PrivateImage.objects.count()
+    client.force_login(owner)
+
+    response = getattr(client, method)(_photo_remove_url(outfit))
+
+    assert response.status_code == 302
+    assert response.headers['Location'] == outfit.get_absolute_url()
+    assert _reread(outfit).photo_id is None
+    assert PrivateImage.objects.count() == images_before
+    assert 'Photo removed.' not in client.get(response.headers['Location']).content.decode()
+
+
+@pytest.mark.parametrize('method', ['get', 'post'])
+def test_remove_on_another_users_outfit_photo_is_404_and_changes_nothing(
+    client, owner, stranger, photographed, method, django_capture_on_commit_callbacks
+):
+    photo_file = _file_of(photographed.photo)
+    client.force_login(stranger)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        response = getattr(client, method)(_photo_remove_url(photographed))
+
+    assert response.status_code == 404
+    assert _reread(photographed).photo_id == photographed.photo_id
+    assert PrivateImage.objects.filter(pk=photographed.photo_id).exists()
+    assert photo_file.is_file()
+
+
+def test_detail_query_count_is_the_same_with_and_without_a_photo(
+    client, owner, wardrobe, photographed
+):
+    bare = make_outfit(owner, garments=wardrobe, name='Bare')
+    client.force_login(owner)
+    with CaptureQueriesContext(connection) as without_photo:
+        client.get(bare.get_absolute_url())
+    with CaptureQueriesContext(connection) as with_photo:
+        client.get(photographed.get_absolute_url())
+
+    assert len(with_photo.captured_queries) == len(without_photo.captured_queries)
+
+
+@pytest.fixture
+def photo_and_collage(owner, wardrobe):
+    """A: the owner's photo over both wardrobe garments; B: three garments, no photo."""
+    return {
+        'A': make_outfit(owner, garments=wardrobe, photo=True, name='Outfit A'),
+        'B': make_outfit(
+            owner,
+            garments=[*wardrobe, make_garment(owner, type=GarmentType.TROUSERS)],
+            name='Outfit B',
+        ),
+    }
+
+
+def test_a_photo_tile_shows_the_photo_and_a_bare_tile_its_collage(
+    client, owner, stranger, photo_and_collage, foreign_wardrobe
+):
+    a, b = photo_and_collage['A'], photo_and_collage['B']
+    theirs = make_outfit(stranger, garments=foreign_wardrobe, photo=True, name='Theirs')
+    client.force_login(owner)
+
+    page = client.get(WARDROBE_URL).content.decode()
+
+    a_tile, b_tile = _tile(page, a), _tile(page, b)
+    assert _image_urls(a_tile) == [a.photo_url]
+    assert 'outfit-preview-photo' in a_tile
+    assert '<span class="outfit-name">Outfit A</span>' in a_tile
+    assert sorted(_image_urls(b_tile)) == sorted(g.photo_url for g in b.garments.all())
+    assert 'outfit-preview-3' in b_tile
+    assert 'outfit-preview-photo' not in b_tile
+    assert _shown(page) == {'Outfit A', 'Outfit B'}
+    assert theirs.photo_url not in page
+    assert theirs.get_absolute_url() not in page
+
+
+def test_removing_the_photo_turns_the_tile_back_into_its_collage(
+    client, owner, wardrobe, photo_and_collage, django_capture_on_commit_callbacks
+):
+    a = photo_and_collage['A']
+    photo_url = a.photo_url
+    client.force_login(owner)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        assert client.post(_photo_remove_url(a)).status_code == 302
+
+    tile = _tile(client.get(WARDROBE_URL).content.decode(), a)
+    assert photo_url not in tile
+    assert sorted(_image_urls(tile)) == sorted(g.photo_url for g in wardrobe)
+    assert 'outfit-preview-2' in tile
+
+
+def test_a_tag_filter_leaves_out_the_photo_of_an_outfit_it_hides(client, owner, photo_and_collage):
+    a, b = photo_and_collage['A'], photo_and_collage['B']
+    a.tags.set(Tag.resolve(owner, ['letnie']))
+    b.tags.set(Tag.resolve(owner, ['zimowe']))
+    client.force_login(owner)
+
+    page = _filtered(client, 'zimowe')
+
+    assert _shown(page) == {'Outfit B'}
+    assert a.photo_url not in page
+    assert _filtered(client, 'letnie').count(a.photo_url) == 1
 
 
 def _shown(page):
@@ -814,7 +1185,9 @@ def test_a_tag_removed_from_its_last_outfit_leaves_the_filter_and_the_bar(client
     assert _available(client.get(WARDROBE_URL).content.decode()) == ['smart casual', 'zimowe']
 
 
-def test_grid_query_count_does_not_grow_with_outfits_tags_or_selections(client, owner, wardrobe):
+def test_grid_query_count_does_not_grow_with_outfits_tags_selections_or_photos(
+    client, owner, wardrobe
+):
     first = _outfit_with(owner, wardrobe, 'First', tags=['x', 'y'])
     client.force_login(owner)
 
@@ -826,12 +1199,15 @@ def test_grid_query_count_does_not_grow_with_outfits_tags_or_selections(client, 
     small = (count(), count('x', 'y'))
 
     first.tags.add(*Tag.resolve(owner, ['z0']))
+    first.photo = make_image(owner)
+    first.save()
     for n in range(1, 5):
-        _outfit_with(owner, wardrobe, f'More {n}', tags=['x', 'y', f'z{n}'])
+        more = _outfit_with(owner, wardrobe, f'More {n}', tags=['x', 'y', f'z{n}'])
+        more.photo = make_image(owner)
+        more.save()
     large = (count(), count('x', 'y'))
 
-    assert _shown(client.get(WARDROBE_URL).content.decode()) == {
-        'First',
-        *(f'More {n}' for n in range(1, 5)),
-    }
+    page = client.get(WARDROBE_URL).content.decode()
+    assert _shown(page) == {'First', *(f'More {n}' for n in range(1, 5))}
+    assert page.count('outfit-preview-photo') == 5
     assert large == small

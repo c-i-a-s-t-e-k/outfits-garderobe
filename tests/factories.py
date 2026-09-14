@@ -35,7 +35,9 @@ def make_garment(user, type=GarmentType.SHIRT, **fields):
     return Garment.objects.create(owner=user, photo=make_image(user), type=type, **fields)
 
 
-def make_outfit(user, garments=(), **fields):
+def make_outfit(user, garments=(), photo=False, **fields):
+    if photo:
+        fields['photo'] = make_image(user)
     outfit = Outfit.objects.create(owner=user, **fields)
     if garments:
         outfit.garments.set(garments)

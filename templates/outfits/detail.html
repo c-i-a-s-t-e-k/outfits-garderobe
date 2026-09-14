@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{{ outfit.name }}{% endblock %}
 
@@ -47,6 +48,36 @@
     </form>
   </section>
 
+  <section aria-labelledby="photo-heading">
+    <h2 id="photo-heading">Photo</h2>
+    {% if outfit.photo_id %}
+      <div class="outfit-photo">
+        <img src="{{ outfit.photo_url }}" alt="{{ outfit.name }} — worn" decoding="async">
+      </div>
+    {% else %}
+      <p>No photo yet.</p>
+    {% endif %}
+
+    {% comment %}
+      data-submit-once: photo-shrink.js disables the button once the upload is
+      on its way, so a slow connection cannot send it twice.
+    {% endcomment %}
+    <form method="post" action="{% url 'outfits:photo_upload' outfit.pk %}"
+          enctype="multipart/form-data" data-submit-once>
+      {% csrf_token %}
+      {{ photo_form.photo.label_tag }}
+      {{ photo_form.photo }}
+      {{ photo_form.photo.errors }}
+      {# Filled by photo-shrink.js while it prepares and sends the photo. #}
+      <p data-shrink-status aria-live="polite"></p>
+      {# autocomplete="off": see garments/add.html. #}
+      <button type="submit" autocomplete="off">{% if outfit.photo_id %}Replace photo{% else %}Upload photo{% endif %}</button>
+    </form>
+    {% if outfit.photo_id %}
+      <p><a href="{% url 'outfits:photo_remove' outfit.pk %}">Remove photo</a></p>
+    {% endif %}
+  </section>
+
   <ul class="garment-grid">
     {% for garment in outfit.ordered_garments %}
       <li>
@@ -64,4 +95,8 @@
   </ul>
 
   <p><a href="{% url 'wardrobe' %}">Back to wardrobe</a></p>
+{% endblock %}
+
+{% block extra_body %}
+  <script src="{% static 'js/photo-shrink.js' %}" defer></script>
 {% endblock %}

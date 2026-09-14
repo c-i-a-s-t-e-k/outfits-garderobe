@@ -7,11 +7,16 @@ from pathlib import Path
 import pytest
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import IntegrityError, connection
+from django.db import IntegrityError, connection, transaction
 from django.forms import modelform_factory
 from PIL import Image
 
-from privatemedia.models import PrivateImage, stored_private_image, upload_to_uuid
+from privatemedia.models import (
+    PrivateImage,
+    discard_private_image,
+    stored_private_image,
+    upload_to_uuid,
+)
 from privatemedia.validators import MAX_UPLOAD_BYTES, validate_max_size
 
 
@@ -171,3 +176,44 @@ def test_stored_private_image_leaves_nothing_when_the_insert_fails(
 
     assert not PrivateImage.objects.exists()
     assert _stored_files(settings.MEDIA_ROOT) == []
+
+
+@pytest.mark.django_db
+def test_discarded_image_loses_its_row_and_its_file_once_committed(
+    settings, tmp_path, django_user_model, django_capture_on_commit_callbacks
+):
+    settings.MEDIA_ROOT = tmp_path / 'media'
+    owner = django_user_model.objects.create_user(username='owner', password='pw-owner-12345')
+    image = PrivateImage.objects.create(
+        owner=owner, image=SimpleUploadedFile('photo.png', _png_bytes(), content_type='image/png')
+    )
+    path = Path(image.image.path)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        with transaction.atomic():
+            discard_private_image(image)
+
+    assert not PrivateImage.objects.exists()
+    assert not path.exists()
+    assert _stored_files(settings.MEDIA_ROOT) == []
+
+
+@pytest.mark.django_db
+def test_discarded_image_keeps_its_row_and_its_file_when_the_transaction_rolls_back(
+    settings, tmp_path, django_user_model, django_capture_on_commit_callbacks
+):
+    """A failed replace must never lose the photo it was about to retire."""
+    settings.MEDIA_ROOT = tmp_path / 'media'
+    owner = django_user_model.objects.create_user(username='owner', password='pw-owner-12345')
+    image = PrivateImage.objects.create(
+        owner=owner, image=SimpleUploadedFile('photo.png', _png_bytes(), content_type='image/png')
+    )
+    pk, path = image.pk, Path(image.image.path)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        with pytest.raises(RuntimeError), transaction.atomic():
+            discard_private_image(image)
+            raise RuntimeError('the caller failed')
+
+    assert PrivateImage.objects.filter(pk=pk).exists()
+    assert path.is_file()

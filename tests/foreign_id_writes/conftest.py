@@ -51,6 +51,13 @@ def assert_no_cross_owner_links():
         mixed_photos = Garment.objects.exclude(photo__owner=F('owner'))
         assert not mixed_photos.exists(), f'garments on a foreign photo: {list(mixed_photos)}'
 
+        mixed_outfit_photos = Outfit.objects.filter(photo__isnull=False).exclude(
+            photo__owner=F('owner')
+        )
+        assert not mixed_outfit_photos.exists(), (
+            f'outfits on a foreign photo: {list(mixed_outfit_photos)}'
+        )
+
         # The through table, read directly: this is where an M2M write lands
         # without passing through either model's save().
         mixed_links = OutfitGarment.objects.exclude(outfit__owner=F('garment__owner'))
