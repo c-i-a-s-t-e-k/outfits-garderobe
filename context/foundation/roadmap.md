@@ -217,3 +217,5 @@ PRD nie ma nierozstrzygniętych pytań. Poniższe wyszły w trakcie układania r
 ## Done
 
 (Pusta przy pierwszym wygenerowaniu. Wpisy dopisuje `/10x-archive` przy archiwizowaniu zmiany.)
+
+- **S-01: użytkownik może się zarejestrować, zalogować, wylogować i zmienić hasło; niezalogowany trafia na stronę logowania zamiast na treść.** — Archived 2026-09-14 → `context/archive/2026-09-12-user-accounts/`. Lesson: —.
