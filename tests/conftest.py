@@ -1,4 +1,4 @@
-"""The two database checks every foreign-id write scenario ends with.
+"""The two database checks risk scenarios end with, shared by every risk folder.
 
 A status code says what the view answered; these say what it left behind.
 """

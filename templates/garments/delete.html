@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Delete garment{% endblock %}
 
@@ -28,9 +29,13 @@
 
   <p>The photo is deleted permanently.</p>
 
-  <form method="post">
+  <form method="post" data-submit-once>
     {% csrf_token %}
     <button type="submit">Delete garment</button>
   </form>
   <p><a href="{% url 'garments:edit' garment.pk %}">Cancel</a></p>
+{% endblock %}
+
+{% block extra_body %}
+  <script src="{% static 'js/photo-shrink.js' %}" defer></script>
 {% endblock %}

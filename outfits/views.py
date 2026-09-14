@@ -152,15 +152,18 @@ def outfit_edit(request, pk):
     """Change the outfit's name and garments; its tags, photo and missing slots stay."""
     # Ownership before the form: a stranger's garment ids are never validated.
     outfit = _owned_outfit(request, pk)
-    form = OutfitEditForm(request.POST or None, owner=request.user, instance=outfit)
-    if form.is_bound and form.is_valid():
-        try:
-            _store_outfit(form)
-        except OutfitNameTaken:
-            form.add_error('name', 'You already have an outfit with this name.')
-        else:
-            messages.success(request, 'Outfit updated.')
-            return redirect(outfit)
+    if request.method == 'POST':
+        form = OutfitEditForm(request.POST, owner=request.user, instance=outfit)
+        if form.is_valid():
+            try:
+                _update_outfit(request.user, pk, form)
+            except OutfitNameTaken:
+                form.add_error('name', 'You already have an outfit with this name.')
+            else:
+                messages.success(request, 'Outfit updated.')
+                return redirect(outfit)
+    else:
+        form = OutfitEditForm(owner=request.user, instance=outfit)
     return render(request, 'outfits/edit.html', {'form': form, 'outfit': outfit})
 
 
@@ -247,16 +250,19 @@ def outfit_missing_replace(request, pk, missing_pk):
     # Already closed — a second tab or a double tap — is not an error.
     if missing is None:
         return redirect(outfit)
-    form = ReplaceMissingGarmentForm(request.POST or None, outfit=outfit, missing=missing)
-    if form.is_bound and form.is_valid():
-        with transaction.atomic():
-            slot = _locked_slot(outfit, missing_pk)
-            if slot is None:
-                return redirect(outfit)
-            outfit.garments.add(form.cleaned_data['garment'])
-            slot.delete()
-        messages.success(request, 'Garment added to the outfit.')
-        return redirect(outfit)
+    if request.method == 'POST':
+        form = ReplaceMissingGarmentForm(request.POST, outfit=outfit, missing=missing)
+        if form.is_valid():
+            with transaction.atomic():
+                slot = _locked_slot(outfit, missing_pk)
+                if slot is None:
+                    return redirect(outfit)
+                outfit.garments.add(form.cleaned_data['garment'])
+                slot.delete()
+            messages.success(request, 'Garment added to the outfit.')
+            return redirect(outfit)
+    else:
+        form = ReplaceMissingGarmentForm(outfit=outfit, missing=missing)
     return render(
         request,
         'outfits/missing_replace.html',
@@ -379,9 +385,6 @@ def _delete_outfit(owner, pk):
 def _store_outfit(form):
     """Store the outfit with its garments and tags together, or leave nothing behind.
 
-    Composing and editing share it. The edit form carries no tags, so an edit
-    leaves the outfit's tags as they are.
-
     Two unnamed saves in parallel can both compute the same `outfit-N`. The
     row insert runs in its own savepoint; if the name is refused — by the
     database constraint, or by full_clean() when the other row committed first
@@ -399,6 +402,28 @@ def _store_outfit(form):
         outfit.name = ''
         outfit.save()
     form.save_m2m()
-    if 'tag_names' in form.cleaned_data:
-        outfit.tags.set(Tag.resolve(outfit.owner, form.cleaned_data['tag_names']))
+    outfit.tags.set(Tag.resolve(outfit.owner, form.cleaned_data['tag_names']))
+    return outfit
+
+
+@transaction.atomic
+def _update_outfit(owner, pk, form):
+    """Write an edit's name and garments onto the outfit as it is now.
+
+    The form's instance was read before validation, and saving it would write
+    back every column as it was then: a photo another tab has since replaced,
+    or, when the outfit was deleted meanwhile, the whole outfit again. So the
+    row is re-read under the lock (404 when it is gone) and only the edited
+    fields are copied onto it.
+    """
+    outfit = _locked_outfit(owner, pk)
+    outfit.name = form.cleaned_data['name']
+    try:
+        with transaction.atomic():
+            outfit.save()
+    except (IntegrityError, ValidationError):
+        # A fresh row keeps its own photo and a non-empty name, so only a name
+        # taken since the form validated can be refused here.
+        raise OutfitNameTaken from None
+    outfit.garments.set(form.cleaned_data['garments'])
     return outfit

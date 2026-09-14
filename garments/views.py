@@ -1,5 +1,7 @@
 """A user's garment list, and adding, editing and deleting a garment — for its owner only."""
 
+import copy
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -40,10 +42,12 @@ def garment_edit(request, pk):
     # server ever decoding it.
     garment = _owned_garment(request, pk)
     if request.method == 'POST':
-        form = GarmentEditForm(request.POST, request.FILES, instance=garment)
+        # A copy: a failed validation has already written the posted values onto
+        # the form's instance, and the page still describes the saved garment.
+        form = GarmentEditForm(request.POST, request.FILES, instance=copy.copy(garment))
         if form.is_valid():
             if form.cleaned_data['photo'] is None:
-                form.save()
+                _update_garment(request.user, form)
             else:
                 _replace_garment_photo(request.user, form)
             messages.success(request, 'Garment updated.')
@@ -98,6 +102,22 @@ def _store_garment(owner, form):
         garment.owner = owner
         garment.photo = image
         garment.save()
+    return garment
+
+
+@transaction.atomic
+def _update_garment(owner, form):
+    """Write an edit's own fields onto the garment as it is now.
+
+    The form's instance was read before validation, and saving it would write
+    back the photo as it was then: one another tab has since replaced, or, when
+    the garment was deleted meanwhile, the garment again. So the row is re-read
+    under the lock (404 when it is gone) and only the edited fields are copied.
+    """
+    garment = _locked_garment(owner, form.instance.pk)
+    for field in form.Meta.fields:
+        setattr(garment, field, getattr(form.instance, field))
+    garment.save()
     return garment
 
 

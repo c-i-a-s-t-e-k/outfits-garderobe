@@ -101,7 +101,10 @@ def test_an_outfit_with_no_garments_left_cannot_be_kept_as_it_is(
 
     page = client.get(o2.get_absolute_url()).content.decode()
     assert 'Keep without it' not in page
-    assert 'Replace' in page
+    for slot in slots:
+        assert f'href="{reverse("outfits:missing_replace", args=[o2.pk, slot])}"' in page
+        assert reverse('outfits:missing_dismiss', args=[o2.pk, slot]) not in page
+    assert f'href="{reverse("outfits:delete", args=[o2.pk])}"' in page
 
     client.post(reverse('outfits:missing_dismiss', args=[o2.pk, slots[0]]))
 

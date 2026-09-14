@@ -39,7 +39,7 @@ With the entry in place, these scenarios pick the route up with no per-route tes
 - Put it in the folder of the risk it protects against, with a sentence name. A new risk means a new folder, and it must exist in test-plan §2 first.
 - If the scenario applies to every route, parametrize over `ROUTES` (or filter by `kind`) instead of naming routes.
 - Assert behaviour taken from the PRD or the risk, never values copied from the implementation.
-- **Never assert the status code alone.** Re-read the database (`foreign_id_writes/conftest.py` has `snapshot_of` and `assert_no_cross_owner_links`), and check that the owner's markers are absent from the body.
+- **Never assert the status code alone.** Re-read the database (`tests/conftest.py` has `snapshot_of` and `assert_no_cross_owner_links`, available in every risk folder), and check that the owner's markers are absent from the body.
 - Make sure the check can't pass vacuously. Give the stranger data of their own, and require at least one collected item.
 
 ## Factories and fixtures

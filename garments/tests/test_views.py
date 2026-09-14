@@ -14,12 +14,13 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from PIL import Image
 
+from garments.forms import GarmentEditForm
 from garments.models import Garment, GarmentType
 from privatemedia import uploadhandlers
 from privatemedia.models import PrivateImage
 from privatemedia.processing import MAX_EDGE_PX
 from privatemedia.validators import MAX_UPLOAD_BYTES
-from tests.factories import make_garment, make_outfit
+from tests.factories import make_garment, make_image, make_outfit
 
 pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('temp_media_root')]
 
@@ -359,6 +360,67 @@ def test_other_text_matching_a_listed_type_is_folded_on_edit(client, owner):
     assert (garment.type, garment.type_other) == (GarmentType.SHIRT, '')
 
 
+def test_a_refused_edit_still_describes_the_saved_garment(client, owner):
+    garment = make_garment(owner, type=GarmentType.SHIRT, description='blue oxford')
+    client.force_login(owner)
+
+    response = _edit(client, garment, type=GarmentType.OTHER, type_other='', description='typed')
+
+    assert response.status_code == 200
+    photo = re.escape(garment.photo_url)
+    img = re.search(rf'<img[^>]*src="{photo}"[^>]*>', response.content.decode())
+    assert 'alt="Shirt: blue oxford"' in img.group(0)
+
+
+def _meanwhile(monkeypatch, change):
+    """Run `change` after the edit form validates and before the view stores it: another tab."""
+    is_valid = GarmentEditForm.is_valid
+
+    def validate_then_change(form):
+        valid = is_valid(form)
+        change()
+        return valid
+
+    monkeypatch.setattr(GarmentEditForm, 'is_valid', validate_then_change)
+
+
+def test_an_edit_of_a_garment_deleted_meanwhile_is_404_and_does_not_bring_it_back(
+    client, owner, monkeypatch
+):
+    garment = make_garment(owner, description='blue oxford')
+
+    def delete_garment():
+        # As the delete page does it: the garment, then its photo row.
+        Garment.objects.filter(pk=garment.pk).delete()
+        PrivateImage.objects.filter(pk=garment.photo_id).delete()
+
+    client.force_login(owner)
+    _meanwhile(monkeypatch, delete_garment)
+
+    response = _edit(client, garment, description='changed')
+
+    assert response.status_code == 404
+    assert not Garment.objects.filter(pk=garment.pk).exists()
+
+
+def test_an_edit_keeps_a_photo_replaced_meanwhile(client, owner, monkeypatch):
+    garment = make_garment(owner, description='blue oxford')
+    replacement = make_image(owner)
+
+    def replace_photo():
+        Garment.objects.filter(pk=garment.pk).update(photo=replacement)
+        PrivateImage.objects.filter(pk=garment.photo_id).delete()
+
+    client.force_login(owner)
+    _meanwhile(monkeypatch, replace_photo)
+
+    response = _edit(client, garment, description='changed')
+
+    assert response.status_code == 302
+    garment.refresh_from_db()
+    assert (garment.description, garment.photo_id) == ('changed', replacement.pk)
+
+
 # --- delete --------------------------------------------------------------------
 
 
@@ -401,6 +463,17 @@ def test_delete_page_of_a_garment_in_no_outfit_says_so(client, owner):
     page = client.get(_delete_url(garment)).content.decode()
 
     assert 'This garment is not in any outfit.' in page
+
+
+def test_delete_confirmation_is_sent_only_once(client, owner):
+    garment = make_garment(owner)
+    client.force_login(owner)
+
+    page = client.get(_delete_url(garment)).content.decode()
+
+    form = re.search(r'<form[^>]*>(?:(?!</form>).)*?Delete garment</button>', page, re.DOTALL)
+    assert 'data-submit-once' in form.group(0).split('>', 1)[0]
+    assert f'<script src="{static("js/photo-shrink.js")}" defer>' in page
 
 
 def test_confirmed_delete_removes_the_garment_and_its_photo_and_keeps_its_outfits(

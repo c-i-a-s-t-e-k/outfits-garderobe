@@ -12,7 +12,6 @@ from django.urls import reverse
 from garments.models import GarmentType
 from outfits.models import Tag
 from tests.factories import make_garment, make_outfit
-from tests.foreign_id_writes.conftest import snapshot_of  # noqa: F401 — a shared fixture
 
 
 @pytest.fixture

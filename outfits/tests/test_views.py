@@ -22,7 +22,7 @@ from django.urls import reverse
 from PIL import ExifTags, Image
 
 from garments.models import Garment, GarmentType
-from outfits.forms import OutfitForm
+from outfits.forms import OutfitEditForm, OutfitForm
 from outfits.models import MissingGarment, Outfit, Tag
 from privatemedia.models import PrivateImage
 from privatemedia.processing import MAX_EDGE_PX
@@ -1341,6 +1341,49 @@ def test_edit_of_another_users_outfit_is_404_and_changes_nothing(
     assert _tag_names(outfit) == ['letnie']
 
 
+def _meanwhile(monkeypatch, change):
+    """Run `change` after the edit form validates and before the view stores it: another tab."""
+    is_valid = OutfitEditForm.is_valid
+
+    def validate_then_change(form):
+        valid = is_valid(form)
+        change()
+        return valid
+
+    monkeypatch.setattr(OutfitEditForm, 'is_valid', validate_then_change)
+
+
+def test_an_edit_does_not_bring_back_an_outfit_deleted_meanwhile(
+    client, owner, wardrobe, lived_in, monkeypatch
+):
+    client.force_login(owner)
+    _meanwhile(monkeypatch, lambda: Outfit.objects.filter(pk=lived_in.pk).delete())
+
+    response = client.post(_edit_url(lived_in), {'name': 'Renamed', 'garments': [wardrobe[0].pk]})
+
+    assert response.status_code == 404
+    assert not Outfit.objects.filter(pk=lived_in.pk).exists()
+
+
+def test_an_edit_keeps_a_photo_replaced_meanwhile(client, owner, wardrobe, lived_in, monkeypatch):
+    replacement = make_image(owner)
+
+    def replace_photo():
+        Outfit.objects.filter(pk=lived_in.pk).update(photo=replacement)
+        PrivateImage.objects.filter(pk=lived_in.photo_id).delete()
+
+    client.force_login(owner)
+    _meanwhile(monkeypatch, replace_photo)
+
+    response = client.post(_edit_url(lived_in), {'name': 'Renamed', 'garments': [wardrobe[0].pk]})
+
+    assert response.status_code == 302
+    outfit = _reread(lived_in)
+    assert outfit.name == 'Renamed'
+    assert set(outfit.garments.all()) == {wardrobe[0]}
+    assert outfit.photo_id == replacement.pk
+
+
 # --- deleting an outfit ----------------------------------------------------------
 
 
@@ -1365,7 +1408,7 @@ def test_delete_page_of_a_tagged_outfit_with_a_photo_warns_about_both(
     assert 'Tags no other outfit uses disappear from your wardrobe filter.' in page
     assert 'Its photo is deleted permanently.' in page
     assert '<img' not in page
-    assert re.search(r'<form method="post">.*?Delete outfit</button>', page, re.DOTALL)
+    assert re.search(r'<form method="post"[^>]*>.*?Delete outfit</button>', page, re.DOTALL)
     assert f'<a href="{lived_in.get_absolute_url()}">Cancel</a>' in page
     assert Outfit.objects.filter(pk=lived_in.pk).exists()
 
@@ -1378,7 +1421,19 @@ def test_delete_page_of_a_bare_outfit_mentions_no_tags_and_no_photo(client, owne
 
     assert 'Its garments stay in your wardrobe.' in page
     assert 'This outfit is tagged' not in page
-    assert 'photo' not in page.lower().split('<main', 1)[-1]
+    main = page.lower().split('<main', 1)[-1].split('</main>', 1)[0]
+    assert 'photo' not in main
+
+
+def test_delete_confirmation_is_sent_only_once(client, owner, wardrobe):
+    outfit = make_outfit(owner, garments=wardrobe, name='Bare')
+    client.force_login(owner)
+
+    page = client.get(_delete_url(outfit)).content.decode()
+
+    form = re.search(r'<form[^>]*>(?:(?!</form>).)*?Delete outfit</button>', page, re.DOTALL)
+    assert 'data-submit-once' in form.group(0).split('>', 1)[0]
+    assert f'<script src="{static("js/photo-shrink.js")}" defer>' in page
 
 
 def test_confirming_delete_removes_the_outfit_its_slots_unused_tags_and_photo_after_commit(
