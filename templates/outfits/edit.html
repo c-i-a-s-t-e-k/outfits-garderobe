@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Edit outfit{% endblock %}
+
+{% block content %}
+  <h1>Edit outfit</h1>
+
+  <form method="post" class="outfit-compose">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div>
+      {{ form.name.label_tag }}
+      {{ form.name }}
+      {{ form.name.errors }}
+    </div>
+
+    {% if outfit.is_incomplete %}
+      {% with count=outfit.missing_count %}
+        <p class="notice">
+          This outfit has {{ count }} missing garment{{ count|pluralize }}.
+          Adding garments here does not close them — use
+          <em>Replace</em> or <em>Keep without it</em> on
+          <a href="{{ outfit.get_absolute_url }}">the outfit page</a>.
+        </p>
+      {% endwith %}
+    {% endif %}
+
+    {% include "outfits/_garment_picker.html" with submit_label="Save changes" %}
+    <p><a href="{{ outfit.get_absolute_url }}">Cancel</a></p>
+  </form>
+{% endblock %}

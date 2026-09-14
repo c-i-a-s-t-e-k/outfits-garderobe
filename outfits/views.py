@@ -1,4 +1,4 @@
-"""The wardrobe grid, and composing, tagging and photographing an outfit — for its owner only."""
+"""The wardrobe grid, and composing, editing, deleting, tagging and photographing outfits."""
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -10,7 +10,7 @@ from django.utils.http import urlencode
 from django.views.decorators.http import require_http_methods, require_POST
 
 from garments.models import Garment
-from outfits.forms import MIN_GARMENTS, AddTagsForm, OutfitForm, OutfitPhotoForm
+from outfits.forms import MIN_GARMENTS, AddTagsForm, OutfitEditForm, OutfitForm, OutfitPhotoForm
 from outfits.models import Outfit, Tag
 from privatemedia.models import discard_private_image, stored_private_image
 
@@ -111,6 +111,36 @@ def outfit_compose(request):
     else:
         form = OutfitForm(owner=request.user)
     return render(request, 'outfits/compose.html', {'form': form})
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def outfit_edit(request, pk):
+    """Change the outfit's name and garments; its tags, photo and missing slots stay."""
+    # Ownership before the form: a stranger's garment ids are never validated.
+    outfit = _owned_outfit(request, pk)
+    form = OutfitEditForm(request.POST or None, owner=request.user, instance=outfit)
+    if form.is_bound and form.is_valid():
+        try:
+            _store_outfit(form)
+        except OutfitNameTaken:
+            form.add_error('name', 'You already have an outfit with this name.')
+        else:
+            messages.success(request, 'Outfit updated.')
+            return redirect(outfit)
+    return render(request, 'outfits/edit.html', {'form': form, 'outfit': outfit})
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def outfit_delete(request, pk):
+    """Confirm, then delete the outfit and its photo; its garments stay."""
+    outfit = _owned_outfit(request, pk)
+    if request.method == 'POST':
+        _delete_outfit(request.user, pk)
+        messages.success(request, 'Outfit deleted.')
+        return redirect('wardrobe')
+    return render(request, 'outfits/delete.html', {'outfit': outfit})
 
 
 @login_required
@@ -244,8 +274,27 @@ def _remove_outfit_photo(owner, pk):
 
 
 @transaction.atomic
+def _delete_outfit(owner, pk):
+    """Delete the outfit, then retire its photo.
+
+    Its missing slots cascade with it, and the post_delete receiver in
+    outfits.signals deletes the tags no other outfit carries. The photo goes
+    last: Outfit.photo is RESTRICT, so the image row cannot go while the outfit
+    still points at it.
+    """
+    outfit = _locked_outfit(owner, pk)
+    photo = outfit.photo
+    outfit.delete()
+    if photo is not None:
+        discard_private_image(photo)
+
+
+@transaction.atomic
 def _store_outfit(form):
     """Store the outfit with its garments and tags together, or leave nothing behind.
+
+    Composing and editing share it. The edit form carries no tags, so an edit
+    leaves the outfit's tags as they are.
 
     Two unnamed saves in parallel can both compute the same `outfit-N`. The
     row insert runs in its own savepoint; if the name is refused — by the
@@ -264,5 +313,6 @@ def _store_outfit(form):
         outfit.name = ''
         outfit.save()
     form.save_m2m()
-    outfit.tags.set(Tag.resolve(outfit.owner, form.cleaned_data['tag_names']))
+    if 'tag_names' in form.cleaned_data:
+        outfit.tags.set(Tag.resolve(outfit.owner, form.cleaned_data['tag_names']))
     return outfit

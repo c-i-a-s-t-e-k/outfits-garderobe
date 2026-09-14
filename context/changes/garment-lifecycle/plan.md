@@ -820,38 +820,38 @@ Bring the branch up to date, open the pull request, run every manual check again
 
 #### Automated
 
-- [x] 2.1 Garment tests pass: `uv run pytest garments/tests`
-- [x] 2.2 The privacy contracts cover the new routes: `uv run pytest tests/`
-- [x] 2.3 The full suite passes: `uv run pytest`
-- [x] 2.4 System checks pass: `uv run python manage.py check`
-- [x] 2.5 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput`
-- [x] 2.6 Linting passes: `uv run ruff check .`
-- [x] 2.7 Formatting is clean: `uv run ruff format --check .`
+- [x] 2.1 Garment tests pass: `uv run pytest garments/tests` — 42fb263
+- [x] 2.2 The privacy contracts cover the new routes: `uv run pytest tests/` — 42fb263
+- [x] 2.3 The full suite passes: `uv run pytest` — 42fb263
+- [x] 2.4 System checks pass: `uv run python manage.py check` — 42fb263
+- [x] 2.5 `collectstatic` succeeds under manifest storage: `uv run python manage.py collectstatic --noinput` — 42fb263
+- [x] 2.6 Linting passes: `uv run ruff check .` — 42fb263
+- [x] 2.7 Formatting is clean: `uv run ruff format --check .` — 42fb263
 
 #### Manual
 
-- [x] 2.8 Tapping a garment in the list opens its edit page; changing the description and saving returns to the list with the new text
-- [x] 2.9 Replacing the photo with a large phone-sized photo shows the shrink status, then the new photo in the list; the old file is gone from the dev `MEDIA_ROOT`
-- [x] 2.10 *Delete garment* shows the affected outfit names; confirming returns to the list with the count message, and the garment's photo file is gone
-- [x] 2.11 At 360 px in headless Chromium the list, edit and delete pages fit without horizontal scrolling
+- [x] 2.8 Tapping a garment in the list opens its edit page; changing the description and saving returns to the list with the new text — 42fb263
+- [x] 2.9 Replacing the photo with a large phone-sized photo shows the shrink status, then the new photo in the list; the old file is gone from the dev `MEDIA_ROOT` — 42fb263
+- [x] 2.10 *Delete garment* shows the affected outfit names; confirming returns to the list with the count message, and the garment's photo file is gone — 42fb263
+- [x] 2.11 At 360 px in headless Chromium the list, edit and delete pages fit without horizontal scrolling — 42fb263
 
 ### Phase 3: Outfit edit and delete
 
 #### Automated
 
-- [ ] 3.1 Outfit tests pass: `uv run pytest outfits/tests`
-- [ ] 3.2 The privacy contracts cover the new routes: `uv run pytest tests/`
-- [ ] 3.3 The full suite passes: `uv run pytest`
-- [ ] 3.4 System checks pass: `uv run python manage.py check`
-- [ ] 3.5 Linting passes: `uv run ruff check .`
-- [ ] 3.6 Formatting is clean: `uv run ruff format --check .`
+- [x] 3.1 Outfit tests pass: `uv run pytest outfits/tests`
+- [x] 3.2 The privacy contracts cover the new routes: `uv run pytest tests/`
+- [x] 3.3 The full suite passes: `uv run pytest`
+- [x] 3.4 System checks pass: `uv run python manage.py check`
+- [x] 3.5 Linting passes: `uv run ruff check .`
+- [x] 3.6 Formatting is clean: `uv run ruff format --check .`
 
 #### Manual
 
-- [ ] 3.7 *Edit outfit* shows the picker with current garments ticked; renaming and unticking a garment saves and returns to the outfit page with its tags and photo intact
-- [ ] 3.8 *Delete outfit* on a tagged outfit with a photo shows the tag warning and the photo sentence; confirming lands on the wardrobe without the outfit, and the photo file is gone
-- [ ] 3.9 Compose still works exactly as before
-- [ ] 3.10 At 360 px in headless Chromium the edit and delete pages fit without horizontal scrolling
+- [x] 3.7 *Edit outfit* shows the picker with current garments ticked; renaming and unticking a garment saves and returns to the outfit page with its tags and photo intact
+- [x] 3.8 *Delete outfit* on a tagged outfit with a photo shows the tag warning and the photo sentence; confirming lands on the wardrobe without the outfit, and the photo file is gone
+- [x] 3.9 Compose still works exactly as before
+- [x] 3.10 At 360 px in headless Chromium the edit and delete pages fit without horizontal scrolling
 
 ### Phase 4: Incomplete outfits in the grid and on the outfit page
 

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Delete outfit{% endblock %}
+
+{% block content %}
+  <h1>Delete outfit</h1>
+
+  <p><strong>{{ outfit.name }}</strong></p>
+  <p>Its garments stay in your wardrobe.</p>
+
+  {% with tags=outfit.tags.all %}
+    {% if tags %}
+      <p class="notice">
+        This outfit is tagged: {% for tag in tags %}{{ tag.name }}{% if not forloop.last %} · {% endif %}{% endfor %}.
+        Tags no other outfit uses disappear from your wardrobe filter.
+      </p>
+    {% endif %}
+  {% endwith %}
+
+  {% if outfit.photo_id %}
+    <p>Its photo is deleted permanently.</p>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit">Delete outfit</button>
+  </form>
+  <p><a href="{{ outfit.get_absolute_url }}">Cancel</a></p>
+{% endblock %}

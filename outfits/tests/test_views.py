@@ -20,9 +20,9 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from PIL import ExifTags, Image
 
-from garments.models import GarmentType
+from garments.models import Garment, GarmentType
 from outfits.forms import OutfitForm
-from outfits.models import Outfit, Tag
+from outfits.models import MissingGarment, Outfit, Tag
 from privatemedia.models import PrivateImage
 from privatemedia.processing import MAX_EDGE_PX
 from privatemedia.validators import MAX_UPLOAD_BYTES
@@ -1211,3 +1211,237 @@ def test_grid_query_count_does_not_grow_with_outfits_tags_selections_or_photos(
     assert _shown(page) == {'First', *(f'More {n}' for n in range(1, 5))}
     assert page.count('outfit-preview-photo') == 5
     assert large == small
+
+
+# --- editing an outfit -----------------------------------------------------------
+
+
+def _edit_url(outfit):
+    return reverse('outfits:edit', args=[outfit.pk])
+
+
+def _missing(outfit):
+    return list(MissingGarment.objects.filter(outfit=outfit).values_list('pk', 'description'))
+
+
+@pytest.fixture
+def lived_in(owner, wardrobe):
+    """A tagged outfit with a photo that lost a garment: all a rename must leave alone."""
+    lost = make_garment(owner, type=GarmentType.ACCESSORY, description='red belt')
+    outfit = make_outfit(owner, garments=[*wardrobe, lost], photo=True, name='Walk')
+    outfit.tags.set(Tag.resolve(owner, ['letnie']))
+    lost.delete()
+    return outfit
+
+
+@pytest.mark.parametrize('tag_names', [None, 'zimowe, smart casual'])
+def test_edit_renames_and_swaps_garments_and_keeps_tags_photo_and_missing_slots(
+    client, owner, wardrobe, lived_in, tag_names
+):
+    added = make_garment(owner, type=GarmentType.SWEATER)
+    slots = _missing(lived_in)
+    client.force_login(owner)
+    data = {'name': 'Long walk', 'garments': [wardrobe[0].pk, added.pk]}
+    if tag_names is not None:
+        data['tag_names'] = tag_names
+
+    response = client.post(_edit_url(lived_in), data)
+
+    assert response.status_code == 302
+    assert response.headers['Location'] == lived_in.get_absolute_url()
+    outfit = _reread(lived_in)
+    assert outfit.name == 'Long walk'
+    assert set(outfit.garments.all()) == {wardrobe[0], added}
+    assert _tag_names(outfit) == ['letnie']
+    assert outfit.photo_id == lived_in.photo_id
+    # Unticking a garment is not losing it: only a deleted garment leaves a slot.
+    assert _missing(outfit) == slots
+    assert 'Outfit updated.' in client.get(response.headers['Location']).content.decode()
+
+
+def test_edit_page_ticks_the_current_garments_and_notes_the_missing_slot(
+    client, owner, wardrobe, lived_in
+):
+    spare = make_garment(owner, type=GarmentType.SWEATER)
+    client.force_login(owner)
+
+    page = client.get(_edit_url(lived_in)).content.decode()
+
+    assert 'checked' in _checkbox(page, wardrobe[0])
+    assert 'checked' in _checkbox(page, wardrobe[1])
+    assert 'checked' not in _checkbox(page, spare)
+    assert 'name="tag_names"' not in page
+    note = re.search(r'<p class="notice">.*?</p>', page, re.DOTALL).group(0)
+    assert 'This outfit has 1 missing garment.' in note
+    assert 'Adding garments here does not close them' in note
+    assert f'href="{lived_in.get_absolute_url()}"' in note
+
+
+def test_adding_a_garment_through_edit_leaves_the_missing_slot_open(
+    client, owner, wardrobe, lived_in
+):
+    added = make_garment(owner, type=GarmentType.ACCESSORY, description='brown belt')
+    slots = _missing(lived_in)
+    client.force_login(owner)
+
+    client.post(
+        _edit_url(lived_in), {'name': 'Walk', 'garments': [g.pk for g in (*wardrobe, added)]}
+    )
+
+    assert set(_reread(lived_in).garments.all()) == {*wardrobe, added}
+    assert _missing(lived_in) == slots
+
+
+def test_edit_page_of_a_complete_outfit_has_no_missing_note(client, owner, wardrobe):
+    outfit = make_outfit(owner, garments=wardrobe, name='Complete')
+    client.force_login(owner)
+
+    page = client.get(_edit_url(outfit)).content.decode()
+
+    assert 'class="notice"' not in page
+    assert 'missing garment' not in page
+
+
+def test_an_invalid_edit_is_shown_again_and_changes_nothing(client, owner, wardrobe, lived_in):
+    client.force_login(owner)
+
+    response = client.post(_edit_url(lived_in), {'name': 'Renamed', 'garments': []})
+
+    assert response.status_code == 200
+    assert 'Choose at least 1 garment.' in response.content.decode()
+    assert _reread(lived_in).name == 'Walk'
+    assert set(_reread(lived_in).garments.all()) == set(wardrobe)
+
+
+@pytest.mark.parametrize('method', ['get', 'post'])
+def test_edit_of_another_users_outfit_is_404_and_changes_nothing(
+    client, owner, stranger, wardrobe, lived_in, method
+):
+    own = make_garment(stranger)
+    client.force_login(stranger)
+
+    response = getattr(client, method)(
+        _edit_url(lived_in), {'name': 'hostile', 'garments': [own.pk, wardrobe[0].pk]}
+    )
+
+    assert response.status_code == 404
+    outfit = _reread(lived_in)
+    assert outfit.name == 'Walk'
+    assert set(outfit.garments.all()) == set(wardrobe)
+    assert _tag_names(outfit) == ['letnie']
+
+
+# --- deleting an outfit ----------------------------------------------------------
+
+
+def _delete_url(outfit):
+    return reverse('outfits:delete', args=[outfit.pk])
+
+
+def test_delete_page_of_a_tagged_outfit_with_a_photo_warns_about_both(
+    client, owner, wardrobe, lived_in
+):
+    lived_in.tags.add(*Tag.resolve(owner, ['smart-casual']))
+    client.force_login(owner)
+
+    response = client.get(_delete_url(lived_in))
+    page = response.content.decode()
+
+    assert response.status_code == 200
+    assert '<h1>Delete outfit</h1>' in page
+    assert 'Walk' in page
+    assert 'Its garments stay in your wardrobe.' in page
+    assert 'This outfit is tagged: letnie · smart-casual.' in page
+    assert 'Tags no other outfit uses disappear from your wardrobe filter.' in page
+    assert 'Its photo is deleted permanently.' in page
+    assert '<img' not in page
+    assert re.search(r'<form method="post">.*?Delete outfit</button>', page, re.DOTALL)
+    assert f'<a href="{lived_in.get_absolute_url()}">Cancel</a>' in page
+    assert Outfit.objects.filter(pk=lived_in.pk).exists()
+
+
+def test_delete_page_of_a_bare_outfit_mentions_no_tags_and_no_photo(client, owner, wardrobe):
+    outfit = make_outfit(owner, garments=wardrobe, name='Bare')
+    client.force_login(owner)
+
+    page = client.get(_delete_url(outfit)).content.decode()
+
+    assert 'Its garments stay in your wardrobe.' in page
+    assert 'This outfit is tagged' not in page
+    assert 'photo' not in page.lower().split('<main', 1)[-1]
+
+
+def test_confirming_delete_removes_the_outfit_its_slots_unused_tags_and_photo_after_commit(
+    client, owner, wardrobe, lived_in, django_capture_on_commit_callbacks
+):
+    lived_in.tags.add(*Tag.resolve(owner, ['shared']))
+    other = _outfit_with(owner, wardrobe, 'Other', tags=['shared'])
+    photo = lived_in.photo
+    photo_file = _file_of(photo)
+    assert _missing(lived_in)
+    client.force_login(owner)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        response = client.post(_delete_url(lived_in))
+
+    assert response.status_code == 302
+    assert response.headers['Location'] == WARDROBE_URL
+    assert not Outfit.objects.filter(pk=lived_in.pk).exists()
+    assert not MissingGarment.objects.exists()
+    assert sorted(Tag.objects.values_list('name', flat=True)) == ['shared']
+    assert _tag_names(other) == ['shared']
+    assert not PrivateImage.objects.filter(pk=photo.pk).exists()
+    assert not photo_file.exists()
+    assert set(Garment.objects.all()) == set(wardrobe)
+    _assert_garment_photos_intact(wardrobe)
+    followed = client.get(response.headers['Location']).content.decode()
+    assert 'Outfit deleted.' in followed
+
+
+def test_confirming_delete_of_an_outfit_without_a_photo_keeps_every_image(
+    client, owner, wardrobe, django_capture_on_commit_callbacks
+):
+    outfit = make_outfit(owner, garments=wardrobe, name='Bare')
+    images_before = PrivateImage.objects.count()
+    client.force_login(owner)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        response = client.post(_delete_url(outfit))
+
+    assert response.status_code == 302
+    assert not Outfit.objects.filter(pk=outfit.pk).exists()
+    assert PrivateImage.objects.count() == images_before
+    _assert_garment_photos_intact(wardrobe)
+
+
+@pytest.mark.parametrize('method', ['get', 'post'])
+def test_delete_of_another_users_outfit_is_404_and_changes_nothing(
+    client, owner, stranger, wardrobe, lived_in, method, django_capture_on_commit_callbacks
+):
+    photo_file = _file_of(lived_in.photo)
+    slots = _missing(lived_in)
+    client.force_login(stranger)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        response = getattr(client, method)(_delete_url(lived_in))
+
+    assert response.status_code == 404
+    outfit = _reread(lived_in)
+    assert outfit.photo_id == lived_in.photo_id
+    assert photo_file.is_file()
+    assert _tag_names(outfit) == ['letnie']
+    assert _missing(outfit) == slots
+
+
+def test_detail_links_to_edit_and_delete_right_under_the_heading(client, owner, wardrobe):
+    outfit = make_outfit(owner, garments=wardrobe, name='Walk')
+    client.force_login(owner)
+
+    page = client.get(outfit.get_absolute_url()).content.decode()
+
+    actions = re.search(
+        r'</h1>\s*(<[^>]*class="outfit-actions".*?</[a-z]+>)\s*<p>Composed', page, re.DOTALL
+    )
+    assert actions, 'the actions row sits directly under the heading'
+    assert f'<a href="{_edit_url(outfit)}">Edit outfit</a>' in actions.group(1)
+    assert f'<a href="{_delete_url(outfit)}">Delete outfit</a>' in actions.group(1)

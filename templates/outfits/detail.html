@@ -5,6 +5,10 @@
 
 {% block content %}
   <h1>{{ outfit.name }}</h1>
+  <p class="outfit-actions">
+    <a href="{% url 'outfits:edit' outfit.pk %}">Edit outfit</a> ·
+    <a href="{% url 'outfits:delete' outfit.pk %}">Delete outfit</a>
+  </p>
   <p>Composed {{ outfit.created_at|date:"j F Y" }}.</p>
 
   <section aria-labelledby="tags-heading">

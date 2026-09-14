@@ -165,6 +165,16 @@ def _compose_payload(seeded, requester):
     return {'name': 'hostile compose', 'garments': garment_ids}
 
 
+def _outfit_edit_payload(seeded, requester):
+    """The compose payload, aimed by the URL at the seeded user's outfit."""
+    return _compose_payload(seeded, requester)
+
+
+def _outfit_delete_payload(seeded, requester):
+    """The seeded user's outfit is in the URL; confirming carries nothing."""
+    return {}
+
+
 def _tags_add_payload(seeded, requester):
     """Tag names, including the seeded user's own tag spelled exactly as they typed it."""
     names = [seeded.outfits[0].tags.get().name]
@@ -218,6 +228,19 @@ ROUTES = {
         seed=_seed_wardrobe,
         shows_photos=True,
         foreign_payload=_compose_payload,
+    ),
+    # The picker shows the owner's garment photos.
+    'outfits:edit': OwnerScopedRoute(
+        kind='write',
+        seed=_seed_outfit_detail,
+        shows_photos=True,
+        foreign_payload=_outfit_edit_payload,
+    ),
+    'outfits:delete': OwnerScopedRoute(
+        kind='write',
+        seed=_seed_outfit_detail,
+        shows_photos=False,
+        foreign_payload=_outfit_delete_payload,
     ),
     'outfits:tags_add': OwnerScopedRoute(
         kind='write',
