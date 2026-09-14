@@ -47,8 +47,8 @@ Osoby dbające o styl hobbystycznie zapominają wcześniej dobrane zestawienia, 
 | S-03 | compose-outfit     | wizualnie złożyć outfit z ubrań i zobaczyć go w siatce garderoby                           | S-02          | FR-005, FR-008, US-01             | done |
 | S-04 | outfit-photo       | dodać do outfitu własne zdjęcie w tym stroju i widzieć je jako kafelek w siatce            | S-03, F-01    | FR-007, FR-008, US-01             | done |
 | S-05 | outfit-tags        | tagować outfity i filtrować siatkę garderoby po wybranym tagu                              | S-03          | FR-009, FR-010, US-02             | done |
-| S-06 | garment-lifecycle  | edytować i usunąć ubranie, a dotknięte outfity widzieć jako niekompletne z szybką naprawą  | S-03          | FR-004, US-01                     | in-progress |
-| S-07 | outfit-lifecycle   | edytować i usunąć outfit, z ostrzeżeniem przy usuwaniu otagowanego                         | S-03, S-05    | FR-006, US-01, US-02              | proposed |
+| S-06 | garment-lifecycle  | edytować i usunąć ubranie, a dotknięte outfity widzieć jako niekompletne z szybką naprawą  | S-03, S-04, S-05 | FR-004, FR-006, US-01          | done |
+| S-07 | outfit-lifecycle   | edytować i usunąć outfit, z ostrzeżeniem przy usuwaniu otagowanego                         | S-03, S-05    | FR-006, US-01, US-02              | done |
 
 ## Streams
 
@@ -157,13 +157,13 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 
 - **Outcome:** użytkownik może edytować i usunąć ubranie, a outfity, które go używały, wyróżniają się w siatce jako niekompletne i dają natychmiastowy wybór: uzupełnij zamiennikiem albo usuń outfit.
 - **Change ID:** garment-lifecycle
-- **PRD refs:** FR-004, US-01
-- **Prerequisites:** S-03
+- **PRD refs:** FR-004, FR-006, US-01
+- **Prerequisites:** S-03, S-04, S-05
 - **Parallel with:** S-04, S-05, S-07
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** leży po kompozycji, bo dopiero wtedy reguła spójności z logiki biznesowej ma co naruszać i da się ją sprawdzić na realnym outficie; ryzykiem jest to, że stan niekompletności musi być widoczny w siatce, a nie tylko zapisany w bazie.
-- **Status:** in-progress
+- **Status:** done — zaimplementowane w PR #8 (garment edit/delete, tombstones, incomplete grid + repair). Ta sama PR dostarczyła też outfit edit/delete (FR-006), więc jej close-out domyka równolegle S-07.
 
 ### S-07: Cykl życia outfitu
 
@@ -175,7 +175,7 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** leży po tagach, bo ostrzeżenie wymagane przez FR-006 dotyczy właśnie otagowanego outfitu i wcześniej nie miałoby czego wykrywać; ryzykiem jest przypadkowe usunięcie, gdy ostrzeżenie da się przekliknąć bez czytania.
-- **Status:** proposed
+- **Status:** done — delivered by `garment-lifecycle` PR #8 (FR-006 in Phase 3); no separate slice was planned (`context/changes/outfit-lifecycle/research.md`, decision 2026-09-14).
 
 ## Backlog Handoff
 
@@ -187,8 +187,8 @@ Fundamenty poniżej zakładają, że to istnieje, i tego nie budują od nowa.
 | S-03 | `compose-outfit` | Wizualne składanie outfitu i siatka garderoby | OG-4 | yes | Zmergowane do `master` 2026-09-13 (PR #2 kod, PR #3 domknięcie); produkcja zweryfikowana |
 | S-04 | `outfit-photo` | Własne zdjęcie w stroju jako kafelek outfitu | OG-5 | yes | Zaimplementowane 2026-09-14 w PR #7 (jedno zdjęcie na outfit z podmianą i usunięciem, plik kasowany po commicie, kafelki 3:4, trasy zdjęcia w sieci prywatności). Checki manualne przeszły na PR env (headless 360 px + prawdziwy telefon developera). Przygotowanie PR env do automatyzacji: OG-13 |
 | S-05 | `outfit-tags` | Tagowanie outfitów i filtrowanie siatki po tagu | OG-6 | yes | Zaimplementowane 2026-09-14 w PR #5 (tagi per użytkownik z kluczem `normalized`, filtr AND, pasek zawężający, trasy tagów w sieci prywatności). Manualne checki na PR i produkcji pominięte decyzją developera |
-| S-06 | `garment-lifecycle` | Edycja i usuwanie ubrania z oznaczeniem niekompletnych outfitów | OG-7 | yes | S-03 done — uruchom `/10x-plan garment-lifecycle` |
-| S-07 | `outfit-lifecycle` | Edycja i usuwanie outfitu z ostrzeżeniem o tagach | OG-8 | yes | S-03 i S-05 done — uruchom `/10x-plan outfit-lifecycle` |
+| S-06 | `garment-lifecycle` | Edycja i usuwanie ubrania z oznaczeniem niekompletnych outfitów | OG-7 | yes | Zaimplementowane 2026-09-14 w PR #8 (tombstone `MissingGarment` pisany przez `pre_delete`, edycja/usunięcie ubrania z podmianą i kasowaniem pliku po commicie, odznaka *Incomplete* i baner w siatce, naprawa *Replace*/*Keep without it* per brakujący slot). Checki manualne przeszły na PR env (360 px + dwa konta). Ta sama PR dostarczyła edycję/usunięcie outfitu (FR-006) i domyka S-07 |
+| S-07 | `outfit-lifecycle` | Edycja i usuwanie outfitu z ostrzeżeniem o tagach | OG-8 | yes | Zamknięte bez osobnej implementacji — dostarczone przez `garment-lifecycle` PR #8 (FR-006 w Phase 3: edycja outfitu, usunięcie z ostrzeżeniem o tagach i zdjęciu) |
 
 Ta tabela jest przekazaniem do narzędzia backlogowego. Jeden wiersz na każdy element roadmapy, bez powielania szczegółów z treści powyżej. Zgłoszenia założone w projekcie Jira **OG (outfits-garderobe)** dnia 2026-09-04; zależności z pola `Prerequisites` odwzorowano tam jako powiązania typu „Blocks".
 
@@ -203,6 +203,7 @@ PRD nie ma nierozstrzygniętych pytań. Poniższe wyszły w trakcie układania r
 ## Parked
 
 - **Automatyczne rozpoznawanie ubrań ze zdjęć** — Poza zakresem wg PRD; użytkownik wpisuje typ i opis ręcznie, rozpoznawanie to osobny moduł.
+- **Pliki zdjęć po usunięciu z admina, ORM lub konta** — Znana luka od `user-accounts`, zawężona do ścieżek UI w `garment-lifecycle`: tylko usunięcie ubrania lub outfitu przez UI kasuje plik zdjęcia na commicie; usunięcie przez `/admin/`, bezpośrednio przez ORM (`QuerySet.delete()`) lub kaskada usunięcia konta zostawia plik na wolumenie osieroconym. Wrócić do tego, gdy zużycie wolumenu zbliży się do progu z F-01 (ok. 1000–1500 zdjęć) albo gdy usunięcie konta dostanie własny UI.
 - **Społeczność i współdzielenie outfitów** — Poza zakresem wg PRD; produkt jest prywatny, bez udostępniania, polubień i komentarzy.
 - **Integracje ze sklepami internetowymi** — Poza zakresem wg PRD; nie sugerujemy zakupów i nie importujemy ubrań.
 - **System pluginów i architektura modularna** — Poza zakresem wg PRD, przeniesione do wersji drugiej.
